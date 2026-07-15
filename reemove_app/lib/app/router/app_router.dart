@@ -39,7 +39,19 @@ import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../features/profile/presentation/screens/profile_settings_screen.dart';
 import '../../features/profile/presentation/screens/profile_verification_screen.dart';
 import '../../features/profile/presentation/screens/public_profile_screen.dart';
+import '../../features/sports/shared/presentation/screens/create_sport_community_screen.dart';
+import '../../features/sports/shared/presentation/screens/create_sports_event_screen.dart';
+import '../../features/sports/shared/presentation/screens/manage_trainer_service_screen.dart';
+import '../../features/sports/shared/presentation/screens/sport_communities_screen.dart';
+import '../../features/sports/shared/presentation/screens/sport_community_detail_screen.dart';
+import '../../features/sports/shared/presentation/screens/sport_event_detail_screen.dart';
+import '../../features/sports/shared/presentation/screens/sport_events_screen.dart';
 import '../../features/sports/shared/presentation/screens/sport_hub_screen.dart';
+import '../../features/sports/shared/presentation/screens/sport_leaderboards_screen.dart';
+import '../../features/sports/shared/presentation/screens/sport_place_detail_screen.dart';
+import '../../features/sports/shared/presentation/screens/sport_places_screen.dart';
+import '../../features/sports/shared/presentation/screens/sport_trainer_detail_screen.dart';
+import '../../features/sports/shared/presentation/screens/sport_trainers_screen.dart';
 import '../../features/sports/shared/presentation/screens/sports_screen.dart';
 import '../../features/startup/presentation/screens/startup_screen.dart';
 import '../navigation/app_shell.dart';
@@ -247,6 +259,192 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                         ),
                       );
                     },
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'places',
+                        name: AppRouteNames.sportPlaces,
+                        pageBuilder:
+                            (BuildContext context, GoRouterState state) =>
+                                MaterialPage<void>(
+                                  key: state.pageKey,
+                                  child: SportPlacesScreen(
+                                    sportId:
+                                        state.pathParameters['sportId'] ?? '',
+                                  ),
+                                ),
+                        routes: <RouteBase>[
+                          GoRoute(
+                            path: ':placeId',
+                            name: AppRouteNames.sportPlace,
+                            pageBuilder:
+                                (
+                                  BuildContext context,
+                                  GoRouterState state,
+                                ) => MaterialPage<void>(
+                                  key: state.pageKey,
+                                  child: SportPlaceDetailScreen(
+                                    sportId:
+                                        state.pathParameters['sportId'] ?? '',
+                                    placeId:
+                                        state.pathParameters['placeId'] ?? '',
+                                  ),
+                                ),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'communities',
+                        name: AppRouteNames.sportCommunities,
+                        pageBuilder:
+                            (BuildContext context, GoRouterState state) =>
+                                MaterialPage<void>(
+                                  key: state.pageKey,
+                                  child: SportCommunitiesScreen(
+                                    sportId:
+                                        state.pathParameters['sportId'] ?? '',
+                                  ),
+                                ),
+                        routes: <RouteBase>[
+                          GoRoute(
+                            path: 'create',
+                            name: AppRouteNames.createSportCommunity,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) =>
+                                    MaterialPage<void>(
+                                      key: state.pageKey,
+                                      child: CreateSportCommunityScreen(
+                                        sportId:
+                                            state.pathParameters['sportId'] ??
+                                            '',
+                                      ),
+                                    ),
+                          ),
+                          GoRoute(
+                            path: ':communityId',
+                            name: AppRouteNames.sportCommunity,
+                            pageBuilder:
+                                (
+                                  BuildContext context,
+                                  GoRouterState state,
+                                ) => MaterialPage<void>(
+                                  key: state.pageKey,
+                                  child: SportCommunityDetailScreen(
+                                    sportId:
+                                        state.pathParameters['sportId'] ?? '',
+                                    communityId:
+                                        state.pathParameters['communityId'] ??
+                                        '',
+                                  ),
+                                ),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'events',
+                        name: AppRouteNames.sportEvents,
+                        pageBuilder:
+                            (BuildContext context, GoRouterState state) =>
+                                MaterialPage<void>(
+                                  key: state.pageKey,
+                                  child: SportEventsScreen(
+                                    sportId:
+                                        state.pathParameters['sportId'] ?? '',
+                                  ),
+                                ),
+                        routes: <RouteBase>[
+                          GoRoute(
+                            path: 'create',
+                            name: AppRouteNames.createSportEvent,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) =>
+                                    MaterialPage<void>(
+                                      key: state.pageKey,
+                                      child: CreateSportsEventScreen(
+                                        sportId:
+                                            state.pathParameters['sportId'] ??
+                                            '',
+                                      ),
+                                    ),
+                          ),
+                          GoRoute(
+                            path: ':eventId',
+                            name: AppRouteNames.sportEvent,
+                            pageBuilder:
+                                (
+                                  BuildContext context,
+                                  GoRouterState state,
+                                ) => MaterialPage<void>(
+                                  key: state.pageKey,
+                                  child: SportEventDetailScreen(
+                                    sportId:
+                                        state.pathParameters['sportId'] ?? '',
+                                    eventId:
+                                        state.pathParameters['eventId'] ?? '',
+                                  ),
+                                ),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'trainers',
+                        name: AppRouteNames.sportTrainers,
+                        pageBuilder:
+                            (BuildContext context, GoRouterState state) =>
+                                MaterialPage<void>(
+                                  key: state.pageKey,
+                                  child: SportTrainersScreen(
+                                    sportId:
+                                        state.pathParameters['sportId'] ?? '',
+                                  ),
+                                ),
+                        routes: <RouteBase>[
+                          GoRoute(
+                            path: 'service',
+                            name: AppRouteNames.manageTrainerService,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) =>
+                                    MaterialPage<void>(
+                                      key: state.pageKey,
+                                      child: ManageTrainerServiceScreen(
+                                        sportId:
+                                            state.pathParameters['sportId'] ??
+                                            '',
+                                      ),
+                                    ),
+                          ),
+                          GoRoute(
+                            path: ':trainerId',
+                            name: AppRouteNames.sportTrainer,
+                            pageBuilder:
+                                (
+                                  BuildContext context,
+                                  GoRouterState state,
+                                ) => MaterialPage<void>(
+                                  key: state.pageKey,
+                                  child: SportTrainerDetailScreen(
+                                    sportId:
+                                        state.pathParameters['sportId'] ?? '',
+                                    trainerId:
+                                        state.pathParameters['trainerId'] ?? '',
+                                  ),
+                                ),
+                          ),
+                        ],
+                      ),
+                      GoRoute(
+                        path: 'leaderboards',
+                        name: AppRouteNames.sportLeaderboards,
+                        pageBuilder:
+                            (BuildContext context, GoRouterState state) =>
+                                MaterialPage<void>(
+                                  key: state.pageKey,
+                                  child: SportLeaderboardsScreen(
+                                    sportId:
+                                        state.pathParameters['sportId'] ?? '',
+                                  ),
+                                ),
+                      ),
+                    ],
                   ),
                 ],
               ),

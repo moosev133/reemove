@@ -7,6 +7,15 @@ void main() {
       expect(AppRoutes.homePost('post 1'), '/home/post/post%201');
       expect(AppRoutes.publicProfile('Move.Fast'), '/profile/user/move.fast');
       expect(AppRoutes.sportHub('trail running'), '/sports/trail%20running');
+      expect(
+        AppRoutes.sportCommunities('football'),
+        '/sports/football/communities',
+      );
+      expect(
+        AppRoutes.sportEvent('running', 'coastal 10k'),
+        '/sports/running/events/coastal%2010k',
+      );
+      expect(AppRoutes.sportLeaderboards('gym'), '/sports/gym/leaderboards');
     });
 
     test('recognizes shell routes and protected aliases', () {

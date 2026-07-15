@@ -48,6 +48,13 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/users/$(authorId)/followers/$(viewerId));
     }
 
+    function isCommunityManager(communityId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/teams/$(communityId)/members/$(request.auth.uid))
+        && get(/databases/$(database)/documents/teams/$(communityId)/members/$(request.auth.uid)).data.status == 'active'
+        && get(/databases/$(database)/documents/teams/$(communityId)/members/$(request.auth.uid)).data.role in ['owner', 'administrator'];
+    }
+
     function activeConversationMember(conversationId) {
       return signedIn()
         && exists(/databases/$(database)/documents/conversations/$(conversationId)/members/$(request.auth.uid))
@@ -313,9 +320,86 @@ service cloud.firestore {
         && request.query.limit <= 50;
       allow write: if isAdmin();
 
+      match /attendees/{attendeeId} {
+        allow get: if isOwner(attendeeId) || isAdmin();
+        allow list: if isAdmin() && request.query.limit <= 100;
+        allow write: if false;
+      }
+
       match /{subcollection}/{documentId} {
         allow read, write: if false;
       }
+    }
+
+    match /teams/{communityId} {
+      allow get: if signedIn() && isPublicActive(resource.data);
+      allow list: if signedIn()
+        && isPublicActive(resource.data)
+        && request.query.limit <= 50;
+      allow write: if false;
+
+      match /members/{memberId} {
+        allow get: if isOwner(memberId) || isCommunityManager(communityId) || (
+          signedIn()
+          && get(/databases/$(database)/documents/teams/$(communityId)).data.visibility == 'public'
+          && get(/databases/$(database)/documents/teams/$(communityId)).data.moderationState == 'active'
+          && resource.data.status == 'active'
+          && resource.data.removedAt == null
+        );
+        allow list: if signedIn()
+          && request.query.limit <= 100
+          && (
+            (
+              get(/databases/$(database)/documents/teams/$(communityId)).data.visibility == 'public'
+              && get(/databases/$(database)/documents/teams/$(communityId)).data.moderationState == 'active'
+              && resource.data.status == 'active'
+              && resource.data.removedAt == null
+            )
+            || (
+              isCommunityManager(communityId)
+              && resource.data.status == 'pending'
+              && resource.data.removedAt == null
+            )
+          );
+        allow write: if false;
+      }
+    }
+
+    match /trainer_profiles/{trainerId} {
+      allow get: if signedIn()
+        && resource.data.moderationState == 'active';
+      allow list: if signedIn()
+        && resource.data.moderationState == 'active'
+        && resource.data.acceptingClients == true
+        && request.query.limit <= 50;
+      allow write: if false;
+    }
+
+    match /trainer_services/{serviceId} {
+      allow get: if signedIn()
+        && resource.data.moderationState == 'active'
+        && resource.data.isActive == true;
+      allow list: if signedIn()
+        && resource.data.moderationState == 'active'
+        && resource.data.isActive == true
+        && request.query.limit <= 50;
+      allow write: if false;
+    }
+
+    match /leaderboards/{leaderboardId} {
+      allow get: if signedIn() && resource.data.isPublished == true;
+      allow list: if signedIn()
+        && resource.data.isPublished == true
+        && request.query.limit <= 20;
+      allow write: if false;
+    }
+
+    match /activities/{activityId} {
+      allow get: if signedIn() && resource.data.userId == request.auth.uid;
+      allow list: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.query.limit <= 100;
+      allow write: if false;
     }
 
     match /challenges/{challengeId} {

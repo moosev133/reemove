@@ -910,6 +910,171 @@ export const seedDocuments = [
     data: {conversationId: groupSeedConversationId, type: "group", title: "Weekend Training", memberSnapshots: [athleteMessageSnapshot, runnerMessageSnapshot, newcomerMessageSnapshot], lastMessage: {id: "group-seed-message-1", senderId: "demo-athlete", kind: "text", preview: "Saturday at 10 — football then recovery run.", sentAt: createdAt}, unreadCount: 0, notificationsEnabled: true, mutedUntil: null, archivedAt: null, removedAt: null, isArchived: false, ...audit},
   })),
   {
+    path: "teams/tamra-seven-a-side",
+    data: {
+      sportId: "football", ownerId: "demo-athlete", name: "Tamra Seven-a-Side",
+      description: "Friendly but organized weekly football for intermediate local players.",
+      type: "team", joinPolicy: "approvalRequired", memberCount: 2, capacity: 18,
+      tags: ["seven-a-side", "weekly", "intermediate"], city: "Tamra", countryCode: "IL",
+      pricingText: "Pitch cost shared per match", isVerified: true,
+      visibility: "public", moderationState: "active", ...audit,
+    },
+  },
+  {
+    path: "teams/tamra-seven-a-side/members/demo-athlete",
+    data: {userId: "demo-athlete", userSnapshot: athleteMessageSnapshot, role: "owner", status: "active", joinedAt: createdAt, removedAt: null, ...audit},
+  },
+  {
+    path: "teams/tamra-seven-a-side/members/demo-runner",
+    data: {userId: "demo-runner", userSnapshot: runnerMessageSnapshot, role: "member", status: "active", joinedAt: createdAt, removedAt: null, ...audit},
+  },
+  {
+    path: "teams/tamra-seven-a-side/members/demo-newcomer",
+    data: {userId: "demo-newcomer", userSnapshot: newcomerMessageSnapshot, role: "pending", status: "pending", joinedAt: createdAt, removedAt: null, ...audit},
+  },
+  {
+    path: "teams/haifa-strength-circle",
+    data: {
+      sportId: "gym", ownerId: "demo-athlete", name: "Haifa Strength Circle",
+      description: "A supportive group for progressive strength training and technique review.",
+      type: "trainingGroup", joinPolicy: "open", memberCount: 1, capacity: 40,
+      tags: ["strength", "technique", "beginner-friendly"], city: "Haifa", countryCode: "IL",
+      pricingText: "Free community group", isVerified: false,
+      visibility: "public", moderationState: "active", ...audit,
+    },
+  },
+  {
+    path: "teams/haifa-strength-circle/members/demo-athlete",
+    data: {userId: "demo-athlete", userSnapshot: athleteMessageSnapshot, role: "owner", status: "active", joinedAt: createdAt, removedAt: null, ...audit},
+  },
+  {
+    path: "teams/haifa-sunrise-runners",
+    data: {
+      sportId: "running", ownerId: "demo-runner", name: "Haifa Sunrise Runners",
+      description: "Easy and tempo coastal runs before the city wakes up.",
+      type: "club", joinPolicy: "open", memberCount: 2, capacity: 80,
+      tags: ["5k", "10k", "coastal", "morning"], city: "Haifa", countryCode: "IL",
+      isVerified: true, visibility: "public", moderationState: "active", ...audit,
+    },
+  },
+  {
+    path: "teams/haifa-sunrise-runners/members/demo-runner",
+    data: {userId: "demo-runner", userSnapshot: runnerMessageSnapshot, role: "owner", status: "active", joinedAt: createdAt, removedAt: null, ...audit},
+  },
+  {
+    path: "teams/haifa-sunrise-runners/members/demo-athlete",
+    data: {userId: "demo-athlete", userSnapshot: athleteMessageSnapshot, role: "member", status: "active", joinedAt: createdAt, removedAt: null, ...audit},
+  },
+  {
+    path: "events/haifa-strength-foundations",
+    data: {
+      ownerId: "demo-runner", ownerSnapshot: runnerMessageSnapshot, sportId: "gym",
+      type: "classSession", title: "Strength Foundations Workshop",
+      description: "A coached session covering squat, press, bracing, and safe progression.",
+      startAt: Timestamp.fromDate(new Date("2026-08-12T16:30:00.000Z")),
+      endAt: Timestamp.fromDate(new Date("2026-08-12T18:00:00.000Z")),
+      timezone: "Asia/Jerusalem", location: new GeoPoint(32.7940, 34.9896), geohash: "svbcr",
+      locality: "Haifa", countryCode: "IL", placeId: "haifa-performance-gym",
+      capacity: 16, attendeeCount: 1, waitlistCount: 0,
+      minimumLevel: "beginner", maximumLevel: "intermediate",
+      price: {amountMinor: 8000, currency: "ILS"}, visibility: "public",
+      status: "published", moderationState: "active", media: [], ...audit,
+    },
+  },
+  {
+    path: "events/haifa-strength-foundations/attendees/demo-runner",
+    data: {userId: "demo-runner", userSnapshot: runnerMessageSnapshot, status: "attending", joinedAt: createdAt, updatedAt: createdAt, schemaVersion: currentSchemaVersion},
+  },
+  {
+    path: "events/coastal-10k-social",
+    data: {
+      ownerId: "demo-runner", ownerSnapshot: runnerMessageSnapshot, sportId: "running",
+      type: "meetup", title: "Coastal 10K Social Run",
+      description: "Conversational 10K with pace groups and coffee after the run.",
+      startAt: Timestamp.fromDate(new Date("2026-08-15T03:30:00.000Z")),
+      endAt: Timestamp.fromDate(new Date("2026-08-15T05:00:00.000Z")),
+      timezone: "Asia/Jerusalem", location: new GeoPoint(32.8191, 34.9569), geohash: "svbcw",
+      locality: "Haifa", countryCode: "IL", placeId: "haifa-coastal-running-track",
+      capacity: 60, attendeeCount: 2, waitlistCount: 0,
+      minimumLevel: "beginner", maximumLevel: "advanced",
+      visibility: "public", status: "published", moderationState: "active", media: [], ...audit,
+    },
+  },
+  {
+    path: "events/coastal-10k-social/attendees/demo-runner",
+    data: {userId: "demo-runner", userSnapshot: runnerMessageSnapshot, status: "attending", joinedAt: createdAt, updatedAt: createdAt, schemaVersion: currentSchemaVersion},
+  },
+  {
+    path: "events/coastal-10k-social/attendees/demo-athlete",
+    data: {userId: "demo-athlete", userSnapshot: athleteMessageSnapshot, status: "attending", joinedAt: createdAt, updatedAt: createdAt, schemaVersion: currentSchemaVersion},
+  },
+  {
+    path: "events/community-football-august/attendees/demo-athlete",
+    data: {userId: "demo-athlete", userSnapshot: athleteMessageSnapshot, status: "attending", joinedAt: createdAt, updatedAt: createdAt, schemaVersion: currentSchemaVersion},
+  },
+  {
+    path: "trainer_profiles/demo-runner",
+    data: {
+      userId: "demo-runner", displayName: "Maya Runner", username: "demo_runner",
+      avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80",
+      bio: "Distance-running coach focused on sustainable progression and strength support.",
+      headline: "Certified running and conditioning coach", sportIds: ["running", "gym"],
+      specialties: ["10K programming", "running form", "strength for runners"],
+      yearsExperience: 8, rating: 4.9, reviewCount: 47, city: "Haifa", countryCode: "IL",
+      acceptingClients: true, isVerified: true,
+      minimumPrice: {amountMinor: 12000, currency: "ILS"}, moderationState: "active", ...audit,
+    },
+  },
+  {
+    path: "trainer_services/maya-running-consultation",
+    data: {
+      trainerId: "demo-runner", sportId: "running", title: "Running plan consultation",
+      description: "A 60-minute assessment and a four-week personalized running structure.",
+      type: "consultation", deliveryMode: "hybrid", durationMinutes: 60,
+      price: {amountMinor: 18000, currency: "ILS"}, isActive: true,
+      moderationState: "active", ...audit,
+    },
+  },
+  {
+    path: "trainer_services/maya-strength-for-runners",
+    data: {
+      trainerId: "demo-runner", sportId: "gym", title: "Strength for runners",
+      description: "Technique-led strength session for durable running performance.",
+      type: "personalTraining", deliveryMode: "inPerson", durationMinutes: 75,
+      price: {amountMinor: 15000, currency: "ILS"}, isActive: true,
+      moderationState: "active", ...audit,
+    },
+  },
+  ...[
+    {id: "football_weekly", sportId: "football", title: "Weekly football form", metric: "matchPoints", unit: "points", entries: [
+      {userId: "demo-athlete", displayName: "ReeMove Athlete", username: "demo_athlete", rank: 1, value: 18, formattedValue: "18 points", trend: 1},
+      {userId: "demo-runner", displayName: "Maya Runner", username: "demo_runner", rank: 2, value: 12, formattedValue: "12 points", trend: 0},
+    ]},
+    {id: "gym_weekly", sportId: "gym", title: "Weekly training volume", metric: "volumeKg", unit: "kg", entries: [
+      {userId: "demo-athlete", displayName: "ReeMove Athlete", username: "demo_athlete", rank: 1, value: 12450, formattedValue: "12,450 kg", trend: 1},
+      {userId: "demo-runner", displayName: "Maya Runner", username: "demo_runner", rank: 2, value: 8200, formattedValue: "8,200 kg", trend: -1},
+    ]},
+    {id: "running_weekly", sportId: "running", title: "Weekly distance", metric: "distanceKm", unit: "km", entries: [
+      {userId: "demo-runner", displayName: "Maya Runner", username: "demo_runner", rank: 1, value: 52.4, formattedValue: "52.4 km", trend: 1},
+      {userId: "demo-athlete", displayName: "ReeMove Athlete", username: "demo_athlete", rank: 2, value: 21.7, formattedValue: "21.7 km", trend: 0},
+    ]},
+  ].map((leaderboard) => ({
+    path: `leaderboards/${leaderboard.id}`,
+    data: {sportId: leaderboard.sportId, title: leaderboard.title, metric: leaderboard.metric,
+      unit: leaderboard.unit, period: "weekly", topEntries: leaderboard.entries,
+      isPublished: true, generatedAt: createdAt, startsAt: challengeStart,
+      endsAt: challengeEnd, ...audit},
+  })),
+  ...[
+    {id: "football-activity-demo", userId: "demo-athlete", sportId: "football", metrics: {matchPoints: 18}},
+    {id: "gym-activity-demo", userId: "demo-athlete", sportId: "gym", metrics: {volumeKg: 12450}},
+    {id: "running-activity-demo", userId: "demo-runner", sportId: "running", metrics: {distanceKm: 52.4}},
+  ].map((activity) => ({
+    path: `activities/${activity.id}`,
+    data: {userId: activity.userId, sportId: activity.sportId, status: "verified",
+      occurredAt: createdAt, metrics: activity.metrics, source: "seed", ...audit},
+  })),
+  {
     path: `data_migrations/${seedDatasetVersion}`,
     data: {
       version: seedDatasetVersion,

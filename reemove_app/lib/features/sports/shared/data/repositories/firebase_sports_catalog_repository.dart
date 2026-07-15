@@ -59,6 +59,18 @@ class FirebaseSportsCatalogRepository implements SportsCatalogRepository {
   }
 
   @override
+  Stream<Result<SportPlace?>> watchPlace(String placeId) async* {
+    try {
+      await for (final DocumentSnapshot<SportPlaceDto> snapshot
+          in _places.doc(placeId).snapshots()) {
+        yield Success<SportPlace?>(snapshot.data()?.toDomain());
+      }
+    } catch (error) {
+      yield FailureResult<SportPlace?>(_mapError(error));
+    }
+  }
+
+  @override
   Stream<Result<List<SportPlace>>> watchPlacesForSport(
     String sportId, {
     int limit = 30,
@@ -80,6 +92,18 @@ class FirebaseSportsCatalogRepository implements SportsCatalogRepository {
       }
     } catch (error) {
       yield FailureResult<List<SportPlace>>(_mapError(error));
+    }
+  }
+
+  @override
+  Stream<Result<SportsEvent?>> watchEvent(String eventId) async* {
+    try {
+      await for (final DocumentSnapshot<SportsEventDto> snapshot
+          in _events.doc(eventId).snapshots()) {
+        yield Success<SportsEvent?>(snapshot.data()?.toDomain());
+      }
+    } catch (error) {
+      yield FailureResult<SportsEvent?>(_mapError(error));
     }
   }
 
@@ -110,6 +134,12 @@ class FirebaseSportsCatalogRepository implements SportsCatalogRepository {
   }
 
   static Failure _mapError(Object error) {
-    return FirestoreFailureMapper.fromUnknown(error);
+    if (error is FirebaseException) {
+      return FirestoreFailureMapper.fromFirebaseException(error);
+    }
+    if (error is FormatException) {
+      return FirestoreFailureMapper.fromFormatException(error);
+    }
+    return FirestoreFailureMapper.unexpected(error);
   }
 }

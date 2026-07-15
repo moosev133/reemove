@@ -39,6 +39,40 @@ abstract final class AppRoutes {
 
   static String sportHub(String sportId) => '/sports/${_segment(sportId)}';
 
+  static String sportPlaces(String sportId) => '${sportHub(sportId)}/places';
+
+  static String sportPlace(String sportId, String placeId) =>
+      '${sportPlaces(sportId)}/${_segment(placeId)}';
+
+  static String sportCommunities(String sportId) =>
+      '${sportHub(sportId)}/communities';
+
+  static String sportCommunity(String sportId, String communityId) =>
+      '${sportCommunities(sportId)}/${_segment(communityId)}';
+
+  static String createSportCommunity(String sportId) =>
+      '${sportCommunities(sportId)}/create';
+
+  static String sportEvents(String sportId) => '${sportHub(sportId)}/events';
+
+  static String sportEvent(String sportId, String eventId) =>
+      '${sportEvents(sportId)}/${_segment(eventId)}';
+
+  static String createSportEvent(String sportId) =>
+      '${sportEvents(sportId)}/create';
+
+  static String sportTrainers(String sportId) =>
+      '${sportHub(sportId)}/trainers';
+
+  static String sportTrainer(String sportId, String trainerId) =>
+      '${sportTrainers(sportId)}/${_segment(trainerId)}';
+
+  static String manageTrainerService(String sportId) =>
+      '${sportTrainers(sportId)}/service';
+
+  static String sportLeaderboards(String sportId) =>
+      '${sportHub(sportId)}/leaderboards';
+
   static String createFlow(String creationType) =>
       '/create/${_segment(creationType)}';
 
@@ -138,6 +172,18 @@ abstract final class AppRouteNames {
   static const String discoverCategory = 'discover-category';
   static const String sports = 'sports';
   static const String sportHub = 'sport-hub';
+  static const String sportPlaces = 'sport-places';
+  static const String sportPlace = 'sport-place';
+  static const String sportCommunities = 'sport-communities';
+  static const String sportCommunity = 'sport-community';
+  static const String createSportCommunity = 'create-sport-community';
+  static const String sportEvents = 'sport-events';
+  static const String sportEvent = 'sport-event';
+  static const String createSportEvent = 'create-sport-event';
+  static const String sportTrainers = 'sport-trainers';
+  static const String sportTrainer = 'sport-trainer';
+  static const String manageTrainerService = 'manage-trainer-service';
+  static const String sportLeaderboards = 'sport-leaderboards';
   static const String create = 'create';
   static const String createFlow = 'create-flow';
   static const String messages = 'messages';

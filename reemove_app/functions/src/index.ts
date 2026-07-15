@@ -68,6 +68,20 @@ import {
   toggleMessageReaction,
 } from "./messaging/messages";
 import {notifyConversationMessage} from "./messaging/notifications";
+import {
+  attendSportsEvent,
+  createSportCommunity,
+  createSportsEvent,
+  joinSportCommunity,
+  leaveSportCommunity,
+  leaveSportsEvent,
+  respondSportCommunityRequest,
+  upsertTrainerService,
+} from "./sports/sportsHub";
+import {
+  rebuildSportLeaderboardsNow,
+  refreshSportLeaderboards,
+} from "./sports/leaderboards";
 import {callableOptions, primaryRegion} from "./core/functionOptions";
 
 initializeApp();
@@ -131,6 +145,16 @@ export {
   processQueuedMedia,
   completeMediaProcessing,
   expireStories,
+  createSportCommunity,
+  joinSportCommunity,
+  leaveSportCommunity,
+  respondSportCommunityRequest,
+  createSportsEvent,
+  attendSportsEvent,
+  leaveSportsEvent,
+  upsertTrainerService,
+  refreshSportLeaderboards,
+  rebuildSportLeaderboardsNow,
 };
 
 export const healthCheck = onCall(callableOptions, async (request) => {
