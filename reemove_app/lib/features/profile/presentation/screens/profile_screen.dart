@@ -140,7 +140,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
   }
 
   Future<void> _shareProfile(UserProfile profile) async {
-    final String value = 'https://reemove.app/u/${profile.usernameNormalized}';
+    final String value =
+        'https://reemove.app${AppRoutes.profileAlias(profile.usernameNormalized)}';
     await Clipboard.setData(ClipboardData(text: value));
     if (!mounted) {
       return;

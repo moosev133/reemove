@@ -308,7 +308,6 @@ class _ContentComposerScreenState extends ConsumerState<ContentComposerScreen> {
           await ref.read(contentDraftRepositoryProvider).clear(widget.kind);
           ref.invalidate(feedControllerProvider);
           ref.invalidate(storyRailProvider);
-          ref.invalidate(initialReelsProvider);
           if (!mounted) {
             return;
           }

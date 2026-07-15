@@ -186,7 +186,9 @@ class ChallengeDetailScreen extends ConsumerWidget {
   static void _copyLink(BuildContext context, String challengeId) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Share link: https://links.reemove.app/ch/$challengeId'),
+        content: Text(
+          'Share link: https://links.reemove.app${AppRoutes.challengeAlias(challengeId)}',
+        ),
       ),
     );
   }

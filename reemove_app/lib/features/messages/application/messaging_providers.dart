@@ -59,7 +59,7 @@ messageAttachmentRepositoryProvider = Provider<MessageAttachmentRepository>((
 final Provider<MessagingDeviceRepository> messagingDeviceRepositoryProvider =
     Provider<MessagingDeviceRepository>((Ref ref) {
       return FirebaseMessagingDeviceRepository(
-        messaging: FirebaseMessaging.instance,
+        messaging: ref.watch(firebaseMessagingProvider),
         functions: ref.watch(firebaseFunctionsProvider),
       );
     });
@@ -195,7 +195,8 @@ messagingDeviceRegistrationProvider = FutureProvider<void>((Ref ref) async {
   if (user == null) {
     return;
   }
-  final NotificationSettings settings = await FirebaseMessaging.instance
+  final FirebaseMessaging messaging = ref.watch(firebaseMessagingProvider);
+  final NotificationSettings settings = await messaging
       .getNotificationSettings();
   if (settings.authorizationStatus == AuthorizationStatus.authorized ||
       settings.authorizationStatus == AuthorizationStatus.provisional) {
@@ -203,9 +204,7 @@ messagingDeviceRegistrationProvider = FutureProvider<void>((Ref ref) async {
       await ref.read(messagingDeviceRepositoryProvider).registerCurrentDevice(),
     );
   }
-  final StreamSubscription<String> subscription = FirebaseMessaging
-      .instance
-      .onTokenRefresh
+  final StreamSubscription<String> subscription = messaging.onTokenRefresh
       .listen((String _) {
         unawaited(
           ref.read(messagingDeviceRepositoryProvider).registerCurrentDevice(),
@@ -224,8 +223,8 @@ final StreamProvider<String> messagingOpenedConversationProvider =
       if (!report.isReady) {
         return;
       }
-      final RemoteMessage? initial = await FirebaseMessaging.instance
-          .getInitialMessage();
+      final FirebaseMessaging messaging = ref.watch(firebaseMessagingProvider);
+      final RemoteMessage? initial = await messaging.getInitialMessage();
       final String? initialId = _conversationId(initial);
       if (initialId != null) {
         yield initialId;

@@ -17,9 +17,10 @@ import '../widgets/nearby_map_view.dart';
 import '../widgets/nearby_result_card.dart';
 
 class NearbyDiscoveryScreen extends ConsumerStatefulWidget {
-  const NearbyDiscoveryScreen({this.sportId, super.key});
+  const NearbyDiscoveryScreen({this.sportId, this.focusType, super.key});
 
   final String? sportId;
+  final String? focusType;
 
   @override
   ConsumerState<NearbyDiscoveryScreen> createState() =>
@@ -34,9 +35,28 @@ class _NearbyDiscoveryScreenState extends ConsumerState<NearbyDiscoveryScreen> {
       Future<void>.microtask(
         () => ref
             .read(nearbyDiscoveryControllerProvider.notifier)
-            .initialize(sportId: widget.sportId),
+            .initialize(
+              sportId: widget.sportId,
+              focusType: _parseFocusType(widget.focusType),
+            ),
       ),
     );
+  }
+
+  @override
+  void didUpdateWidget(NearbyDiscoveryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sportId != widget.sportId ||
+        oldWidget.focusType != widget.focusType) {
+      unawaited(
+        ref
+            .read(nearbyDiscoveryControllerProvider.notifier)
+            .initialize(
+              sportId: widget.sportId,
+              focusType: _parseFocusType(widget.focusType),
+            ),
+      );
+    }
   }
 
   @override
@@ -266,6 +286,19 @@ class _NearbyDiscoveryScreenState extends ConsumerState<NearbyDiscoveryScreen> {
     'running' => 'running',
     _ => sportId,
   };
+}
+
+NearbyEntityType? _parseFocusType(String? raw) {
+  final String? value = raw?.trim().toLowerCase();
+  if (value == null || value.isEmpty) {
+    return null;
+  }
+  for (final NearbyEntityType type in NearbyEntityType.values) {
+    if (type.name == value) {
+      return type;
+    }
+  }
+  return null;
 }
 
 class _ResultsList extends StatelessWidget {

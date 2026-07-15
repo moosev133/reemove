@@ -350,22 +350,6 @@ final postByIdProvider = FutureProvider.family<FeedPost?, String>((
   );
 });
 
-final FutureProvider<FeedPage> initialReelsProvider = FutureProvider<FeedPage>((
-  Ref ref,
-) async {
-  final AuthUser? user = await ref.watch(currentAuthUserProvider.future);
-  if (user == null) {
-    return const FeedPage(items: <FeedPost>[], hasMore: false);
-  }
-  final Result<FeedPage> result = await ref
-      .watch(feedRepositoryProvider)
-      .loadReels(viewerId: user.uid);
-  return result.when<FeedPage>(
-    success: (FeedPage page) => page,
-    failure: (Failure failure) => throw StateError(failure.message),
-  );
-});
-
 extension _FirstOrNull<T> on Iterable<T> {
   T? get firstOrNull {
     final Iterator<T> iterator = this.iterator;

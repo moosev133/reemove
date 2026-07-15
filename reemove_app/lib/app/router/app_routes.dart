@@ -44,6 +44,11 @@ abstract final class AppRoutes {
     queryParameters: <String, String>{'sport': sportId},
   ).toString();
 
+  static String nearbyForType(String type) => Uri(
+    path: nearby,
+    queryParameters: <String, String>{'type': type},
+  ).toString();
+
   static String sportsRoute(String routeId) =>
       '$nearby/routes/${_segment(routeId)}';
 

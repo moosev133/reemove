@@ -105,7 +105,6 @@ class _PostActionsSheetState extends ConsumerState<_PostActionsSheet> {
       success: (_) {
         ref.invalidate(feedControllerProvider);
         ref.invalidate(storyRailProvider);
-        ref.invalidate(initialReelsProvider);
         Navigator.of(context).pop();
         ScaffoldMessenger.of(
           context,

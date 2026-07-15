@@ -55,12 +55,23 @@ class NearbyDiscoveryController extends Notifier<NearbyDiscoveryState> {
     return NearbyDiscoveryState.initial();
   }
 
-  Future<void> initialize({String? sportId}) async {
+  Future<void> initialize({
+    String? sportId,
+    NearbyEntityType? focusType,
+  }) async {
+    if (focusType != null) {
+      state = state.copyWith(
+        types: <NearbyEntityType>{focusType},
+        clearSelection: true,
+      );
+    }
     if (_initialized) {
       if (sportId != null &&
           sportId.isNotEmpty &&
           !state.sportIds.contains(sportId)) {
         state = state.copyWith(sportIds: <String>{sportId});
+        await refresh();
+      } else if (focusType != null) {
         await refresh();
       }
       return;

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/adaptive_page_body.dart';
 import '../../../../core/widgets/app_empty_state.dart';
@@ -31,23 +33,46 @@ class CreateFlowScreen extends StatelessWidget {
     if (creationType == 'listing') {
       return const CreateMarketplaceListingScreen();
     }
+    if (creationType == 'event') {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Create event or match')),
+        body: AdaptivePageBody(
+          slivers: <Widget>[
+            const AppPageHeader(
+              eyebrow: 'Sports hubs own events',
+              title: 'Choose a sport first',
+              subtitle:
+                  'Events and matches are created inside a sport hub so they inherit the community, place catalog, and members for that sport.',
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            AppEmptyState(
+              icon: Icons.event_available_outlined,
+              title: 'Open a sport hub to continue',
+              message:
+                  'Pick Football, Gym, or Running, then use Create event from that hub.',
+              actionLabel: 'Open Sports',
+              onAction: () => context.go(AppRoutes.sports),
+            ),
+          ],
+        ),
+      );
+    }
     final String title = _titleFor(creationType);
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: AdaptivePageBody(
         slivers: <Widget>[
           AppPageHeader(
-            eyebrow: 'Coming in its dedicated module',
+            eyebrow: 'Unavailable creation type',
             title: title,
             subtitle:
-                'The social publishing tools are ready. This creation type will be enabled in its scheduled product phase.',
+                'This creation path is not wired. Share a post, story, reel, challenge, or listing from Create instead.',
           ),
           const SizedBox(height: AppSpacing.xl),
           AppEmptyState(
             icon: _iconFor(creationType),
-            title: '$title is not available yet',
-            message:
-                'Nothing has been published or charged. Return to Create to share a post, story, or reel now.',
+            title: '$title is not available',
+            message: 'Return to Create and choose a supported option.',
           ),
         ],
       ),
@@ -57,14 +82,10 @@ class CreateFlowScreen extends StatelessWidget {
 
 String _titleFor(String type) => switch (type) {
   'event' => 'Create event or match',
-  'challenge' => 'Create challenge',
-  'listing' => 'Create marketplace listing',
   _ => 'Create',
 };
 
 IconData _iconFor(String type) => switch (type) {
   'event' => Icons.event_available_outlined,
-  'challenge' => Icons.emoji_events_outlined,
-  'listing' => Icons.sell_outlined,
   _ => Icons.add_circle_outline_rounded,
 };

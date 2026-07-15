@@ -3,6 +3,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,9 +13,10 @@ import 'firebase_bootstrap.dart';
 
 /// Shared Firebase SDK accessors for all features.
 ///
-/// Feature modules must not redefine Auth, Firestore, Functions, Storage, or
-/// Realtime Database providers. Call sites that run before bootstrap readiness
-/// must gate on [FirebaseBootstrapReport.isReady] instead of watching these.
+/// Feature modules must not redefine Auth, Firestore, Functions, Storage,
+/// Messaging, or Realtime Database providers. Call sites that run before
+/// bootstrap readiness must gate on [FirebaseBootstrapReport.isReady] instead
+/// of watching these.
 abstract final class FirebaseSdk {
   static void ensureReady(FirebaseBootstrapReport report, String service) {
     if (!report.isReady) {
@@ -87,4 +89,13 @@ final Provider<FirebaseDatabase> firebaseDatabaseProvider =
         'Realtime Database',
       );
       return FirebaseSdk.databaseFor(ref.watch(appEnvironmentProvider));
+    });
+
+final Provider<FirebaseMessaging> firebaseMessagingProvider =
+    Provider<FirebaseMessaging>((Ref ref) {
+      FirebaseSdk.ensureReady(
+        ref.watch(firebaseBootstrapReportProvider),
+        'Firebase Cloud Messaging',
+      );
+      return FirebaseMessaging.instance;
     });

@@ -255,6 +255,7 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                         key: state.pageKey,
                         child: NearbyDiscoveryScreen(
                           sportId: state.uri.queryParameters['sport'],
+                          focusType: state.uri.queryParameters['type'],
                         ),
                       );
                     },

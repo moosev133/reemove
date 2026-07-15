@@ -1,4 +1,3 @@
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/app_environment.dart';
@@ -64,7 +63,9 @@ notificationPermissionServiceProvider = Provider<NotificationPermissionService>(
     if (!report.isReady || environment.useFirebaseEmulators) {
       return const UnavailableNotificationPermissionService();
     }
-    return FirebaseNotificationPermissionService(FirebaseMessaging.instance);
+    return FirebaseNotificationPermissionService(
+      ref.watch(firebaseMessagingProvider),
+    );
   },
 );
 

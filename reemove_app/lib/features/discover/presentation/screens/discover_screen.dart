@@ -84,17 +84,17 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               _CategoryCard(
                 icon: Icons.people_alt_outlined,
                 title: 'People',
-                onTap: () => context.push(AppRoutes.discoverCategory('people')),
+                onTap: () => context.push(AppRoutes.nearbyForType('person')),
               ),
               _CategoryCard(
                 icon: Icons.place_outlined,
                 title: 'Places',
-                onTap: () => context.push(AppRoutes.discoverCategory('places')),
+                onTap: () => context.push(AppRoutes.nearbyForType('place')),
               ),
               _CategoryCard(
                 icon: Icons.event_outlined,
                 title: 'Events',
-                onTap: () => context.push(AppRoutes.discoverCategory('events')),
+                onTap: () => context.push(AppRoutes.nearbyForType('event')),
               ),
               _CategoryCard(
                 icon: Icons.emoji_events_outlined,

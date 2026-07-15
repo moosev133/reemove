@@ -21,6 +21,9 @@ void main() {
         AppRoutes.nearbyForSport('running'),
         '/discover/nearby?sport=running',
       );
+      expect(AppRoutes.nearbyForType('person'), '/discover/nearby?type=person');
+      expect(AppRoutes.profileAlias('Move.Fast'), '/u/move.fast');
+      expect(AppRoutes.challengeAlias('weekly 5k'), '/ch/weekly%205k');
       expect(
         AppRoutes.sportsRoute('coastal loop'),
         '/discover/nearby/routes/coastal%20loop',
