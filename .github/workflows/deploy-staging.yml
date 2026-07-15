@@ -31,6 +31,20 @@ jobs:
         with:
           node-version: "22"
       - run: npm install --global firebase-tools
+      - name: Materialize Firebase project aliases
+        env:
+          FIREBASE_STAGING_PROJECT_ID: ${{ vars.FIREBASE_STAGING_PROJECT_ID }}
+        run: |
+          if [[ -z "${FIREBASE_STAGING_PROJECT_ID}" ]]; then
+            echo "Set GitHub Environment variable FIREBASE_STAGING_PROJECT_ID on staging." >&2
+            exit 1
+          fi
+          printf '%s\n' "{
+            \"projects\": {
+              \"staging\": \"${FIREBASE_STAGING_PROJECT_ID}\"
+            },
+            \"default\": \"staging\"
+          }" > .firebaserc
       - name: Select staging project
         run: firebase use staging
       - name: Deploy staging backend

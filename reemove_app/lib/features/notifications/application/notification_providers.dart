@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/router/app_routes.dart';
+import '../../../app/router/deep_link_policy.dart';
 import '../../../core/errors/failure.dart';
 import '../../../core/firebase/firebase_bootstrap.dart';
 import '../../../core/firebase/firebase_providers.dart';
@@ -282,10 +284,32 @@ String? notificationRoute(RemoteMessage? message) {
     return null;
   }
   final String route = value.trim();
-  if (!route.startsWith('/') ||
-      route.startsWith('//') ||
-      route.contains(r'\') ||
-      route.length > 500) {
+  if (route.isEmpty || route.length > 500 || route.contains(r'\')) {
+    return null;
+  }
+
+  // Absolute deep links (https / reemove) must match DeepLinkPolicy.
+  if (route.contains('://')) {
+    final Uri? allowed = DeepLinkPolicy.parseAllowed(route);
+    if (allowed == null) {
+      return null;
+    }
+    final String path = allowed.path.isEmpty ? '/' : allowed.path;
+    final String query = allowed.hasQuery ? '?${allowed.query}' : '';
+    return '$path$query';
+  }
+
+  // In-app paths only (existing FCM contract).
+  if (!route.startsWith('/') || route.startsWith('//')) {
+    return null;
+  }
+  if (!(AppRoutes.isAuthenticatedLocation(route) ||
+      AppRoutes.isShellLocation(route) ||
+      AppRoutes.isProtectedAlias(route) ||
+      route.startsWith(AppRoutes.aiHub) ||
+      route.startsWith(AppRoutes.challenges) ||
+      route.startsWith(AppRoutes.marketplace) ||
+      route.startsWith(AppRoutes.nearby))) {
     return null;
   }
   return route;

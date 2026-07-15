@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Reemove App</string>
+	<string>ReeMove</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>reemove_app</string>
+	<string>ReeMove</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -67,10 +67,10 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>ReeMove uses the camera when you choose to take a profile photo.</string>
+	<string>ReeMove uses the camera when you take photos for your profile, posts, stories, messages, marketplace listings, or challenge proof.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>ReeMove lets you select a profile photo from your library.</string>
+	<string>ReeMove lets you choose photos from your library for your profile, posts, stories, messages, marketplace listings, or challenge proof.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>ReeMove uses your location to show nearby sports people, places, and events.</string>
+	<string>ReeMove uses your location to show nearby sports people, places, routes, and events while you use the app.</string>
 </dict>
 </plist>

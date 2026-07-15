@@ -800,7 +800,10 @@ service cloud.firestore {
     }
 
     match /moderation_queue/{documentId} {
-      allow read, write: if isAdmin();
+      // Server-only writes (Admin SDK / Cloud Functions). Admins may read.
+      allow get: if isAdmin();
+      allow list: if isAdmin() && request.query.limit <= 100;
+      allow write: if false;
     }
 
     match /audit_logs/{documentId} {

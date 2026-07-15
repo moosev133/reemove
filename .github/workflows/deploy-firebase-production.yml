@@ -38,6 +38,20 @@ jobs:
       - name: Verify signed tag
         working-directory: .
         run: git tag -v "${{ inputs.release_tag }}"
+      - name: Materialize Firebase project aliases
+        env:
+          FIREBASE_PRODUCTION_PROJECT_ID: ${{ vars.FIREBASE_PRODUCTION_PROJECT_ID }}
+        run: |
+          if [[ -z "${FIREBASE_PRODUCTION_PROJECT_ID}" ]]; then
+            echo "Set GitHub Environment variable FIREBASE_PRODUCTION_PROJECT_ID on production." >&2
+            exit 1
+          fi
+          printf '%s\n' "{
+            \"projects\": {
+              \"production\": \"${FIREBASE_PRODUCTION_PROJECT_ID}\"
+            },
+            \"default\": \"production\"
+          }" > .firebaserc
       - name: Deploy approved backend
         run: ./scripts/firebase/deploy_production.sh
         env:
