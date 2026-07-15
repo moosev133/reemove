@@ -1,0 +1,24 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["REPLACE_TEAM_ID.com.reemove.reemove"],
+        "components": [
+          {"/": "/p/*", "comment": "Post links"},
+          {"/": "/u/*", "comment": "Public profile links"},
+          {"/": "/c/*", "comment": "Conversation links"},
+          {"/": "/s/*", "comment": "Sport hub links"},
+          {"/": "/home/*"},
+          {"/": "/discover/*"},
+          {"/": "/sports/*"},
+          {"/": "/messages/*"},
+          {"/": "/profile/*"}
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["REPLACE_TEAM_ID.com.reemove.reemove"]
+  }
+}

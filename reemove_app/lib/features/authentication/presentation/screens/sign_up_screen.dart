@@ -50,6 +50,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (!valid || !consentsValid) {
       return;
     }
+
     await ref
         .read(authActionControllerProvider.notifier)
         .registerAndProvision(
@@ -69,7 +70,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     final bool loading = action.isLoading;
     return AuthScaffold(
       showBackButton: true,
-      onBack: () => context.go(AppRoutes.authWelcome),
+      onBack: () => context.go(
+        AppRoutes.inheritReturnTo(
+          GoRouterState.of(context).uri,
+          AppRoutes.authWelcome,
+        ),
+      ),
       heroTitle: 'Build your\nsports identity.',
       heroMessage:
           'Choose a unique username and create one profile for every sport you love.',
@@ -153,7 +159,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 TextButton(
                   onPressed: loading
                       ? null
-                      : () => context.go(AppRoutes.signIn),
+                      : () => context.go(
+                          AppRoutes.inheritReturnTo(
+                            GoRouterState.of(context).uri,
+                            AppRoutes.signIn,
+                          ),
+                        ),
                   child: const Text('I already have an account'),
                 ),
               ],

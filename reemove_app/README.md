@@ -7,17 +7,21 @@ ReeMove is a production-oriented Flutter and Firebase sports social network. The
 - **Phase 1 — Project architecture:** complete.
 - **Phase 2 — Database design:** complete.
 - **Phase 3 — Authentication:** complete.
-- **Phase 4 — Onboarding:** complete in this package.
+- **Phase 4 — Onboarding:** complete.
+- **Phase 5 — Main navigation:** complete in this package.
 
 The cumulative repository now contains:
 
 - Feature-first Clean Architecture with Firebase-independent domain models.
 - Riverpod dependency injection, async state, and guarded application routing.
-- Premium responsive light/dark authentication and onboarding UI.
+- Premium responsive light/dark authentication, onboarding, and six-tab application shell.
 - Email/password, Google, and Apple authentication plus provider linking.
 - Transaction-backed server-owned usernames and account provisioning.
 - Verification, recovery, recent-login controls, session revocation, and retryable deletion.
 - A resumable ten-step onboarding flow for birthday, sports, levels, goals, avatar, location, discovery, accessibility, notifications, and review.
+- Separate Home, Discover, Sports, Create, Messages, and Profile navigation stacks with state restoration.
+- Guarded deep links that preserve the requested destination through authentication and onboarding.
+- Android App Links, iOS Universal Links, and custom-scheme configuration automation.
 - Trusted callable Functions for per-step persistence and atomic completion.
 - Coarse public versus exact private location storage.
 - Typed Firestore repositories, converters, indexes, Rules, Storage policies, seed data, and migration conventions.
@@ -58,6 +62,7 @@ Then complete:
 
 - `docs/AUTHENTICATION_SETUP.md`
 - `docs/ONBOARDING_SETUP.md`
+- `docs/DEEP_LINK_SETUP.md`
 
 ## Local emulators
 
@@ -121,6 +126,9 @@ flutter run --release \
 
 ## Documentation
 
+- `docs/PHASE_5_COMPLETION.md`
+- `docs/NAVIGATION_IMPLEMENTATION.md`
+- `docs/DEEP_LINK_SETUP.md`
 - `docs/PHASE_4_COMPLETION.md`
 - `docs/ONBOARDING_IMPLEMENTATION.md`
 - `docs/ONBOARDING_SETUP.md`

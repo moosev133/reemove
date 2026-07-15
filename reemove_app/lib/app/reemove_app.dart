@@ -16,6 +16,7 @@ class ReeMoveApp extends ConsumerWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'ReeMove',
+      restorationScopeId: 'reemove_app',
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,

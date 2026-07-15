@@ -14,7 +14,7 @@ Do not share Authentication users, Firestore data, Storage buckets, Analytics st
 
 Run `flutterfire configure` separately for each environment. `lib/firebase_options.dart` and native Firebase configuration files are intentionally absent because they must be generated from the owner's real projects.
 
-Generate native platform folders, apply Phase 4 permission declarations, and install dependencies:
+Generate native platform folders, apply permission and Phase 5 deep-link declarations, and install dependencies:
 
 ```bash
 ./scripts/bootstrap_project.sh
@@ -126,3 +126,15 @@ A complete store-specific operational runbook is delivered in Phase 16.
 - Avatar camera/library/cancel/lost-data flows and Storage metadata verification pass.
 - Modified-client attempts cannot directly write private onboarding or completion-owned profile fields.
 - Two-device completion is idempotent and does not regress an already completed profile.
+
+
+## Phase 5 navigation and link release gates
+
+- Configure `APP_LINK_HOST` before bootstrap.
+- Complete `docs/DEEP_LINK_SETUP.md`.
+- Publish Android `assetlinks.json` and Apple `apple-app-site-association` without redirects.
+- Verify the production Android certificate fingerprints, Apple Team ID, bundle ID, and associated-domain capability.
+- Test every alias from cold start, background, and foreground.
+- Test signed-out links through sign-in, verification, username setup, and onboarding.
+- Verify private/removed resources show a safe unavailable state.
+- Verify tab stacks and scroll positions survive branch switching and process restoration.

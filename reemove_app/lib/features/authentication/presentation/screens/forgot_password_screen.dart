@@ -50,7 +50,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     final bool loading = action.isLoading;
     return AuthScaffold(
       showBackButton: true,
-      onBack: () => context.go(AppRoutes.signIn),
+      onBack: () => context.go(
+        AppRoutes.inheritReturnTo(
+          GoRouterState.of(context).uri,
+          AppRoutes.signIn,
+        ),
+      ),
       heroTitle: 'Reset. Recover.\nKeep moving.',
       heroMessage:
           'We will send a secure password reset link to your account email.',
@@ -94,7 +99,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               ),
               const SizedBox(height: AppSpacing.sm),
               TextButton(
-                onPressed: loading ? null : () => context.go(AppRoutes.signIn),
+                onPressed: loading
+                    ? null
+                    : () => context.go(
+                        AppRoutes.inheritReturnTo(
+                          GoRouterState.of(context).uri,
+                          AppRoutes.signIn,
+                        ),
+                      ),
                 child: const Text('Back to sign in'),
               ),
             ],

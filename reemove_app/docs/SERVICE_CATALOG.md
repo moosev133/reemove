@@ -162,3 +162,12 @@ The broader catalog above remains the target service inventory for later phases.
 - `configure_native_permissions.py` native configuration tool
 
 The callable Functions are the only write path for the private draft and trusted completion transition. Avatar bytes go directly to Storage under owner-scoped rules; completion independently verifies the resulting object metadata.
+
+## Phase 5 implemented navigation services and providers
+
+- `appRouterProvider` — one guarded router with six stateful branch navigators
+- `AppNavigationBadgeController` — typed badge adapter for future activity/message streams
+- `publicProfileByUsernameProvider` — username reservation resolution and authorized profile loading
+- `configure_deep_links.py` — idempotent Android/iOS native-link configuration
+
+No new privileged backend service is introduced in Phase 5. Existing Authentication and Firestore authorization remain the source of truth for route access.

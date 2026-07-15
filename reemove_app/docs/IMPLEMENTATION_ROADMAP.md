@@ -112,5 +112,6 @@ The specification defines **16 mandatory development phases**. Each phase has a 
 - Phase 2: complete.
 - Phase 3: complete.
 - Phase 4: complete.
+- Phase 5: complete.
 
-Phase 4 ships the resumable ten-step onboarding flow, typed draft/domain layer, avatar pipeline, age and legal policy checks, coarse/public versus exact/private location handling, discovery/accessibility/notification preferences, trusted server completion, native permission automation, rules coverage, and complete/incomplete emulator users. Phase 5 begins with the adaptive six-destination application shell.
+Phase 5 ships the adaptive six-destination application shell, separate stateful branch navigators, guarded return-to routing, stable nested route contracts, username-based profile links, navigation badges, and repeatable Android/iOS deep-link configuration. Phase 6 begins with the complete social feed and publishing pipeline.

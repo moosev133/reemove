@@ -8,9 +8,14 @@ import '../dto/user_profile_dto.dart';
 import '../mappers/user_profile_mapper.dart';
 
 class FirebaseUserProfileRepository implements UserProfileRepository {
-  const FirebaseUserProfileRepository(this._users);
+  const FirebaseUserProfileRepository({
+    required CollectionReference<UserProfileDto> users,
+    required CollectionReference<Map<String, dynamic>> usernames,
+  }) : _users = users,
+       _usernames = usernames;
 
   final CollectionReference<UserProfileDto> _users;
+  final CollectionReference<Map<String, dynamic>> _usernames;
 
   @override
   Future<Result<UserProfile?>> getById(String uid) async {
@@ -26,6 +31,31 @@ class FirebaseUserProfileRepository implements UserProfileRepository {
     } on FormatException catch (error) {
       return FailureResult<UserProfile?>(
         FirestoreFailureMapper.fromFormatException(error),
+      );
+    } catch (error) {
+      return FailureResult<UserProfile?>(
+        FirestoreFailureMapper.unexpected(error),
+      );
+    }
+  }
+
+  @override
+  Future<Result<UserProfile?>> getByUsername(String username) async {
+    final String normalized = username.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return const Success<UserProfile?>(null);
+    }
+    try {
+      final DocumentSnapshot<Map<String, dynamic>> reservation =
+          await _usernames.doc(normalized).get();
+      final Object? uidValue = reservation.data()?['uid'];
+      if (uidValue is! String || uidValue.trim().isEmpty) {
+        return const Success<UserProfile?>(null);
+      }
+      return getById(uidValue.trim());
+    } on FirebaseException catch (error) {
+      return FailureResult<UserProfile?>(
+        FirestoreFailureMapper.fromFirebaseException(error),
       );
     } catch (error) {
       return FailureResult<UserProfile?>(

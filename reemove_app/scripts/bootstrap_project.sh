@@ -23,6 +23,7 @@ if [[ ! -d android || ! -d ios || ! -d web ]]; then
 fi
 
 python3 scripts/configure_native_permissions.py
+python3 scripts/configure_deep_links.py --host "${APP_LINK_HOST:-links.reemove.app}"
 flutter pub get
 
 if ! command -v flutterfire >/dev/null; then
@@ -42,4 +43,4 @@ popd >/dev/null
 flutter analyze
 flutter test
 
-echo "ReeMove Phase 4 onboarding foundation is ready. Configure Firebase providers and native capabilities, then run npm run verify:backend."
+echo "ReeMove Phase 5 navigation shell is ready. Configure Firebase providers and native capabilities, then run npm run verify:backend."

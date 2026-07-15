@@ -9,8 +9,88 @@ abstract final class AppRoutes {
   static const String usernameSetup = '/auth/username';
   static const String accountBlocked = '/auth/blocked';
   static const String onboarding = '/onboarding';
+
   static const String home = '/home';
+  static const String activity = '/home/activity';
+  static const String discover = '/discover';
+  static const String discoverSearch = '/discover/search';
+  static const String sports = '/sports';
+  static const String create = '/create';
+  static const String messages = '/messages';
+  static const String profile = '/profile';
+
   static const String accountSecurity = '/account/security';
+
+  static String homePost(String postId) => '/home/post/${_segment(postId)}';
+
+  static String discoverCategory(String category) =>
+      '/discover/category/${_segment(category)}';
+
+  static String sportHub(String sportId) => '/sports/${_segment(sportId)}';
+
+  static String createFlow(String creationType) =>
+      '/create/${_segment(creationType)}';
+
+  static String conversation(String conversationId) =>
+      '/messages/${_segment(conversationId)}';
+
+  static String publicProfile(String username) =>
+      '/profile/user/${_segment(username.toLowerCase())}';
+
+  static String postAlias(String postId) => '/p/${_segment(postId)}';
+
+  static String profileAlias(String username) =>
+      '/u/${_segment(username.toLowerCase())}';
+
+  static String conversationAlias(String conversationId) =>
+      '/c/${_segment(conversationId)}';
+
+  static String sportAlias(String sportId) => '/s/${_segment(sportId)}';
+
+  static String withReturnTo(String target, String? returnTo) {
+    if (returnTo == null || returnTo.trim().isEmpty) {
+      return target;
+    }
+    return Uri(
+      path: target,
+      queryParameters: <String, String>{'returnTo': returnTo},
+    ).toString();
+  }
+
+  static String inheritReturnTo(Uri currentUri, String target) {
+    return withReturnTo(target, currentUri.queryParameters['returnTo']);
+  }
+
+  static bool isShellLocation(String location) {
+    final String path = Uri.tryParse(location)?.path ?? location;
+    return <String>[
+      home,
+      discover,
+      sports,
+      create,
+      messages,
+      profile,
+    ].any((String root) => path == root || path.startsWith('$root/'));
+  }
+
+  static bool isProtectedAlias(String location) {
+    final String path = Uri.tryParse(location)?.path ?? location;
+    return <String>[
+      '/p/',
+      '/u/',
+      '/c/',
+      '/s/',
+    ].any((String prefix) => path.startsWith(prefix));
+  }
+
+  static bool isAuthenticatedLocation(String location) {
+    final String path = Uri.tryParse(location)?.path ?? location;
+    return isShellLocation(path) ||
+        isProtectedAlias(path) ||
+        path == accountSecurity;
+  }
+
+  static String _segment(String value) => Uri.encodeComponent(value.trim());
 }
 
 abstract final class AppRouteNames {
@@ -24,6 +104,25 @@ abstract final class AppRouteNames {
   static const String usernameSetup = 'username-setup';
   static const String accountBlocked = 'account-blocked';
   static const String onboarding = 'onboarding';
-  static const String home = 'home';
   static const String accountSecurity = 'account-security';
+
+  static const String home = 'home';
+  static const String activity = 'activity';
+  static const String homePost = 'home-post';
+  static const String discover = 'discover';
+  static const String discoverSearch = 'discover-search';
+  static const String discoverCategory = 'discover-category';
+  static const String sports = 'sports';
+  static const String sportHub = 'sport-hub';
+  static const String create = 'create';
+  static const String createFlow = 'create-flow';
+  static const String messages = 'messages';
+  static const String conversation = 'conversation';
+  static const String profile = 'profile';
+  static const String publicProfile = 'public-profile';
+
+  static const String postAlias = 'post-alias';
+  static const String profileAlias = 'profile-alias';
+  static const String conversationAlias = 'conversation-alias';
+  static const String sportAlias = 'sport-alias';
 }

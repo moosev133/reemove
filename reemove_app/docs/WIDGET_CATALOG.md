@@ -109,3 +109,16 @@ These components use the shared design system and support light/dark mode, keybo
 80. `SportIcon` — catalog icon-key mapping with safe fallback
 
 The flow also includes reusable privacy cards, review tiles, permission recovery actions, responsive sport grids, skill-level inputs, and discovery controls. All permission requests originate from an explicit user tap.
+
+## Phase 5 implemented navigation components
+
+81. `AppShell` — adaptive host for the stateful navigation shell
+82. `AppBottomNavigation` — compact six-destination Material 3 navigation
+83. `AppNavigationRail` — medium/expanded rail with theme control and badges
+84. `AdaptivePageBody` — centered responsive scroll body for branch pages
+85. `AppPageHeader` — consistent page title, eyebrow, subtitle, and trailing action
+86. `AppAvatar` — network image/initials avatar fallback
+87. `AppEmptyState` — accessible production empty/unavailable surface
+88. `AppSectionHeader` — reusable section title and action row
+
+The six branch screens use these components rather than embedding navigation chrome or responsive thresholds inside feature widgets.

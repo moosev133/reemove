@@ -35,8 +35,10 @@ final Provider<ReeMoveFirestore> reeMoveFirestoreProvider =
 
 final Provider<UserProfileRepository> userProfileRepositoryProvider =
     Provider<UserProfileRepository>((Ref ref) {
+      final ReeMoveFirestore database = ref.watch(reeMoveFirestoreProvider);
       return FirebaseUserProfileRepository(
-        ref.watch(reeMoveFirestoreProvider).users,
+        users: database.users,
+        usernames: database.usernames,
       );
     });
 

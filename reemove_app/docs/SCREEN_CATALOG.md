@@ -144,7 +144,7 @@ The final product is expected to contain approximately **78 screens and major mo
 
 The count is intentionally larger than a typical MVP because every required capability is represented as a real production flow rather than compressed into generic placeholder pages.
 
-## Implemented routes through Phase 4
+## Implemented routes through Phase 5
 
 | Route | Screen | Purpose |
 |---|---|---|
@@ -157,8 +157,21 @@ The count is intentionally larger than a typical MVP because every required capa
 | `/auth/verify-email` | `EmailVerificationScreen` | Resend and refresh verification state |
 | `/auth/username` | `UsernameSetupScreen` | Social-user account provisioning |
 | `/auth/blocked` | `AccountBlockedScreen` | Restricted/removed account state |
-| `/account/security` | `AccountSecurityScreen` | Linked providers, reauthentication, local/global sign-out, deletion |
+| `/account/security` | `AccountSecurityScreen` | Linked providers, reauthentication, sessions, deletion |
 | `/onboarding` | `OnboardingFlowScreen` | Ten-step resumable onboarding and trusted completion |
-| `/home` | `AuthenticatedHomeHandoffScreen` | Guarded destination replaced by the Phase 5 shell |
+| `/home` | `HomeScreen` | Personalized shell home and quick actions |
+| `/home/activity` | `ActivityScreen` | Activity inbox route |
+| `/home/post/:postId` | `PostDeepLinkScreen` | Safe post deep-link destination |
+| `/discover` | `DiscoverScreen` | Discovery overview |
+| `/discover/search` | `DiscoverSearchScreen` | Universal search route |
+| `/discover/category/:category` | `DiscoverCategoryScreen` | Category result route |
+| `/sports` | `SportsScreen` | Favorite-first sports selector |
+| `/sports/:sportId` | `SportHubScreen` | Stable sport hub route |
+| `/create` | `CreateScreen` | Creation type selector |
+| `/create/:creationType` | `CreateFlowScreen` | Isolated creation draft entry |
+| `/messages` | `MessagesScreen` | Conversation inbox route |
+| `/messages/:conversationId` | `ConversationScreen` | Safe conversation deep-link destination |
+| `/profile` | `ProfileScreen` | Current account profile |
+| `/profile/user/:username` | `PublicProfileScreen` | Username-resolved public profile |
 
-The `/onboarding` route renders distinct profile, birthday/legal, sports, levels, goals, location, discovery, accessibility, notifications, and review steps while preserving one guarded route and one typed controller. Google and Apple authentication remain actions inside the welcome flow. Reset confirmation remains inside the forgot-password screen.
+Short aliases `/p/:postId`, `/u/:username`, `/c/:conversationId`, and `/s/:sportId` redirect into the correct stateful branch. All protected links preserve a validated internal return target through sign-in, profile provisioning, verification, and onboarding.

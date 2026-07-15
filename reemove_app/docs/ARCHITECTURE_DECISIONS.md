@@ -108,3 +108,19 @@ Location and notification APIs are invoked only from explicit controls on their 
 ## ADR-027: Native permission configuration is generated idempotently
 
 Native project folders are intentionally not committed before the owner configures FlutterFire. `configure_native_permissions.py` patches generated Android/iOS files after `flutter create`, including when-in-use-only iOS location settings, without duplicating declarations on repeated bootstrap runs.
+
+## ADR-028: Separate navigator per primary destination
+
+The six primary destinations use `StatefulShellRoute.indexedStack`. Each branch has a stable navigator key and restoration scope, preserving child routes and scroll state when users switch tabs. A shared stack was rejected because it loses destination context and makes back behavior unpredictable.
+
+## ADR-029: Protected deep links use validated internal return targets
+
+When an account gate interrupts a protected link, the requested relative route is carried in `returnTo`. The router accepts only internal authenticated paths with no scheme or host. This preserves user intent without creating an open-redirect surface.
+
+## ADR-030: Public profile links resolve through username reservations
+
+`usernames/{normalizedUsername}` remains the unique, transaction-owned index from username to UID. Public profile navigation resolves that direct document before loading the user profile, avoiding scans and keeping rename/deletion behavior centralized.
+
+## ADR-031: Native link configuration is generated after Flutter bootstrap
+
+Android and iOS folders are still generated locally. `configure_deep_links.py` applies verified HTTPS links, the custom scheme, associated-domain entitlements, and Flutter metadata idempotently after generation. Domain-verification files remain explicit deployment artifacts because signing identities are environment-owned secrets/configuration.

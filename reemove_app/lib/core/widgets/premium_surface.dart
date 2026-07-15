@@ -7,10 +7,12 @@ class PremiumSurface extends StatelessWidget {
     required this.child,
     super.key,
     this.padding = const EdgeInsets.all(AppSpacing.lg),
+    this.onTap,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +32,14 @@ class PremiumSurface extends StatelessWidget {
           ),
         ],
       ),
-      child: Padding(padding: padding, child: child),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Padding(padding: padding, child: child),
+        ),
+      ),
     );
   }
 }

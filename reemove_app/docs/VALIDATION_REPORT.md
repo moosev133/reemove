@@ -1,16 +1,16 @@
-# Validation report — Phase 4
+# Validation report — Phase 5
 
 Validation date: 2026-07-13
 
 ## Passed in this environment
 
-- Repository JSON parsing.
-- YAML parsing for `pubspec.yaml`, analysis options, and CI workflow.
+- Repository JSON and YAML parsing.
 - Relative Dart import resolution.
-- Clean Architecture boundary check preventing Firebase types in domain files.
-- Shell syntax validation.
-- Python syntax validation for repository and native-configuration tools.
-- Node syntax validation for Firestore and Storage Rules tests.
+- Clean Architecture boundary validation preventing Firebase SDK types from leaking into domain files.
+- Shell and Python syntax validation.
+- Native Android/iOS deep-link configurator fixture test.
+- Deep-link configurator idempotency on a second run.
+- Firebase Rules test-source JavaScript syntax validation.
 - Cloud Functions ESLint.
 - Cloud Functions strict TypeScript compilation.
 - Cloud Functions/Auth/Firestore seed compilation.
@@ -18,38 +18,39 @@ Validation date: 2026-07-13
   - 4 onboarding age/geospatial policy tests.
   - 3 onboarding request-parser tests.
   - 4 username/display-name policy tests.
-  - 4 recent-authentication window tests.
-- Dart tree-sitter grammar parse: **141 files passed** with no syntax-error nodes.
-- Repository architecture/configuration validation passed.
-- Native permission patcher fixture test passed and remained idempotent on a second run.
-- Firebase Rules test dependencies installed with zero npm audit vulnerabilities.
-- Deterministic completed/incomplete Auth and Firestore seed identity consistency review.
-- Callable/export/repository naming consistency review.
+  - 4 recent-authentication-window tests.
+- Dart tree-sitter grammar parse: **168 files passed** with no syntax-error nodes.
+- Navigation destination ordering and route-contract source review.
+- Stateful branch navigator-key and restoration-scope review.
+- Guarded internal `returnTo` sanitization review.
+- Username-based profile-resolution boundary review.
+- Source/configuration dependency and naming consistency review.
 
-## Security behavior represented by automated tests
+## Phase 5 behavior represented by tests
 
-- Anonymous and unauthorized profile access is rejected.
-- Active public profile reads are bounded.
-- Client profile creation, username reservation, and private metadata writes are rejected.
-- Owners may read only their own private onboarding draft and cannot write it directly.
-- Clients cannot set `onboardingCompleted` or onboarding-owned profile personalization fields.
-- Server-owned counters, verification, moderation, rate-limit, audit, and deletion records remain protected.
-- Avatar Storage ownership, path, content type, metadata, and size policies remain covered.
-- Onboarding request version, goal catalog, coordinate range, list bounds, age policy, and geohash behavior are unit tested.
+- The six destinations retain the specification order: Home, Discover, Sports, Create, Messages, and Profile.
+- Route helpers generate canonical nested and short-link paths.
+- External, malformed, and non-protected return targets are rejected.
+- Navigation badge totals are bounded and display values are capped safely.
+- Native link declarations can be applied repeatedly without duplicate entries.
+- Public profile links resolve through the server-owned username reservation index rather than an unrestricted username query.
 
-## Rules emulator execution result
+## Firebase Rules emulator result
 
-`npm run test:rules` was attempted. The command timed out during Firebase Emulator startup in this execution environment before the Firestore/Storage assertions ran. Test source, configuration, JavaScript syntax, dependencies, ports, and CI wiring are complete, but this report does not claim the Rules assertions executed here.
+`npm run test:rules` was executed. Firebase CLI started the Firestore and Storage emulator workflow, but the Firestore emulator binary could not be downloaded in this environment. The emulator assertions therefore did **not** execute here.
 
-Run the suite on a machine where Firebase emulator binaries can be downloaded and cached:
+The Rules source, test source, package lock, ports, and CI wiring are present. Run the suite on a development or CI machine with Firebase emulator binaries available:
 
 ```bash
+npm --prefix firebase_tests ci
 npm run test:rules
 ```
 
-## Flutter limitation
+Phase 5 introduces no new client-writable collection; the Rules suite remains the cumulative policy suite from Phases 2–4.
 
-The Flutter/Dart SDK and generated Android/iOS/web projects are unavailable in this environment, so these commands were not executable here:
+## Flutter SDK limitation
+
+The Flutter/Dart SDK and generated Android/iOS/web projects are unavailable in this execution environment, so these commands were not run here:
 
 ```bash
 flutter pub get
@@ -61,18 +62,19 @@ flutter build ipa
 flutter build web
 ```
 
-Dart grammar parsing is not a replacement for Flutter analysis, package resolution, widget tests, or native builds. Those checks remain mandatory before staging.
+Tree-sitter grammar parsing is not a replacement for Flutter package resolution, analyzer type checking, widget tests, integration tests, accessibility testing, or native builds. All remain mandatory before staging.
 
 ## Dependency audit
 
-- `firebase_tests`: zero known npm vulnerabilities.
+- `firebase_tests`: 0 known vulnerabilities.
 - `functions` production dependency tree: 9 moderate, 0 high, and 0 critical advisories.
-- No unsupported forced major upgrades were applied. Re-evaluate Firebase Admin/Functions versions during each release dependency review.
+- No forced major dependency upgrade was applied solely to silence transitive advisories. Re-evaluate Firebase Admin and Functions dependencies during release hardening.
 
 ## Reproduction commands
 
 ```bash
 python3 scripts/validate_repository.py
+python3 scripts/test_configure_deep_links.py
 npm --prefix functions ci
 npm --prefix functions run lint
 npm --prefix functions run build
@@ -83,4 +85,4 @@ flutter analyze
 flutter test --coverage
 ```
 
-Deployment is blocked until the Flutter checks, native device matrix, and full emulator Rules suite pass in CI or on a properly equipped development machine.
+Deployment remains blocked until Flutter analysis/tests, native device builds, and the complete emulator Rules suite pass on a properly equipped machine.

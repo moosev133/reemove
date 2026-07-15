@@ -32,11 +32,23 @@ class AuthWelcomeScreen extends ConsumerWidget {
             AuthPrimaryButton(
               label: 'Create an account',
               icon: Icons.arrow_forward_rounded,
-              onPressed: () => context.go(AppRoutes.signUp),
+              onPressed: () => context.go(
+                AppRoutes.inheritReturnTo(
+                  GoRouterState.of(context).uri,
+                  AppRoutes.signUp,
+                ),
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             OutlinedButton(
-              onPressed: loading ? null : () => context.go(AppRoutes.signIn),
+              onPressed: loading
+                  ? null
+                  : () => context.go(
+                      AppRoutes.inheritReturnTo(
+                        GoRouterState.of(context).uri,
+                        AppRoutes.signIn,
+                      ),
+                    ),
               child: const Text('Sign in with email'),
             ),
             const SizedBox(height: AppSpacing.lg),

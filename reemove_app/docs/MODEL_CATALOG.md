@@ -137,3 +137,10 @@ Authentication-specific Firebase objects remain in data mappers and repositories
 99. `OnboardingViewState` — immutable application state for UI and async operations
 
 `OnboardingDraftDto` is a data-layer serializer rather than a domain model. Birthday and exact location remain inside private records; the public profile model receives only area-level discovery fields.
+
+## Phase 5 implemented navigation models
+
+- `AppDestination` — ordered destination identity, labels, icons, route roots, and location ownership
+- `AppNavigationBadges` — bounded Home activity and Messages badge counts
+
+These models contain no Firebase state and can be overridden or driven by later notification and messaging repositories.

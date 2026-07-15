@@ -15,6 +15,9 @@ class ReeMoveFirestore {
 
   final FirebaseFirestore instance;
 
+  CollectionReference<Map<String, dynamic>> get usernames =>
+      instance.collection(FirestoreCollections.usernames);
+
   CollectionReference<UserProfileDto> get users => instance
       .collection(FirestoreCollections.users)
       .withConverter<UserProfileDto>(

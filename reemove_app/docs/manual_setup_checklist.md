@@ -22,6 +22,11 @@ Pending configuration that must be completed outside Git before Firebase-backed 
 - [ ] Ensure `app_config/mobile` includes `minimumAge`, `maximumAge`, `onboardingVersion`, `termsVersion`, and `privacyVersion`
 - [ ] Ensure enabled `sports/{sportId}` documents exist for favorite-sport selection
 
+- [ ] Configure deep links: `python3 scripts/configure_deep_links.py --host links.reemove.app` (or via bootstrap with `APP_LINK_HOST`)
+- [ ] Host `docs/app_links/assetlinks.json` and `apple-app-site-association.json` on the verified HTTPS link host
+- [ ] Replace SHA-256 fingerprints and Apple Team ID placeholders in app-link verification files
+- [ ] Enable Android App Links / iOS Associated Domains for the production link host
+
 ## Do not commit
 
 - `.firebaserc` (real project IDs)

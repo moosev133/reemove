@@ -50,7 +50,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     final bool loading = action.isLoading;
     return AuthScaffold(
       showBackButton: true,
-      onBack: () => context.go(AppRoutes.authWelcome),
+      onBack: () => context.go(
+        AppRoutes.inheritReturnTo(
+          GoRouterState.of(context).uri,
+          AppRoutes.authWelcome,
+        ),
+      ),
       heroTitle: 'Your next move\nstarts here.',
       heroMessage:
           'Return to your training partners, events, challenges, and sports communities.',
@@ -94,7 +99,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   child: TextButton(
                     onPressed: loading
                         ? null
-                        : () => context.go(AppRoutes.forgotPassword),
+                        : () => context.go(
+                            AppRoutes.inheritReturnTo(
+                              GoRouterState.of(context).uri,
+                              AppRoutes.forgotPassword,
+                            ),
+                          ),
                     child: const Text('Forgot password?'),
                   ),
                 ),
@@ -111,7 +121,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     TextButton(
                       onPressed: loading
                           ? null
-                          : () => context.go(AppRoutes.signUp),
+                          : () => context.go(
+                              AppRoutes.inheritReturnTo(
+                                GoRouterState.of(context).uri,
+                                AppRoutes.signUp,
+                              ),
+                            ),
                       child: const Text('Create account'),
                     ),
                   ],
