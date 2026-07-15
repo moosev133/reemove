@@ -3,50 +3,95 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:reemove/core/domain/value_objects/content_policy.dart';
 import 'package:reemove/features/profile/data/dto/user_profile_dto.dart';
 import 'package:reemove/features/profile/data/mappers/user_profile_mapper.dart';
+import 'package:reemove/features/profile/domain/entities/profile_privacy_settings.dart';
 import 'package:reemove/features/profile/domain/entities/user_profile.dart';
 
 void main() {
-  test(
-    'maps a Firestore user document to the provider-neutral domain model',
-    () {
-      final DateTime now = DateTime.utc(2026, 7, 13, 12);
-      final UserProfileDto dto = UserProfileDto.fromMap(<String, dynamic>{
-        'uid': 'athlete-1',
-        'username': 'athlete_1',
-        'usernameNormalized': 'athlete_1',
-        'displayName': 'Athlete One',
-        'bio': 'Runner and football player',
-        'role': 'athlete',
-        'isVerified': false,
-        'verificationType': 'none',
-        'favoriteSportIds': <String>['football', 'running'],
-        'sportLevels': <String, String>{
-          'football': 'intermediate',
-          'running': 'advanced',
-        },
-        'goals': <String>['community'],
-        'location': const GeoPoint(32.8, 35),
-        'geohash': 'sv8x',
-        'discoveryRadiusKm': 25,
-        'visibility': 'public',
-        'followersCount': 10,
-        'followingCount': 5,
-        'postsCount': 3,
-        'onboardingCompleted': true,
-        'moderationState': 'active',
-        'createdAt': Timestamp.fromDate(now),
-        'updatedAt': Timestamp.fromDate(now),
-        'schemaVersion': 1,
-      }, documentId: 'athlete-1');
+  test('maps the complete public profile document to the domain model', () {
+    final DateTime now = DateTime.utc(2026, 7, 13, 12);
+    final UserProfileDto dto = UserProfileDto.fromMap(<String, dynamic>{
+      'uid': 'trainer-1',
+      'username': 'Coach Move',
+      'usernameNormalized': 'coach_move',
+      'displayName': 'Coach Move',
+      'bio': 'Strength coach and runner.',
+      'avatarUrl': 'https://cdn.reemove.app/avatar.jpg',
+      'coverUrl': 'https://cdn.reemove.app/cover.jpg',
+      'websiteUrl': 'https://coach.example',
+      'primarySportId': 'gym',
+      'role': 'trainer',
+      'isVerified': true,
+      'verificationType': 'trainer',
+      'professionalDetails': <String, dynamic>{
+        'headline': 'Certified strength coach',
+        'organization': 'ReeMove Performance',
+        'positionOrCategory': 'Personal trainer',
+        'yearsExperience': 7,
+        'specialties': <String>['strength', 'mobility'],
+        'acceptingClients': true,
+      },
+      'favoriteSportIds': <String>['gym', 'running'],
+      'sportLevels': <String, String>{
+        'gym': 'professional',
+        'running': 'advanced',
+      },
+      'goals': <String>['community', 'performance'],
+      'location': const GeoPoint(32.8, 35),
+      'geohash': 'sv8x',
+      'locality': 'Haifa',
+      'countryCode': 'IL',
+      'discoveryRadiusKm': 25,
+      'visibility': 'followers',
+      'followApprovalPolicy': 'approvalRequired',
+      'followersCount': 1200,
+      'followingCount': 82,
+      'postsCount': 34,
+      'reelsCount': 11,
+      'onboardingCompleted': true,
+      'moderationState': 'active',
+      'createdAt': Timestamp.fromDate(now),
+      'updatedAt': Timestamp.fromDate(now),
+      'schemaVersion': 2,
+    }, documentId: 'trainer-1');
 
-      final UserProfile profile = dto.toDomain();
+    final UserProfile profile = dto.toDomain();
 
-      expect(profile.uid, 'athlete-1');
-      expect(profile.role, UserRole.athlete);
-      expect(profile.sportLevels['running'], SportLevel.advanced);
-      expect(profile.visibility, Visibility.public);
-      expect(profile.location?.latitude, 32.8);
-      expect(profile.audit.createdAt, now);
-    },
-  );
+    expect(profile.uid, 'trainer-1');
+    expect(profile.role, UserRole.trainer);
+    expect(profile.verificationType, VerificationType.trainer);
+    expect(profile.isVerified, isTrue);
+    expect(profile.primarySportId, 'gym');
+    expect(profile.professionalDetails.headline, 'Certified strength coach');
+    expect(profile.professionalDetails.yearsExperience, 7);
+    expect(profile.professionalDetails.acceptingClients, isTrue);
+    expect(profile.sportLevels['gym'], SportLevel.professional);
+    expect(profile.visibility, Visibility.followers);
+    expect(profile.followApprovalPolicy, FollowApprovalPolicy.approvalRequired);
+    expect(profile.location?.locality, 'Haifa');
+    expect(profile.reelsCount, 11);
+    expect(profile.audit.createdAt, now);
+    expect(profile.audit.schemaVersion, 2);
+  });
+
+  test('uses backward-compatible defaults for older profile documents', () {
+    final DateTime now = DateTime.utc(2026, 7, 13, 12);
+    final UserProfile profile = UserProfileDto.fromMap(<String, dynamic>{
+      'uid': 'athlete-legacy',
+      'username': 'legacy',
+      'usernameNormalized': 'legacy',
+      'displayName': 'Legacy Athlete',
+      'favoriteSportIds': <String>[],
+      'sportLevels': <String, String>{},
+      'goals': <String>[],
+      'visibility': 'public',
+      'createdAt': Timestamp.fromDate(now),
+      'updatedAt': Timestamp.fromDate(now),
+    }, documentId: 'athlete-legacy').toDomain();
+
+    expect(profile.role, UserRole.athlete);
+    expect(profile.verificationType, VerificationType.none);
+    expect(profile.followApprovalPolicy, FollowApprovalPolicy.automatic);
+    expect(profile.reelsCount, 0);
+    expect(profile.professionalDetails.isEmpty, isTrue);
+  });
 }

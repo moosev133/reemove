@@ -11,11 +11,7 @@ class ContentReactionDto {
     required this.reposted,
   });
 
-  factory ContentReactionDto.fromFirestore(
-    DocumentSnapshot<FirestoreMap> snapshot,
-    SnapshotOptions? _,
-  ) {
-    final FirestoreMap data = snapshot.data() ?? const <String, dynamic>{};
+  factory ContentReactionDto.fromMap(FirestoreMap data) {
     return ContentReactionDto(
       uid: FirestoreParser.string(data, 'uid', fallback: ''),
       postId: FirestoreParser.string(data, 'postId', fallback: ''),
@@ -23,6 +19,14 @@ class ContentReactionDto {
       saved: FirestoreParser.boolean(data, 'saved', fallback: false),
       reposted: FirestoreParser.boolean(data, 'reposted', fallback: false),
     );
+  }
+
+  factory ContentReactionDto.fromFirestore(
+    DocumentSnapshot<FirestoreMap> snapshot,
+    SnapshotOptions? _,
+  ) {
+    final FirestoreMap data = snapshot.data() ?? const <String, dynamic>{};
+    return ContentReactionDto.fromMap(data);
   }
 
   final String uid;

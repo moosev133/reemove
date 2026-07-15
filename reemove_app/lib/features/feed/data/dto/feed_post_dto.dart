@@ -72,16 +72,9 @@ class FeedPostDto {
     this.originalAuthorId,
   });
 
-  factory FeedPostDto.fromFirestore(
-    DocumentSnapshot<FirestoreMap> snapshot,
-    SnapshotOptions? _,
-  ) {
-    final FirestoreMap? data = snapshot.data();
-    if (data == null) {
-      throw FormatException('Post ${snapshot.id} has no data.');
-    }
+  factory FeedPostDto.fromMap(FirestoreMap data, {required String documentId}) {
     return FeedPostDto(
-      id: snapshot.id,
+      id: documentId,
       author: PostAuthorSnapshotDto.fromMap(
         FirestoreParser.map(data, 'authorSnapshot'),
       ),
@@ -125,6 +118,17 @@ class FeedPostDto {
         'originalAuthorId',
       ),
     );
+  }
+
+  factory FeedPostDto.fromFirestore(
+    DocumentSnapshot<FirestoreMap> snapshot,
+    SnapshotOptions? _,
+  ) {
+    final FirestoreMap? data = snapshot.data();
+    if (data == null) {
+      throw FormatException('Post ${snapshot.id} has no data.');
+    }
+    return FeedPostDto.fromMap(data, documentId: snapshot.id);
   }
 
   final String id;

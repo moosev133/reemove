@@ -16,6 +16,13 @@ const demoUsers = [
     displayName: "ReeMove Newcomer",
     emailVerified: true,
   },
+  {
+    uid: "demo-runner",
+    email: "runner@demo.reemove.app",
+    password: "ReeMoveDemo123!",
+    displayName: "Maya Runner",
+    emailVerified: true,
+  },
 ] as const;
 
 async function seedAuth(): Promise<void> {

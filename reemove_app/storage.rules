@@ -48,6 +48,20 @@ service firebase.storage {
         && resource.metadata.ownerId == uid;
     }
 
+    match /users/{uid}/cover/{assetId} {
+      allow read: if signedIn();
+      allow create: if isOwner(uid)
+        && request.resource.size < 15 * 1024 * 1024
+        && isImage()
+        && validOwnerMetadata(uid);
+      allow update: if isOwner(uid)
+        && request.resource.size < 15 * 1024 * 1024
+        && isImage()
+        && preservesOwnerMetadata(uid);
+      allow delete: if isOwner(uid)
+        && resource.metadata.ownerId == uid;
+    }
+
     match /content/{uid}/{draftId}/{assetId}/{filename} {
       allow read: if isOwner(uid);
       allow create: if isOwner(uid)

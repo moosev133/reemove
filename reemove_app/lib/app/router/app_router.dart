@@ -27,7 +27,14 @@ import '../../features/home/presentation/screens/post_deep_link_screen.dart';
 import '../../features/messages/presentation/screens/conversation_screen.dart';
 import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_flow_screen.dart';
+import '../../features/profile/domain/entities/profile_connection.dart';
+import '../../features/profile/presentation/screens/blocked_profiles_screen.dart';
+import '../../features/profile/presentation/screens/edit_profile_screen.dart';
+import '../../features/profile/presentation/screens/profile_connections_screen.dart';
+import '../../features/profile/presentation/screens/profile_privacy_screen.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/profile/presentation/screens/profile_settings_screen.dart';
+import '../../features/profile/presentation/screens/profile_verification_screen.dart';
 import '../../features/profile/presentation/screens/public_profile_screen.dart';
 import '../../features/sports/shared/presentation/screens/sport_hub_screen.dart';
 import '../../features/sports/shared/presentation/screens/sports_screen.dart';
@@ -303,6 +310,55 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                 name: AppRouteNames.profile,
                 pageBuilder: _page(const ProfileScreen()),
                 routes: <RouteBase>[
+                  GoRoute(
+                    path: 'edit',
+                    name: AppRouteNames.editProfile,
+                    pageBuilder: _page(const EditProfileScreen()),
+                  ),
+                  GoRoute(
+                    path: 'settings',
+                    name: AppRouteNames.profileSettings,
+                    pageBuilder: _page(const ProfileSettingsScreen()),
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'privacy',
+                        name: AppRouteNames.profilePrivacy,
+                        pageBuilder: _page(const ProfilePrivacyScreen()),
+                      ),
+                      GoRoute(
+                        path: 'blocked',
+                        name: AppRouteNames.blockedProfiles,
+                        pageBuilder: _page(const BlockedProfilesScreen()),
+                      ),
+                      GoRoute(
+                        path: 'verification',
+                        name: AppRouteNames.profileVerification,
+                        pageBuilder: _page(const ProfileVerificationScreen()),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'connections/:profileId/:type',
+                    name: AppRouteNames.profileConnections,
+                    pageBuilder: (BuildContext context, GoRouterState state) {
+                      final String rawType =
+                          state.pathParameters['type'] ?? 'followers';
+                      final ProfileConnectionType type = ProfileConnectionType
+                          .values
+                          .firstWhere(
+                            (ProfileConnectionType item) =>
+                                item.name == rawType,
+                            orElse: () => ProfileConnectionType.followers,
+                          );
+                      return MaterialPage<void>(
+                        key: state.pageKey,
+                        child: ProfileConnectionsScreen(
+                          profileId: state.pathParameters['profileId'] ?? '',
+                          type: type,
+                        ),
+                      );
+                    },
+                  ),
                   GoRoute(
                     path: 'user/:username',
                     name: AppRouteNames.publicProfile,

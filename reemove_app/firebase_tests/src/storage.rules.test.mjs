@@ -69,6 +69,35 @@ describe("avatar storage rules", () => {
   });
 });
 
+describe("profile cover and verification evidence rules", () => {
+  it("allows an owner to upload a valid cover image", async () => {
+    const storage = testEnv.authenticatedContext("alice").storage();
+    const cover = ref(storage, "users/alice/cover/cover.png");
+
+    await assertSucceeds(uploadBytes(cover, bytes, validMetadata));
+    await assertSucceeds(deleteObject(cover));
+  });
+
+  it("keeps verification evidence private and owner-scoped", async () => {
+    const alice = testEnv.authenticatedContext("alice").storage();
+    const bob = testEnv.authenticatedContext("bob").storage();
+    const evidencePath = "verification/alice/alice/evidence.png";
+    await assertSucceeds(uploadBytes(ref(alice, evidencePath), bytes, {
+      contentType: "image/png",
+      customMetadata: {
+        ownerId: "alice", schemaVersion: "1", purpose: "profile-verification",
+      },
+    }));
+    await assertSucceeds(getBytes(ref(alice, evidencePath)));
+    await assertFails(getBytes(ref(bob, evidencePath)));
+    await assertFails(uploadBytes(
+      ref(bob, "verification/alice/alice/forged.png"),
+      bytes,
+      {contentType: "image/png", customMetadata: {ownerId: "bob", schemaVersion: "1"}},
+    ));
+  });
+});
+
 describe("processed media rules", () => {
   it("blocks clients from writing processed post variants", async () => {
     const storage = testEnv.authenticatedContext("alice").storage();

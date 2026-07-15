@@ -29,6 +29,9 @@ Pending configuration that must be completed outside Git before Firebase-backed 
 - [ ] Deploy Phase 6 feed Functions, Firestore rules/indexes, and Storage rules (posts, stories, feed_entries, reactions, media paths)
 - [ ] Configure media processor secrets/URLs (`MEDIA_PROCESSOR_URL`, `MEDIA_PROCESSOR_CALLBACK_URL`, `MEDIA_PROCESSOR_SECRET`) — see `docs/MEDIA_PROCESSING_SETUP.md`
 - [ ] Optionally seed emulator feed fixtures (posts, reels, stories, comments, reactions)
+- [ ] Deploy Phase 7 profile Functions, Firestore rules/indexes, and Storage rules (follow graph, verification, cover uploads, locked public user reads)
+- [ ] Configure verification admin review workflow (see `docs/PROFILE_VERIFICATION_SETUP.md`)
+- [ ] Optionally seed emulator profile fixtures (followers, follow requests, privacy settings, verification)
 
 ## Do not commit
 

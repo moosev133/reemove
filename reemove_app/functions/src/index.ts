@@ -27,6 +27,27 @@ import {
   processQueuedMedia,
 } from "./media/mediaProcessing";
 import {saveOnboardingProgress} from "./onboarding/saveOnboardingProgress";
+import {
+  cancelFollowRequest,
+  followProfile,
+  getProfileRelationship,
+  getPublicProfile,
+  listBlockedProfiles,
+  listProfileConnections,
+  removeFollower,
+  respondToFollowRequest,
+  unblockUser,
+  unfollowProfile,
+} from "./profile/followGraph";
+import {loadProfileContent} from "./profile/profileContent";
+import {
+  cancelVerificationRequest,
+  reviewVerificationRequest,
+  submitVerificationRequest,
+  syncProfileSnapshots,
+  updateProfile,
+  updateProfilePrivacy,
+} from "./profile/profileManagement";
 import {callableOptions, primaryRegion} from "./core/functionOptions";
 
 initializeApp();
@@ -55,6 +76,23 @@ export {
   deleteStory,
   reportContent,
   blockUser,
+  getProfileRelationship,
+  getPublicProfile,
+  followProfile,
+  unfollowProfile,
+  cancelFollowRequest,
+  respondToFollowRequest,
+  removeFollower,
+  listProfileConnections,
+  listBlockedProfiles,
+  unblockUser,
+  loadProfileContent,
+  updateProfile,
+  updateProfilePrivacy,
+  submitVerificationRequest,
+  cancelVerificationRequest,
+  reviewVerificationRequest,
+  syncProfileSnapshots,
   onContentUpload,
   processQueuedMedia,
   completeMediaProcessing,

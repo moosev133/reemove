@@ -185,6 +185,9 @@ export const completeOnboarding = onCall(callableOptions, async (request) => {
       ...publicLocation,
       discoveryRadiusKm: draft.discovery.radiusKm,
       visibility: draft.discovery.visibility,
+      followApprovalPolicy: draft.discovery.visibility === "public" ?
+        "automatic" :
+        "approvalRequired",
       onboardingCompleted: true,
       onboardingVersion,
       updatedAt: now,

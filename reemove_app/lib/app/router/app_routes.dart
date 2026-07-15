@@ -19,6 +19,11 @@ abstract final class AppRoutes {
   static const String create = '/create';
   static const String messages = '/messages';
   static const String profile = '/profile';
+  static const String editProfile = '/profile/edit';
+  static const String profileSettings = '/profile/settings';
+  static const String profilePrivacy = '/profile/settings/privacy';
+  static const String blockedProfiles = '/profile/settings/blocked';
+  static const String profileVerification = '/profile/settings/verification';
 
   static const String accountSecurity = '/account/security';
 
@@ -40,6 +45,9 @@ abstract final class AppRoutes {
 
   static String publicProfile(String username) =>
       '/profile/user/${_segment(username.toLowerCase())}';
+
+  static String profileConnections(String profileId, String type) =>
+      '/profile/connections/${_segment(profileId)}/${_segment(type)}';
 
   static String postAlias(String postId) => '/p/${_segment(postId)}';
 
@@ -126,6 +134,12 @@ abstract final class AppRouteNames {
   static const String conversation = 'conversation';
   static const String profile = 'profile';
   static const String publicProfile = 'public-profile';
+  static const String editProfile = 'edit-profile';
+  static const String profileSettings = 'profile-settings';
+  static const String profilePrivacy = 'profile-privacy';
+  static const String blockedProfiles = 'blocked-profiles';
+  static const String profileVerification = 'profile-verification';
+  static const String profileConnections = 'profile-connections';
 
   static const String postAlias = 'post-alias';
   static const String profileAlias = 'profile-alias';

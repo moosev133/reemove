@@ -82,6 +82,9 @@ abstract final class FirestoreParser {
     if (value is DateTime) {
       return value.toUtc();
     }
+    if (value is String) {
+      return DateTime.parse(value).toUtc();
+    }
     throw FormatException('Expected Timestamp at "$key".');
   }
 
@@ -95,6 +98,9 @@ abstract final class FirestoreParser {
     }
     if (value is DateTime) {
       return value.toUtc();
+    }
+    if (value is String) {
+      return DateTime.parse(value).toUtc();
     }
     throw FormatException('Expected nullable Timestamp at "$key".');
   }

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/adaptive_page_body.dart';
-import '../../../../core/widgets/app_avatar.dart';
 import '../../../../core/widgets/app_empty_state.dart';
-import '../../../../core/widgets/premium_surface.dart';
 import '../../../authentication/application/authentication_providers.dart';
+import '../../domain/entities/profile_content_page.dart';
 import '../../domain/entities/user_profile.dart';
+import '../widgets/profile_content_panel.dart';
+import '../widgets/profile_header.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -20,6 +22,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen>
     with AutomaticKeepAliveClientMixin<ProfileScreen> {
+  ProfileContentFilter _filter = ProfileContentFilter.posts;
+
   @override
   bool get wantKeepAlive => true;
 
@@ -34,21 +38,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         title: const Text('Profile'),
         actions: <Widget>[
           IconButton(
-            tooltip: 'Account and security',
-            onPressed: () => context.push(AppRoutes.accountSecurity),
+            tooltip: 'Profile settings',
+            onPressed: () => context.push(AppRoutes.profileSettings),
             icon: const Icon(Icons.settings_outlined),
           ),
         ],
       ),
       body: profileValue.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stackTrace) => AdaptivePageBody(
-          slivers: const <Widget>[
+        error: (Object error, StackTrace stackTrace) => const AdaptivePageBody(
+          slivers: <Widget>[
             AppEmptyState(
               icon: Icons.person_off_outlined,
               title: 'Profile unavailable',
-              message:
-                  'Your profile could not be loaded. Check your connection and try again.',
+              message: 'Your profile could not be loaded. Try again shortly.',
             ),
           ],
         ),
@@ -65,160 +68,80 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               ],
             );
           }
-          return AdaptivePageBody(
-            maxWidth: 940,
-            slivers: <Widget>[
-              _ProfileHero(profile: profile),
-              const SizedBox(height: AppSpacing.lg),
-              Row(
-                children: <Widget>[
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () => context.push(
-                        AppRoutes.publicProfile(profile.usernameNormalized),
-                      ),
-                      icon: const Icon(Icons.visibility_outlined),
-                      label: const Text('View public profile'),
-                    ),
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(currentUserProfileProvider);
+              await ref.read(currentUserProfileProvider.future);
+            },
+            child: AdaptivePageBody(
+              maxWidth: 980,
+              restorationId: 'own_profile_scroll',
+              slivers: <Widget>[
+                ProfileHeader(
+                  profile: profile,
+                  isOwnProfile: true,
+                  onPrimaryAction: () => context.push(AppRoutes.editProfile),
+                  onSecondaryAction: () => _shareProfile(profile),
+                  onFollowers: () => context.push(
+                    AppRoutes.profileConnections(profile.uid, 'followers'),
                   ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => context.push(AppRoutes.accountSecurity),
-                      icon: const Icon(Icons.manage_accounts_outlined),
-                      label: const Text('Account settings'),
-                    ),
+                  onFollowing: () => context.push(
+                    AppRoutes.profileConnections(profile.uid, 'following'),
                   ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              const AppEmptyState(
-                icon: Icons.grid_view_rounded,
-                title: 'Your activity grid is empty',
-                message:
-                    'Posts, reels, activity, and saved collections will be organized here.',
-              ),
-            ],
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                SegmentedButton<ProfileContentFilter>(
+                  showSelectedIcon: false,
+                  segments: const <ButtonSegment<ProfileContentFilter>>[
+                    ButtonSegment<ProfileContentFilter>(
+                      value: ProfileContentFilter.posts,
+                      icon: Icon(Icons.grid_view_rounded),
+                      label: Text('Posts'),
+                    ),
+                    ButtonSegment<ProfileContentFilter>(
+                      value: ProfileContentFilter.reels,
+                      icon: Icon(Icons.smart_display_outlined),
+                      label: Text('Reels'),
+                    ),
+                    ButtonSegment<ProfileContentFilter>(
+                      value: ProfileContentFilter.saved,
+                      icon: Icon(Icons.bookmark_border_rounded),
+                      label: Text('Saved'),
+                    ),
+                    ButtonSegment<ProfileContentFilter>(
+                      value: ProfileContentFilter.reposted,
+                      icon: Icon(Icons.repeat_rounded),
+                      label: Text('Reposts'),
+                    ),
+                  ],
+                  selected: <ProfileContentFilter>{_filter},
+                  onSelectionChanged: (Set<ProfileContentFilter> value) {
+                    setState(() => _filter = value.first);
+                  },
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ProfileContentPanel(
+                  profileId: profile.uid,
+                  filter: _filter,
+                  onOpen: (String postId) =>
+                      context.push(AppRoutes.homePost(postId)),
+                ),
+              ],
+            ),
           );
         },
       ),
     );
   }
-}
 
-class _ProfileHero extends StatelessWidget {
-  const _ProfileHero({required this.profile});
-
-  final UserProfile profile;
-
-  @override
-  Widget build(BuildContext context) {
-    return PremiumSurface(
-      child: Column(
-        children: <Widget>[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              AppAvatar(
-                displayName: profile.displayName,
-                imageUrl: profile.avatarUrl,
-                radius: 46,
-              ),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Flexible(
-                          child: Text(
-                            profile.displayName,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.headlineMedium,
-                          ),
-                        ),
-                        if (profile.isVerified) ...<Widget>[
-                          const SizedBox(width: AppSpacing.xs),
-                          Icon(
-                            Icons.verified_rounded,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      '@${profile.username}',
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    if (profile.bio.isNotEmpty) ...<Widget>[
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(profile.bio),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: <Widget>[
-              _Stat(label: 'Posts', value: profile.postsCount),
-              _Stat(label: 'Followers', value: profile.followersCount),
-              _Stat(label: 'Following', value: profile.followingCount),
-            ],
-          ),
-          if (profile.favoriteSportIds.isNotEmpty) ...<Widget>[
-            const SizedBox(height: AppSpacing.lg),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Wrap(
-                spacing: AppSpacing.xs,
-                runSpacing: AppSpacing.xs,
-                children: profile.favoriteSportIds
-                    .map((String sport) => Chip(label: Text(_humanize(sport))))
-                    .toList(growable: false),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
+  Future<void> _shareProfile(UserProfile profile) async {
+    final String value = 'https://reemove.app/u/${profile.usernameNormalized}';
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Profile link copied.')));
   }
-}
-
-class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
-
-  final String label;
-  final int value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: <Widget>[
-          Text('$value', style: Theme.of(context).textTheme.titleLarge),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-String _humanize(String value) {
-  return value
-      .replaceAll(RegExp(r'[-_]'), ' ')
-      .split(RegExp(r'\s+'))
-      .where((String part) => part.isNotEmpty)
-      .map((String part) => '${part[0].toUpperCase()}${part.substring(1)}')
-      .join(' ');
 }

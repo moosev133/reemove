@@ -53,7 +53,7 @@ async function seedFirestore() {
     const db = context.firestore();
     await Promise.all([
       setDoc(doc(db, "users/public-user"), publicUser("public-user")),
-      setDoc(doc(db, "users/private-user"), publicUser("private-user", "private")),
+      setDoc(doc(db, "users/private-user"), publicUser("private-user", "followers")),
       setDoc(doc(db, "users/incomplete-user"), {
         ...publicUser("incomplete-user"),
         onboardingCompleted: false,
@@ -153,6 +153,25 @@ async function seedFirestore() {
       setDoc(doc(db, "story_views/reader--story-1"), {
         uid: "reader", storyId: "story-1", viewedAt: new Date("2026-07-13T12:00:00Z"), schemaVersion: 1,
       }),
+      setDoc(doc(db, "users/private-user/followers/approved-reader"), {
+        userId: "approved-reader",
+        createdAt: new Date("2026-07-13T12:00:00Z"),
+        updatedAt: new Date("2026-07-13T12:00:00Z"),
+        schemaVersion: 1,
+      }),
+      setDoc(doc(db, "follow_requests/reader--private-user"), {
+        requesterId: "reader", targetId: "private-user", status: "pending",
+        createdAt: new Date("2026-07-13T12:00:00Z"),
+        updatedAt: new Date("2026-07-13T12:00:00Z"), schemaVersion: 1,
+      }),
+      setDoc(doc(db, "verification_requests/public-user"), {
+        uid: "public-user", requestedType: "athlete", status: "pending",
+        legalName: "Public User", summary: "Competitive athlete identity review.",
+        evidence: [{storagePath: "verification/public-user/public-user/evidence.png", label: "Athlete ID"}],
+        submittedAt: new Date("2026-07-13T12:00:00Z"),
+        createdAt: new Date("2026-07-13T12:00:00Z"),
+        updatedAt: new Date("2026-07-13T12:00:00Z"), schemaVersion: 1,
+      }),
     ]);
   });
 }
@@ -167,12 +186,14 @@ describe("user profile rules", () => {
     await assertSucceeds(getDoc(doc(authenticated, "users/public-user")));
   });
 
-  it("allows only the owner to read a private profile", async () => {
+  it("allows only the owner or an approved follower to read a followers-only profile", async () => {
     await seedFirestore();
     const other = testEnv.authenticatedContext("other-user").firestore();
+    const follower = testEnv.authenticatedContext("approved-reader").firestore();
     const owner = testEnv.authenticatedContext("private-user").firestore();
 
     await assertFails(getDoc(doc(other, "users/private-user")));
+    await assertSucceeds(getDoc(doc(follower, "users/private-user")));
     await assertSucceeds(getDoc(doc(owner, "users/private-user")));
   });
 
@@ -196,12 +217,12 @@ describe("user profile rules", () => {
     }));
   });
 
-  it("prevents owners from changing server-owned counters", async () => {
+  it("keeps profile edits and counters behind trusted server mutations", async () => {
     await seedFirestore();
     const owner = testEnv.authenticatedContext("public-user").firestore();
     const profile = doc(owner, "users/public-user");
 
-    await assertSucceeds(updateDoc(profile, {
+    await assertFails(updateDoc(profile, {
       displayName: "Updated Name",
       updatedAt: serverTimestamp(),
     }));
@@ -240,6 +261,34 @@ describe("user profile rules", () => {
       goals: ["performance"],
       updatedAt: serverTimestamp(),
     }));
+  });
+});
+
+describe("profile relationship and verification rules", () => {
+  it("keeps follow edges and requests server-owned", async () => {
+    await seedFirestore();
+    const reader = testEnv.authenticatedContext("reader").firestore();
+
+    await assertFails(setDoc(doc(reader, "users/reader/following/public-user"), {
+      userId: "public-user", createdAt: serverTimestamp(), updatedAt: serverTimestamp(), schemaVersion: 1,
+    }));
+    await assertFails(setDoc(doc(reader, "follow_requests/reader--public-user"), {
+      requesterId: "reader", targetId: "public-user", status: "pending",
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp(), schemaVersion: 1,
+    }));
+    await assertFails(getDoc(doc(reader, "follow_requests/reader--private-user")));
+  });
+
+  it("exposes verification requests only to their owner or an administrator", async () => {
+    await seedFirestore();
+    const owner = testEnv.authenticatedContext("public-user").firestore();
+    const other = testEnv.authenticatedContext("reader").firestore();
+    const admin = testEnv.authenticatedContext("admin", {admin: true}).firestore();
+
+    await assertSucceeds(getDoc(doc(owner, "verification_requests/public-user")));
+    await assertFails(getDoc(doc(other, "verification_requests/public-user")));
+    await assertSucceeds(getDoc(doc(admin, "verification_requests/public-user")));
+    await assertFails(updateDoc(doc(owner, "verification_requests/public-user"), {status: "approved"}));
   });
 });
 

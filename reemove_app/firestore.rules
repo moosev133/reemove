@@ -48,6 +48,18 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/users/$(authorId)/followers/$(viewerId));
     }
 
+    function canReadUserProfile(uid, data) {
+      return signedIn()
+        && data.moderationState == 'active'
+        && !isBlocked(request.auth.uid, uid)
+        && (
+          request.auth.uid == uid
+          || data.visibility == 'public'
+          || (data.visibility == 'followers'
+            && follows(request.auth.uid, uid))
+        );
+    }
+
     function canReadPublishedContent(data) {
       return signedIn()
         && data.moderationState == 'active'
@@ -88,6 +100,10 @@ service cloud.firestore {
           'displayName',
           'bio',
           'avatarUrl',
+          'coverUrl',
+          'websiteUrl',
+          'primarySportId',
+          'professionalDetails',
           'role',
           'isVerified',
           'verificationType',
@@ -101,9 +117,11 @@ service cloud.firestore {
           'countryCode',
           'discoveryRadiusKm',
           'visibility',
+          'followApprovalPolicy',
           'followersCount',
           'followingCount',
           'postsCount',
+          'reelsCount',
           'onboardingCompleted',
           'createdAt',
           'updatedAt',
@@ -123,9 +141,11 @@ service cloud.firestore {
           'goals',
           'discoveryRadiusKm',
           'visibility',
+          'followApprovalPolicy',
           'followersCount',
           'followingCount',
           'postsCount',
+          'reelsCount',
           'onboardingCompleted',
           'moderationState',
           'createdAt',
@@ -156,9 +176,11 @@ service cloud.firestore {
         && data.discoveryRadiusKm >= 1
         && data.discoveryRadiusKm <= 200
         && data.visibility in ['public', 'followers', 'private']
+        && data.followApprovalPolicy in ['automatic', 'approvalRequired']
         && data.followersCount == 0
         && data.followingCount == 0
         && data.postsCount == 0
+        && data.reelsCount == 0
         && data.moderationState == 'active';
     }
 
@@ -191,21 +213,16 @@ service cloud.firestore {
     function validPrivateProfile(uid, documentId) {
       let data = request.resource.data;
       return isOwner(uid)
-        && documentId in ['profile', 'preferences', 'consents']
+        && documentId in ['profile', 'profile_settings', 'preferences', 'consents']
         && data.keys().size() <= 40
         && (!('uid' in data) || data.uid == uid)
         && data.updatedAt == request.time;
     }
 
     match /users/{uid} {
-      allow get: if isOwner(uid)
-        || (signedIn() && isPublicActive(resource.data));
-      allow list: if signedIn()
-        && isPublicActive(resource.data)
-        && request.query.limit <= 50;
-      allow create: if false;
-      allow update: if validPublicUserUpdate(uid);
-      allow delete: if false;
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin() && request.query.limit <= 100;
+      allow create, update, delete: if false;
 
       match /private/{documentId} {
         allow read: if isOwner(uid);
@@ -223,7 +240,8 @@ service cloud.firestore {
       }
 
       match /followers/{followerId} {
-        allow get: if signedIn();
+        allow get: if isOwner(uid)
+          || (signedIn() && request.auth.uid == followerId);
         allow list: if isOwner(uid) && request.query.limit <= 100;
         allow write: if false;
       }
@@ -241,6 +259,16 @@ service cloud.firestore {
     match /usernames/{username} {
       allow get: if true;
       allow list: if false;
+      allow write: if false;
+    }
+
+    match /follow_requests/{requestId} {
+      allow read, write: if false;
+    }
+
+    match /verification_requests/{uid} {
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin() && request.query.limit <= 100;
       allow write: if false;
     }
 
