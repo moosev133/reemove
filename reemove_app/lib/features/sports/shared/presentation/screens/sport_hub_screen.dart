@@ -159,9 +159,8 @@ class SportHubScreen extends ConsumerWidget {
               subtitle:
                   'Community and official goals for ${module.title.toLowerCase()}.',
               actionLabel: 'All challenges',
-              onAction: () => context.push(
-                AppRoutes.discoverCategory('challenges-$sportId'),
-              ),
+              onAction: () =>
+                  context.push(AppRoutes.challengesForSport(sportId)),
             ),
             const SizedBox(height: AppSpacing.md),
             challenges.when(
@@ -180,6 +179,8 @@ class SportHubScreen extends ConsumerWidget {
                             return SizedBox(
                               width: 330,
                               child: PremiumSurface(
+                                onTap: () =>
+                                    context.push(AppRoutes.challenge(item.id)),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: <Widget>[
@@ -250,6 +251,14 @@ class SportHubScreen extends ConsumerWidget {
                     unawaited(
                       context.push(AppRoutes.createSportEvent(sportId)),
                     );
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.emoji_events_rounded),
+                  title: const Text('Create challenge'),
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    unawaited(context.push(AppRoutes.createChallenge));
                   },
                 ),
                 ListTile(

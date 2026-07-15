@@ -47,6 +47,28 @@ abstract final class AppRoutes {
   static String sportsRoute(String routeId) =>
       '$nearby/routes/${_segment(routeId)}';
 
+  static const String challenges = '/discover/challenges';
+  static const String challengeRewards = '/discover/challenges/rewards';
+
+  static String challengesForSport(String sportId) => Uri(
+    path: challenges,
+    queryParameters: <String, String>{'sport': sportId},
+  ).toString();
+
+  static String challenge(String challengeId) =>
+      '$challenges/${_segment(challengeId)}';
+
+  static String submitChallengeProgress(String challengeId) =>
+      '${challenge(challengeId)}/submit';
+
+  static String reviewChallengeSubmissions(String challengeId) =>
+      '${challenge(challengeId)}/review';
+
+  static String challengeAlias(String challengeId) =>
+      '/ch/${_segment(challengeId)}';
+
+  static String get createChallenge => createFlow('challenge');
+
   static String sportHub(String sportId) => '/sports/${_segment(sportId)}';
 
   static String sportPlaces(String sportId) => '${sportHub(sportId)}/places';
@@ -146,6 +168,7 @@ abstract final class AppRoutes {
       '/u/',
       '/c/',
       '/s/',
+      '/ch/',
     ].any((String prefix) => path.startsWith(prefix));
   }
 
@@ -182,6 +205,12 @@ abstract final class AppRouteNames {
   static const String discoverCategory = 'discover-category';
   static const String nearby = 'nearby';
   static const String sportsRoute = 'sports-route';
+  static const String challenges = 'challenges';
+  static const String challenge = 'challenge';
+  static const String challengeRewards = 'challenge-rewards';
+  static const String submitChallengeProgress = 'submit-challenge-progress';
+  static const String reviewChallengeSubmissions =
+      'review-challenge-submissions';
   static const String sports = 'sports';
   static const String sportHub = 'sport-hub';
   static const String sportPlaces = 'sport-places';
@@ -216,4 +245,5 @@ abstract final class AppRouteNames {
   static const String profileAlias = 'profile-alias';
   static const String conversationAlias = 'conversation-alias';
   static const String sportAlias = 'sport-alias';
+  static const String challengeAlias = 'challenge-alias';
 }

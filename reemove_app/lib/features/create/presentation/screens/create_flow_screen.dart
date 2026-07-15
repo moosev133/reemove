@@ -4,6 +4,7 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/adaptive_page_body.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_page_header.dart';
+import '../../../challenges/presentation/screens/create_challenge_screen.dart';
 import '../../../feed/domain/entities/content_draft.dart';
 import '../../../feed/presentation/screens/content_composer_screen.dart';
 
@@ -22,6 +23,9 @@ class CreateFlowScreen extends StatelessWidget {
     };
     if (kind != null) {
       return ContentComposerScreen(kind: kind);
+    }
+    if (creationType == 'challenge') {
+      return const CreateChallengeScreen();
     }
     final String title = _titleFor(creationType);
     return Scaffold(

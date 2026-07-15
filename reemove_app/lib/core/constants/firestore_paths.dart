@@ -16,6 +16,9 @@ abstract final class FirestoreCollections {
   static const String routes = 'routes';
   static const String activities = 'activities';
   static const String challenges = 'challenges';
+  static const String challengeBadges = 'challenge_badges';
+  static const String challengeRewards = 'challenge_rewards';
+  static const String rewardClaims = 'reward_claims';
   static const String leaderboards = 'leaderboards';
   static const String badges = 'badges';
   static const String rewards = 'rewards';

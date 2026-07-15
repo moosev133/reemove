@@ -99,8 +99,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
               _CategoryCard(
                 icon: Icons.emoji_events_outlined,
                 title: 'Challenges',
-                onTap: () =>
-                    context.push(AppRoutes.discoverCategory('challenges')),
+                onTap: () => context.push(AppRoutes.challenges),
               ),
             ],
           ),

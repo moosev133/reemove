@@ -55,6 +55,36 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/teams/$(communityId)/members/$(request.auth.uid)).data.role in ['owner', 'administrator'];
     }
 
+    function canReadChallenge(challengeId) {
+      let data = get(
+        /databases/$(database)/documents/challenges/$(challengeId)
+      ).data;
+      return signedIn()
+        && (
+          isAdmin()
+          || data.creatorId == request.auth.uid
+          || (
+            isPublicActive(data)
+            && data.status in ['scheduled', 'active', 'completed']
+          )
+        );
+    }
+
+    function canManageChallenge(challengeId) {
+      let data = get(
+        /databases/$(database)/documents/challenges/$(challengeId)
+      ).data;
+      return signedIn()
+        && (
+          isAdmin()
+          || data.creatorId == request.auth.uid
+          || (
+            data.communityId is string
+            && isCommunityManager(data.communityId)
+          )
+        );
+    }
+
     function activeConversationMember(conversationId) {
       return signedIn()
         && exists(/databases/$(database)/documents/conversations/$(conversationId)/members/$(request.auth.uid))
@@ -267,6 +297,12 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /challenge_badges/{badgeId} {
+        allow get: if isOwner(uid);
+        allow list: if isOwner(uid) && request.query.limit <= 100;
+        allow write: if false;
+      }
+
       match /{subcollection}/{documentId} {
         allow read, write: if false;
       }
@@ -415,17 +451,85 @@ service cloud.firestore {
     }
 
     match /challenges/{challengeId} {
-      allow get: if signedIn() && isPublicActive(resource.data)
-        && resource.data.status in ['scheduled', 'active', 'completed'];
+      allow get: if signedIn()
+        && (
+          isAdmin()
+          || resource.data.creatorId == request.auth.uid
+          || (
+            isPublicActive(resource.data)
+            && resource.data.status in ['scheduled', 'active', 'completed']
+          )
+        );
       allow list: if signedIn()
         && isPublicActive(resource.data)
-        && resource.data.status in ['scheduled', 'active', 'completed']
+        && resource.data.status == 'active'
         && request.query.limit <= 50;
-      allow write: if isAdmin();
+      allow write: if false;
+
+      match /participants/{participantId} {
+        allow get: if isOwner(participantId)
+          || canManageChallenge(challengeId);
+        allow list: if signedIn()
+          && resource.data.userId == request.auth.uid
+          && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /leaderboard/{entryId} {
+        allow get: if canReadChallenge(challengeId);
+        allow list: if canReadChallenge(challengeId)
+          && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /submissions/{submissionId} {
+        allow get: if signedIn()
+          && (
+            resource.data.userId == request.auth.uid
+            || canManageChallenge(challengeId)
+          );
+        allow list: if canManageChallenge(challengeId)
+          && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /used_activities/{activityId} {
+        allow read, write: if false;
+      }
 
       match /{subcollection}/{documentId} {
         allow read, write: if false;
       }
+    }
+
+    match /challenge_badges/{badgeId} {
+      allow get: if signedIn() && resource.data.isActive == true;
+      allow list: if signedIn()
+        && resource.data.isActive == true
+        && request.query.limit <= 100;
+      allow write: if false;
+    }
+
+    match /challenge_rewards/{rewardId} {
+      allow get: if signedIn() && resource.data.isActive == true;
+      allow list: if signedIn()
+        && resource.data.isActive == true
+        && request.query.limit <= 100;
+      allow write: if false;
+    }
+
+    match /reward_claims/{claimId} {
+      allow get: if signedIn() && resource.data.userId == request.auth.uid;
+      allow list: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.query.limit <= 100;
+      allow write: if false;
+    }
+
+    match /{path=**}/participants/{participantId} {
+      allow list: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.query.limit <= 100;
     }
 
     match /marketplace_listings/{listingId} {

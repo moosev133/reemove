@@ -14,6 +14,11 @@ import '../../features/authentication/presentation/screens/forgot_password_scree
 import '../../features/authentication/presentation/screens/sign_in_screen.dart';
 import '../../features/authentication/presentation/screens/sign_up_screen.dart';
 import '../../features/authentication/presentation/screens/username_setup_screen.dart';
+import '../../features/challenges/presentation/screens/challenge_detail_screen.dart';
+import '../../features/challenges/presentation/screens/challenge_rewards_screen.dart';
+import '../../features/challenges/presentation/screens/challenge_submissions_screen.dart';
+import '../../features/challenges/presentation/screens/challenges_screen.dart';
+import '../../features/challenges/presentation/screens/submit_challenge_progress_screen.dart';
 import '../../features/create/presentation/screens/create_flow_screen.dart';
 import '../../features/create/presentation/screens/create_screen.dart';
 import '../../features/discover/presentation/screens/discover_category_screen.dart';
@@ -262,6 +267,71 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                                 ),
                               );
                             },
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'challenges',
+                    name: AppRouteNames.challenges,
+                    pageBuilder: (BuildContext context, GoRouterState state) {
+                      return MaterialPage<void>(
+                        key: state.pageKey,
+                        child: ChallengesScreen(
+                          sportId: state.uri.queryParameters['sport'],
+                        ),
+                      );
+                    },
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'rewards',
+                        name: AppRouteNames.challengeRewards,
+                        pageBuilder: _page(const ChallengeRewardsScreen()),
+                      ),
+                      GoRoute(
+                        path: ':challengeId',
+                        name: AppRouteNames.challenge,
+                        pageBuilder:
+                            (BuildContext context, GoRouterState state) {
+                              return MaterialPage<void>(
+                                key: state.pageKey,
+                                child: ChallengeDetailScreen(
+                                  challengeId:
+                                      state.pathParameters['challengeId'] ?? '',
+                                ),
+                              );
+                            },
+                        routes: <RouteBase>[
+                          GoRoute(
+                            path: 'submit',
+                            name: AppRouteNames.submitChallengeProgress,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) {
+                                  return MaterialPage<void>(
+                                    key: state.pageKey,
+                                    child: SubmitChallengeProgressScreen(
+                                      challengeId:
+                                          state.pathParameters['challengeId'] ??
+                                          '',
+                                    ),
+                                  );
+                                },
+                          ),
+                          GoRoute(
+                            path: 'review',
+                            name: AppRouteNames.reviewChallengeSubmissions,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) {
+                                  return MaterialPage<void>(
+                                    key: state.pageKey,
+                                    child: ChallengeSubmissionsScreen(
+                                      challengeId:
+                                          state.pathParameters['challengeId'] ??
+                                          '',
+                                    ),
+                                  );
+                                },
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -681,6 +751,12 @@ List<RouteBase> _aliasRoutes() {
       name: AppRouteNames.sportAlias,
       redirect: (BuildContext context, GoRouterState state) =>
           AppRoutes.sportHub(state.pathParameters['sportId'] ?? ''),
+    ),
+    GoRoute(
+      path: '/ch/:challengeId',
+      name: AppRouteNames.challengeAlias,
+      redirect: (BuildContext context, GoRouterState state) =>
+          AppRoutes.challenge(state.pathParameters['challengeId'] ?? ''),
     ),
   ];
 }

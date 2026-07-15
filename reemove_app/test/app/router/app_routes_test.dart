@@ -25,6 +25,25 @@ void main() {
         AppRoutes.sportsRoute('coastal loop'),
         '/discover/nearby/routes/coastal%20loop',
       );
+      expect(AppRoutes.challenges, '/discover/challenges');
+      expect(
+        AppRoutes.challengesForSport('trail running'),
+        '/discover/challenges?sport=trail+running',
+      );
+      expect(
+        AppRoutes.challenge('weekly 5k'),
+        '/discover/challenges/weekly%205k',
+      );
+      expect(
+        AppRoutes.submitChallengeProgress('weekly 5k'),
+        '/discover/challenges/weekly%205k/submit',
+      );
+      expect(
+        AppRoutes.reviewChallengeSubmissions('weekly 5k'),
+        '/discover/challenges/weekly%205k/review',
+      );
+      expect(AppRoutes.createChallenge, '/create/challenge');
+      expect(AppRoutes.isProtectedAlias('/ch/weekly-5k'), isTrue);
     });
 
     test('recognizes shell routes and protected aliases', () {

@@ -6,6 +6,23 @@ import {deleteAccount, retryAccountDeletions} from "./account/deleteAccount";
 import {provisionAccount} from "./account/provisionAccount";
 import {revokeSessions} from "./account/revokeSessions";
 import {syncAuthProviders} from "./account/syncAuthProviders";
+import {
+  claimChallengeRewards,
+  createChallenge,
+  getChallengeProofReviewUrl,
+  joinChallenge,
+  leaveChallenge,
+  reviewChallengeSubmission,
+  setChallengeReminder,
+  submitChallengeProgress,
+} from "./challenges/challenges";
+import {
+  finalizeExpiredChallenges,
+  generateWeeklyChallenges,
+  generateWeeklyChallengesNow,
+  refreshChallengeLeaderboards,
+  sendChallengeReminders,
+} from "./challenges/challengeAutomation";
 import {completeOnboarding} from "./onboarding/completeOnboarding";
 import {
   blockUser,
@@ -104,6 +121,19 @@ setGlobalOptions({
 
 export {
   deleteAccount,
+  createChallenge,
+  joinChallenge,
+  leaveChallenge,
+  submitChallengeProgress,
+  reviewChallengeSubmission,
+  setChallengeReminder,
+  claimChallengeRewards,
+  generateWeeklyChallenges,
+  generateWeeklyChallengesNow,
+  getChallengeProofReviewUrl,
+  refreshChallengeLeaderboards,
+  finalizeExpiredChallenges,
+  sendChallengeReminders,
   provisionAccount,
   retryAccountDeletions,
   revokeSessions,

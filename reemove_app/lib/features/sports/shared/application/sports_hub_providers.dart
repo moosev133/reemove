@@ -6,6 +6,7 @@ import '../../../../core/firebase/firebase_providers.dart';
 import '../../../../core/result/result.dart';
 import '../../../authentication/application/authentication_providers.dart';
 import '../../../authentication/domain/entities/auth_user.dart';
+import '../../../challenges/application/challenge_providers.dart';
 import '../../../challenges/domain/entities/challenge.dart';
 import '../data/repositories/firebase_sports_hub_repository.dart';
 import '../domain/entities/sport_community.dart';

@@ -4,6 +4,7 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/adaptive_page_body.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_page_header.dart';
+import '../../../challenges/presentation/screens/challenges_screen.dart';
 
 class DiscoverCategoryScreen extends StatelessWidget {
   const DiscoverCategoryScreen({required this.category, super.key});
@@ -12,6 +13,15 @@ class DiscoverCategoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (category == 'challenges') {
+      return const ChallengesScreen();
+    }
+    if (category.startsWith('challenges-')) {
+      return ChallengesScreen(
+        sportId: category.substring('challenges-'.length),
+      );
+    }
+
     final String title = category.isEmpty
         ? 'Explore'
         : '${category[0].toUpperCase()}${category.substring(1)}';

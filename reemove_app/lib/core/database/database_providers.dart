@@ -1,7 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/challenges/data/repositories/firebase_challenge_repository.dart';
-import '../../features/challenges/domain/repositories/challenge_repository.dart';
 import '../../features/marketplace/data/repositories/firebase_marketplace_catalog_repository.dart';
 import '../../features/marketplace/domain/repositories/marketplace_catalog_repository.dart';
 import '../../features/profile/data/repositories/firebase_user_profile_repository.dart';
@@ -33,13 +31,6 @@ final Provider<SportsCatalogRepository> sportsCatalogRepositoryProvider =
         sports: database.sports,
         places: database.places,
         events: database.events,
-      );
-    });
-
-final Provider<ChallengeRepository> challengeRepositoryProvider =
-    Provider<ChallengeRepository>((Ref ref) {
-      return FirebaseChallengeRepository(
-        ref.watch(reeMoveFirestoreProvider).challenges,
       );
     });
 
