@@ -151,6 +151,15 @@ import {
   rebuildSportLeaderboardsNow,
   refreshSportLeaderboards,
 } from "./sports/leaderboards";
+import {
+  aiCoach,
+  createSportsContent,
+  generateNutritionGuidance,
+  generateSafeChallenge,
+  generateWorkoutPlan,
+  getTrainerBusinessInsights,
+  rankPlayerMatches,
+} from "./ai/functions";
 import {callableOptions, primaryRegion} from "./core/functionOptions";
 
 initializeApp();
@@ -277,6 +286,13 @@ export {
   syncNearbyPerson,
   syncNearbyPersonPreferences,
   syncNearbyPersonPrivateProfile,
+  aiCoach,
+  generateWorkoutPlan,
+  generateNutritionGuidance,
+  rankPlayerMatches,
+  generateSafeChallenge,
+  createSportsContent,
+  getTrainerBusinessInsights,
 };
 
 export const healthCheck = onCall(callableOptions, async (request) => {

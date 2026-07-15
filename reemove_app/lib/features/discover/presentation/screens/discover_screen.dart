@@ -106,6 +106,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 title: 'Marketplace',
                 onTap: () => context.push(AppRoutes.marketplace),
               ),
+              _CategoryCard(
+                icon: Icons.smart_toy_outlined,
+                title: 'ReeMove AI',
+                onTap: () => context.push(AppRoutes.aiHub),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.xl),

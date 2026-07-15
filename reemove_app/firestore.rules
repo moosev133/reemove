@@ -338,6 +338,25 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /ai_outputs/{outputId} {
+        allow get: if isOwner(uid) || isAdmin();
+        allow list: if (isOwner(uid) || isAdmin()) && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /ai_conversations/{conversationId} {
+        allow get: if isOwner(uid) || isAdmin();
+        allow list: if (isOwner(uid) || isAdmin()) && request.query.limit <= 100;
+        allow write: if false;
+
+        match /messages/{messageId} {
+          allow get: if isOwner(uid) || isAdmin();
+          allow list: if (isOwner(uid) || isAdmin())
+            && request.query.limit <= 100;
+          allow write: if false;
+        }
+      }
+
       match /{subcollection}/{documentId} {
         allow read, write: if false;
       }
@@ -760,6 +779,22 @@ service cloud.firestore {
     match /notification_deliveries/{deliveryId} {
       allow get: if isAdmin()
         || (signedIn() && resource.data.recipientId == request.auth.uid);
+      allow list: if isAdmin() && request.query.limit <= 100;
+      allow write: if false;
+    }
+
+    match /ai_usage/{userId}/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /ai_audit_logs/{logId} {
+      allow get: if isAdmin();
+      allow list: if isAdmin() && request.query.limit <= 100;
+      allow write: if false;
+    }
+
+    match /trainer_metrics/{trainerId} {
+      allow get: if isOwner(trainerId) || isAdmin();
       allow list: if isAdmin() && request.query.limit <= 100;
       allow write: if false;
     }

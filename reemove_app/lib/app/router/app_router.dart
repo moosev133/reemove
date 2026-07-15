@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/app_error_view.dart';
+import '../../features/ai/presentation/screens/ai_hub_screen.dart';
+import '../../features/ai/presentation/screens/ai_module_form_screen.dart';
 import '../../features/authentication/application/authentication_providers.dart';
 import '../../features/authentication/domain/entities/auth_routing_state.dart';
 import '../../features/authentication/presentation/screens/account_blocked_screen.dart';
@@ -242,6 +244,83 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                     path: 'search',
                     name: AppRouteNames.discoverSearch,
                     pageBuilder: _page(const DiscoverSearchScreen()),
+                  ),
+                  GoRoute(
+                    path: 'ai',
+                    name: AppRouteNames.aiHub,
+                    pageBuilder: _page(const AiHubScreen()),
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'coach',
+                        name: AppRouteNames.aiCoach,
+                        pageBuilder: _page(
+                          const AiModuleFormScreen(
+                            kind: AiFormKind.coach,
+                            title: 'AI Coach',
+                          ),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'workout',
+                        name: AppRouteNames.aiWorkout,
+                        pageBuilder: _page(
+                          const AiModuleFormScreen(
+                            kind: AiFormKind.workout,
+                            title: 'Workout Generator',
+                          ),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'nutrition',
+                        name: AppRouteNames.aiNutrition,
+                        pageBuilder: _page(
+                          const AiModuleFormScreen(
+                            kind: AiFormKind.nutrition,
+                            title: 'Nutrition Guidance',
+                          ),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'matchmaker',
+                        name: AppRouteNames.aiMatchmaker,
+                        pageBuilder: _page(
+                          const AiModuleFormScreen(
+                            kind: AiFormKind.matchmaker,
+                            title: 'Player Matchmaker',
+                          ),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'challenge',
+                        name: AppRouteNames.aiChallenge,
+                        pageBuilder: _page(
+                          const AiModuleFormScreen(
+                            kind: AiFormKind.challenge,
+                            title: 'Challenge Generator',
+                          ),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'content',
+                        name: AppRouteNames.aiContent,
+                        pageBuilder: _page(
+                          const AiModuleFormScreen(
+                            kind: AiFormKind.content,
+                            title: 'Content Assistant',
+                          ),
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'trainer-insights',
+                        name: AppRouteNames.aiTrainerInsights,
+                        pageBuilder: _page(
+                          const AiModuleFormScreen(
+                            kind: AiFormKind.trainerInsights,
+                            title: 'Trainer Insights',
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   GoRoute(
                     path: 'category/:category',

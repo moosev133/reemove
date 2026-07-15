@@ -49,7 +49,7 @@ export const seedDocuments = [
   {
     path: "feature_flags/ai_coach",
     data: {
-      enabled: false,
+      enabled: true,
       rolloutPercentage: 0,
       allowedPlatforms: ["android", "ios", "web"],
       minimumBuild: 1,
@@ -1533,6 +1533,21 @@ export const seedDocuments = [
       successCount: 1,
       failureCount: 0,
       createdAt,
+      updatedAt: createdAt,
+      schemaVersion: currentSchemaVersion,
+    },
+  },
+  {
+    path: "trainer_metrics/demo-athlete",
+    data: {
+      uid: "demo-athlete",
+      role: "trainer",
+      activeClients: 12,
+      sessionsThisMonth: 28,
+      retentionRate: 0.82,
+      averageRating: 4.7,
+      revenueTrend: "stable",
+      topSports: ["gym", "running"],
       updatedAt: createdAt,
       schemaVersion: currentSchemaVersion,
     },

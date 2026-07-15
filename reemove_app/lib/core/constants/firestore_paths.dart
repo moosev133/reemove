@@ -36,6 +36,11 @@ abstract final class FirestoreCollections {
   static const String moderationQueue = 'moderation_queue';
   static const String aiRequests = 'ai_requests';
   static const String aiArtifacts = 'ai_artifacts';
+  static const String aiOutputs = 'ai_outputs';
+  static const String aiConversations = 'ai_conversations';
+  static const String aiUsage = 'ai_usage';
+  static const String aiAuditLogs = 'ai_audit_logs';
+  static const String trainerMetrics = 'trainer_metrics';
   static const String feedEntries = 'feed_entries';
   static const String contentReactions = 'content_reactions';
   static const String reposts = 'reposts';

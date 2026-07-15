@@ -62,6 +62,13 @@ class ProfileSettingsScreen extends ConsumerWidget {
                   subtitle: 'Review and unblock accounts',
                   onTap: () => context.push(AppRoutes.blockedProfiles),
                 ),
+                const Divider(height: 1),
+                _SettingsTile(
+                  icon: Icons.smart_toy_outlined,
+                  title: 'ReeMove AI',
+                  subtitle: 'Coach, plans, matchmaker, and content tools',
+                  onTap: () => context.push(AppRoutes.aiHub),
+                ),
               ],
             ),
           ),

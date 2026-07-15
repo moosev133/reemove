@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -59,6 +61,12 @@ class _CreateScreenState extends State<CreateScreen>
         description: 'List sports equipment for the ReeMove community.',
         icon: Icons.sell_outlined,
       ),
+      _CreationOption(
+        id: 'ai_content',
+        title: 'Content Assistant',
+        description: 'Draft captions and post ideas with ReeMove AI.',
+        icon: Icons.edit_note_rounded,
+      ),
     ];
     return Scaffold(
       appBar: AppBar(title: const Text('Create')),
@@ -85,8 +93,15 @@ class _CreateScreenState extends State<CreateScreen>
                         width: width,
                         child: _CreationCard(
                           option: option,
-                          onTap: () =>
+                          onTap: () {
+                            if (option.id == 'ai_content') {
+                              unawaited(context.push(AppRoutes.aiContent));
+                              return;
+                            }
+                            unawaited(
                               context.push(AppRoutes.createFlow(option.id)),
+                            );
+                          },
                         ),
                       ),
                     )

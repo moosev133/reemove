@@ -15,7 +15,7 @@
 | 11 | Challenges | **Complete in this package** | Weekly/community/AI challenges and rewards |
 | 12 | Marketplace | **Complete in this package** | Listings, filters, seller profiles, favorites, chat |
 | 13 | Notifications | **Complete in this package** | FCM, inbox, preferences, deep links |
-| 14 | AI modules | Planned | Seven AI feature families behind a typed gateway |
+| 14 | AI modules | **Complete in this package** | Coach, workout, nutrition, matchmaker, challenges, content, trainer insights |
 | 15 | Testing | Planned | Full automated, security, performance, accessibility hardening |
 | 16 | Deployment | Planned | Store releases, CI/CD, staged rollout, operations |
 

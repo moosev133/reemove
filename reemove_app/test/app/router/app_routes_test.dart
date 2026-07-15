@@ -68,6 +68,9 @@ void main() {
       expect(AppRoutes.myMarketplaceListings, '/profile/marketplace');
       expect(AppRoutes.isProtectedAlias('/m/listing-1'), isTrue);
       expect(AppRoutes.notificationSettings, '/home/activity/settings');
+      expect(AppRoutes.aiHub, '/discover/ai');
+      expect(AppRoutes.aiCoach, '/discover/ai/coach');
+      expect(AppRoutes.aiMatchmaker, '/discover/ai/matchmaker');
     });
 
     test('recognizes shell routes and protected aliases', () {
