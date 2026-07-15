@@ -195,10 +195,58 @@ The checked-in rules remain deny-by-default. Each later phase must extend rules 
 
 ## Cumulative implementation status
 
-Typed converters and repositories are implemented for `users`, `sports`, `places`, `events`, `challenges`, `marketplace_listings`, `app_config`, and `feature_flags`. Phase 3 additionally implements server-owned `usernames`, user-private `profile` and `consents` documents, `account_deletions`, authentication `audit_logs`, and transactional `rate_limits`. Phase 4 implements user-private `onboarding` and `preferences`, trusted personalization writes, and the coarse-public/exact-private location split. Other cataloged collections remain intentionally denied until their feature phase adds complete code, rules, indexes, and tests.
+Typed converters and repositories are implemented for `users`, `sports`, `places`, `events`, `challenges`, `marketplace_listings`, `app_config`, and `feature_flags`. Phase 3 additionally implements server-owned `usernames`, user-private `profile` and `consents` documents, `account_deletions`, authentication `audit_logs`, and transactional `rate_limits`. Phase 4 implements user-private `onboarding` and `preferences`, trusted personalization writes, and the coarse-public/exact-private location split. Phase 5 reuses the server-owned `usernames` index for direct public-profile link resolution. Phase 6 implements posts, comments, stories, feed entries, private reactions/views, reposts, media assets/jobs, and reciprocal block indexes. Other cataloged collections remain intentionally denied until their feature phase adds complete code, rules, indexes, and tests.
 
 Current schema version: `1`.
 
-Current deterministic seed dataset: `2026-07-13.phase4.v1`.
+Current deterministic seed dataset: `2026-07-13.phase6.v1`.
 
-See `DATABASE_IMPLEMENTATION.md`, `AUTHENTICATION_IMPLEMENTATION.md`, `ONBOARDING_IMPLEMENTATION.md`, `DATA_MIGRATIONS.md`, and the phase completion reports for executable details.
+See `DATABASE_IMPLEMENTATION.md`, `AUTHENTICATION_IMPLEMENTATION.md`, `ONBOARDING_IMPLEMENTATION.md`, `FEED_IMPLEMENTATION.md`, `DATA_MIGRATIONS.md`, and the phase completion reports for executable details.
+
+## Phase 6 social-content collections
+
+### `posts/{postId}`
+
+`authorId`, trusted `authorSnapshot`, `kind` (`post`/`reel`), `caption`, trusted `media[]`, normalized `hashtags[]`, `mentions[]`, optional `sportId` and `locationLabel`, `visibility`, `moderationState`, `status` (`processing`/`published`), `allowComments`, server-owned engagement counters, `rankingScore`, fan-out completion fields, timestamps, and `schemaVersion`.
+
+### `posts/{postId}/comments/{commentId}`
+
+`postId`, `authorId`, trusted `authorSnapshot`, normalized `text`, optional `parentCommentId`, `likeCount`, `replyCount`, `isDeleted`, `moderationState`, timestamps, and `schemaVersion`.
+
+### `stories/{storyId}`
+
+`authorId`, trusted `authorSnapshot`, trusted `media`, optional caption/sport, `visibility`, `moderationState`, server-owned `viewCount`, `createdAt`, `updatedAt`, `expiresAt`, and `schemaVersion`.
+
+### `feed_entries/{recipientId}--{postId}`
+
+`recipientId`, `postId`, `authorId`, source, ranking score, publication timestamp, creation timestamp, and schema version. Client writes are denied.
+
+### Private interaction documents
+
+- `content_reactions/{uid}--{postId}`: liked/saved/reposted state.
+- `comment_reactions/{uid}--{commentId}`: comment-like state.
+- `story_views/{uid}--{storyId}`: unique story view.
+- `post_views/{uid}--{postId}`: unique post view, server-only.
+- `reposts/{uid}--{postId}`: persistent server-owned repost record.
+
+### Media processing
+
+- `media_assets/{assetId}`: owner, draft, current trusted Storage object, kind, processing state, download/thumbnail metadata, linked content path, and timestamps.
+- `media_jobs/{assetId}`: input path, owner, linked content path, queue state, attempts, dispatch/completion metadata, and errors.
+
+### User safety subcollections
+
+- `users/{uid}/blocks/{targetUid}`: accounts this user blocked.
+- `users/{uid}/blocked_by/{blockerUid}`: reciprocal private visibility index.
+
+Both indexes are readable only by their owning user and writable only by trusted backend code.
+
+## Phase 6 Storage layout
+
+```text
+content/{uid}/{draftId}/{assetId}/{filename}      # owner-only draft read/write
+processed/{uid}/{assetId}/{filename}              # authenticated read, server-only write
+processed_content/{uid}/{assetId}/{filename}      # supported legacy processor prefix
+```
+
+Draft objects bind `ownerId`, `draftId`, `assetId`, media kind, MIME type, size, and schema version in Storage metadata. The publishing Function independently re-reads that metadata before creating content.

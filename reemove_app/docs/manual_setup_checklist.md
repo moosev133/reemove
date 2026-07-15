@@ -26,6 +26,9 @@ Pending configuration that must be completed outside Git before Firebase-backed 
 - [ ] Host `docs/app_links/assetlinks.json` and `apple-app-site-association.json` on the verified HTTPS link host
 - [ ] Replace SHA-256 fingerprints and Apple Team ID placeholders in app-link verification files
 - [ ] Enable Android App Links / iOS Associated Domains for the production link host
+- [ ] Deploy Phase 6 feed Functions, Firestore rules/indexes, and Storage rules (posts, stories, feed_entries, reactions, media paths)
+- [ ] Configure media processor secrets/URLs (`MEDIA_PROCESSOR_URL`, `MEDIA_PROCESSOR_CALLBACK_URL`, `MEDIA_PROCESSOR_SECRET`) — see `docs/MEDIA_PROCESSING_SETUP.md`
+- [ ] Optionally seed emulator feed fixtures (posts, reels, stories, comments, reactions)
 
 ## Do not commit
 

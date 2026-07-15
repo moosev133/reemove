@@ -171,3 +171,25 @@ The callable Functions are the only write path for the private draft and trusted
 - `configure_deep_links.py` — idempotent Android/iOS native-link configuration
 
 No new privileged backend service is introduced in Phase 5. Existing Authentication and Firestore authorization remain the source of truth for route access.
+
+## Phase 6 implemented feed, media, and safety services
+
+- `FeedRepository` / `FirebaseFeedRepository`
+- `PostInteractionRepository` / `FirebasePostInteractionRepository`
+- `StoryRepository` / `FirebaseStoryRepository`
+- `ContentPublishingRepository` / `FirebaseContentPublishingRepository`
+- `ContentDraftRepository` / `SharedPreferencesContentDraftRepository`
+- `ContentMediaPicker` / `PlatformContentMediaPicker`
+- `FeedController` Riverpod `AsyncNotifier`
+- `publishPost` and `publishStory` callable Functions
+- `togglePostReaction`, `createPostComment`, `deletePostComment`, and `toggleCommentLike` callable Functions
+- `recordPostView`, `markStoryViewed`, and `deleteStory` callable Functions
+- `reportContent` and `blockUser` callable Functions
+- `fanoutPublishedPost` Firestore trigger
+- `onContentUpload` Storage trigger
+- `processQueuedMedia` scheduled dispatcher
+- `completeMediaProcessing` authenticated HTTP callback
+- `expireStories` scheduled cleanup
+- `contentRankingScore` and publishing/text policy modules
+
+The application never writes trusted social counters, moderation state, reaction records, repost records, feed entries, media assets, or processing jobs directly.

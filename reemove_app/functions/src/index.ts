@@ -7,6 +7,25 @@ import {provisionAccount} from "./account/provisionAccount";
 import {revokeSessions} from "./account/revokeSessions";
 import {syncAuthProviders} from "./account/syncAuthProviders";
 import {completeOnboarding} from "./onboarding/completeOnboarding";
+import {
+  blockUser,
+  createPostComment,
+  deletePostComment,
+  deleteStory,
+  markStoryViewed,
+  recordPostView,
+  reportContent,
+  toggleCommentLike,
+  togglePostReaction,
+} from "./feed/interactions";
+import {publishPost, publishStory} from "./feed/publishContent";
+import {fanoutPublishedPost} from "./feed/fanout";
+import {
+  completeMediaProcessing,
+  expireStories,
+  onContentUpload,
+  processQueuedMedia,
+} from "./media/mediaProcessing";
 import {saveOnboardingProgress} from "./onboarding/saveOnboardingProgress";
 import {callableOptions, primaryRegion} from "./core/functionOptions";
 
@@ -24,6 +43,22 @@ export {
   syncAuthProviders,
   saveOnboardingProgress,
   completeOnboarding,
+  publishPost,
+  publishStory,
+  fanoutPublishedPost,
+  togglePostReaction,
+  createPostComment,
+  toggleCommentLike,
+  deletePostComment,
+  recordPostView,
+  markStoryViewed,
+  deleteStory,
+  reportContent,
+  blockUser,
+  onContentUpload,
+  processQueuedMedia,
+  completeMediaProcessing,
+  expireStories,
 };
 
 export const healthCheck = onCall(callableOptions, async (request) => {

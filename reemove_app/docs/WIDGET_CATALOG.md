@@ -122,3 +122,17 @@ The flow also includes reusable privacy cards, review tiles, permission recovery
 88. `AppSectionHeader` — reusable section title and action row
 
 The six branch screens use these components rather than embedding navigation chrome or responsive thresholds inside feature widgets.
+
+## Phase 6 implemented social-content components
+
+89. `FeedPostCard` — identity, caption, media, counters, audience, and actions
+90. `PostMediaGallery` — image/video carousel with page indicators
+91. `NetworkMediaImage` — cached image, loading, and failure states
+92. `InlineVideoPlayer` — lifecycle-aware network playback and controls
+93. `StoryRail` — unseen-first grouped story entry
+94. `CommentsBottomSheet` — pagination, optimistic comment likes, and composer
+95. `ContentActionsSheet` — report and reciprocal block flow
+96. `FeedLoadingSkeleton` — feed loading state
+97. `RelativeTime` — bounded human-readable timestamps
+
+`ContentComposerScreen`, `ReelsScreen`, and `StoryViewerScreen` are feature screens rather than reusable widgets. Media surfaces have explicit loading, processing, error, and empty states.

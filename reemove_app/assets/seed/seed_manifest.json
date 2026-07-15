@@ -1,9 +1,17 @@
 {
-  "datasetVersion": "2026-07-13.phase4.v1",
+  "datasetVersion": "2026-07-13.phase6.v1",
   "schemaVersion": 1,
-  "authEmulatorUsers": 2,
-  "demoUids": ["demo-athlete", "demo-newcomer"],
-  "sports": ["football", "gym", "running"],
+  "authEmulatorUsers": 3,
+  "demoUids": [
+    "demo-athlete",
+    "demo-newcomer",
+    "demo-runner"
+  ],
+  "sports": [
+    "football",
+    "gym",
+    "running"
+  ],
   "collections": [
     "app_config",
     "feature_flags",
@@ -14,8 +22,27 @@
     "events",
     "challenges",
     "marketplace_listings",
+    "posts",
+    "feed_entries",
+    "content_reactions",
+    "stories",
     "data_migrations"
   ],
-  "privateUserDocuments": ["profile", "consents", "preferences", "onboarding"],
-  "serverOnlyCollections": ["account_deletions", "audit_logs", "rate_limits"]
+  "privateUserDocuments": [
+    "profile",
+    "consents",
+    "preferences",
+    "onboarding"
+  ],
+  "serverOnlyCollections": [
+    "account_deletions",
+    "audit_logs",
+    "rate_limits",
+    "reposts",
+    "comment_reactions",
+    "story_views",
+    "post_views",
+    "media_assets",
+    "media_jobs"
+  ]
 }

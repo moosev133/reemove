@@ -138,3 +138,19 @@ A complete store-specific operational runbook is delivered in Phase 16.
 - Test signed-out links through sign-in, verification, username setup, and onboarding.
 - Verify private/removed resources show a safe unavailable state.
 - Verify tab stacks and scroll positions survive branch switching and process restoration.
+
+## Phase 6 social feed and media release gates
+
+- Complete `docs/MEDIA_PROCESSING_SETUP.md` for every environment that permits video publishing.
+- Store `MEDIA_PROCESSOR_SECRET` only in the platform secret manager and rotate it after any exposure.
+- Configure processor and callback URLs; verify the callback is HTTPS and points to the intended project/region.
+- Confirm the processor can read originals and write only to the derived `processed/{uid}/{assetId}/` prefix.
+- Deploy Firestore indexes before enabling feed/reel queries in production.
+- Configure Firestore TTL or scheduled cleanup for expired stories, rate limits, and obsolete processing records where appropriate.
+- Test public, followers, and private content with both block directions.
+- Test image, carousel, video, failed video, oversized media, MIME mismatch, interrupted upload, retry, and app-restart draft recovery.
+- Test feed pagination with identical scores/timestamps and verify no duplicate or skipped content.
+- Verify only one unique view is counted per authenticated user and content.
+- Verify clients cannot write counters, reactions, comments, stories, posts, feed entries, reposts, media assets, or jobs directly.
+- Monitor media queue age, dispatch failures, callback failures, processing latency, report volume, and block/error rates.
+- Review download-URL/CDN policy before private/followers content is exposed to production users. Move to short-lived authorized delivery if the product's privacy threat model requires non-shareable media URLs.

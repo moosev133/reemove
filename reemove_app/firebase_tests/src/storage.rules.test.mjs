@@ -93,3 +93,70 @@ describe("processed media rules", () => {
     await assertFails(getBytes(ref(unauthenticated, "users/alice/avatar/avatar.png")));
   });
 });
+
+describe("social content upload rules", () => {
+  const contentMetadata = {
+    contentType: "image/png",
+    customMetadata: {
+      ownerId: "alice",
+      draftId: "draft-1",
+      assetId: "asset-1",
+      kind: "image",
+      schemaVersion: "1",
+    },
+  };
+
+  it("allows only the owner to read, upload, and delete a draft asset", async () => {
+    const storage = testEnv.authenticatedContext("alice").storage();
+    const asset = ref(storage, "content/alice/draft-1/asset-1/photo.png");
+    await assertSucceeds(uploadBytes(asset, bytes, contentMetadata));
+    await assertSucceeds(getBytes(asset));
+    const other = testEnv.authenticatedContext("bob").storage();
+    await assertFails(
+      getBytes(ref(other, "content/alice/draft-1/asset-1/photo.png")),
+    );
+    await assertSucceeds(deleteObject(asset));
+  });
+
+  it("rejects ownership, path metadata, and media-kind mismatches", async () => {
+    const bob = testEnv.authenticatedContext("bob").storage();
+    await assertFails(uploadBytes(
+      ref(bob, "content/alice/draft-1/asset-1/photo.png"),
+      bytes,
+      contentMetadata,
+    ));
+
+    const alice = testEnv.authenticatedContext("alice").storage();
+    await assertFails(uploadBytes(
+      ref(alice, "content/alice/draft-2/asset-1/photo.png"),
+      bytes,
+      contentMetadata,
+    ));
+    await assertFails(uploadBytes(
+      ref(alice, "content/alice/draft-1/asset-1/photo.png"),
+      bytes,
+      {
+        ...contentMetadata,
+        customMetadata: {...contentMetadata.customMetadata, kind: "video"},
+      },
+    ));
+  });
+
+  it("keeps processed variants server-owned", async () => {
+    const storage = testEnv.authenticatedContext("alice").storage();
+    const metadata = {
+      contentType: "video/mp4",
+      customMetadata: {ownerId: "alice", schemaVersion: "1"},
+    };
+    await assertFails(uploadBytes(
+      ref(storage, "processed_content/alice/asset-1/output.mp4"),
+      bytes,
+      metadata,
+    ));
+    await assertFails(uploadBytes(
+      ref(storage, "processed/alice/asset-1/output.mp4"),
+      bytes,
+      metadata,
+    ));
+  });
+});

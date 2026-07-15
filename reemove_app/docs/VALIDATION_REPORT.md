@@ -1,4 +1,4 @@
-# Validation report — Phase 5
+# Validation report — Phase 6
 
 Validation date: 2026-07-13
 
@@ -8,49 +8,57 @@ Validation date: 2026-07-13
 - Relative Dart import resolution.
 - Clean Architecture boundary validation preventing Firebase SDK types from leaking into domain files.
 - Shell and Python syntax validation.
-- Native Android/iOS deep-link configurator fixture test.
-- Deep-link configurator idempotency on a second run.
+- Native Android/iOS deep-link configurator fixture and idempotency tests.
 - Firebase Rules test-source JavaScript syntax validation.
 - Cloud Functions ESLint.
 - Cloud Functions strict TypeScript compilation.
-- Cloud Functions/Auth/Firestore seed compilation.
-- Backend unit tests: **15 passed**.
+- Cloud Functions seed compilation.
+- Backend policy tests: **22 passed**.
+  - 7 content publishing, text, and feed-ranking tests.
   - 4 onboarding age/geospatial policy tests.
   - 3 onboarding request-parser tests.
   - 4 username/display-name policy tests.
   - 4 recent-authentication-window tests.
-- Dart tree-sitter grammar parse: **168 files passed** with no syntax-error nodes.
-- Navigation destination ordering and route-contract source review.
-- Stateful branch navigator-key and restoration-scope review.
-- Guarded internal `returnTo` sanitization review.
-- Username-based profile-resolution boundary review.
+- Dart tree-sitter grammar parse: **212 files passed** with no syntax-error or missing-token nodes.
+- Feed cursor/query/index source alignment review.
+- Missing-reaction document authorization review.
+- Reciprocal block-index and direct-access policy review.
+- Draft upload ownership, MIME, size, metadata, and processor-prefix review.
+- Media job dispatch and authenticated callback ownership review.
 - Source/configuration dependency and naming consistency review.
+- Package-lock files are present for Functions and Rules tests.
 
-## Phase 5 behavior represented by tests
+## Phase 6 behavior represented by tests and source checks
 
-- The six destinations retain the specification order: Home, Discover, Sports, Create, Messages, and Profile.
-- Route helpers generate canonical nested and short-link paths.
-- External, malformed, and non-protected return targets are rejected.
-- Navigation badge totals are bounded and display values are capped safely.
-- Native link declarations can be applied repeatedly without duplicate entries.
-- Public profile links resolve through the server-owned username reservation index rather than an unrestricted username query.
+- Publishing rejects invalid media combinations, unsafe text, excessive media, invalid story content, and malformed hashtags/mentions.
+- Ranking is deterministic and clamps negative or invalid counters.
+- Clients cannot directly create or update posts, stories, comments, reactions, reposts, feed entries, media assets, media jobs, or trusted counters.
+- Existing and missing viewer reaction/view documents use UID-prefixed deterministic IDs.
+- Public, private, processing, removed, and expired content policies are represented in Security Rules tests.
+- Blocked users lose direct post/story access in either direction; reciprocal block indexes remain private.
+- Public list queries remain bounded and application-side block filtering prevents blocked accounts from rendering.
+- Draft uploads require owner/path-bound metadata and are readable only by the owner.
+- Both supported processed-media prefixes deny client writes.
+- Seed data covers image posts, carousel content, a reel, comments, reactions, following feed entries, and a story.
 
 ## Firebase Rules emulator result
 
-`npm run test:rules` was executed. Firebase CLI started the Firestore and Storage emulator workflow, but the Firestore emulator binary could not be downloaded in this environment. The emulator assertions therefore did **not** execute here.
+`npm run test:rules` was executed. Firebase CLI began the Firestore and Storage emulator workflow, but this environment could not download:
 
-The Rules source, test source, package lock, ports, and CI wiring are present. Run the suite on a development or CI machine with Firebase emulator binaries available:
+```text
+cloud-firestore-emulator-v1.21.0.jar
+```
+
+The executable emulator assertions therefore did **not** run here. The Rules source, expanded test suite, package lock, ports, indexes, and CI wiring are included. Run before staging:
 
 ```bash
 npm --prefix firebase_tests ci
 npm run test:rules
 ```
 
-Phase 5 introduces no new client-writable collection; the Rules suite remains the cumulative policy suite from Phases 2–4.
-
 ## Flutter SDK limitation
 
-The Flutter/Dart SDK and generated Android/iOS/web projects are unavailable in this execution environment, so these commands were not run here:
+The Flutter/Dart SDK and generated native projects are unavailable in this execution environment. These required commands were not run here:
 
 ```bash
 flutter pub get
@@ -62,13 +70,17 @@ flutter build ipa
 flutter build web
 ```
 
-Tree-sitter grammar parsing is not a replacement for Flutter package resolution, analyzer type checking, widget tests, integration tests, accessibility testing, or native builds. All remain mandatory before staging.
+Tree-sitter grammar parsing is not a substitute for package resolution, analyzer type checking, widget/integration tests, accessibility testing, or native builds.
 
 ## Dependency audit
 
-- `firebase_tests`: 0 known vulnerabilities.
-- `functions` production dependency tree: 9 moderate, 0 high, and 0 critical advisories.
-- No forced major dependency upgrade was applied solely to silence transitive advisories. Re-evaluate Firebase Admin and Functions dependencies during release hardening.
+- `firebase_tests`: **0 known vulnerabilities**.
+- `functions` production dependency tree: **9 moderate, 0 high, and 0 critical** advisories.
+- No forced major dependency upgrade was applied solely to silence transitive advisories. Re-evaluate the Firebase Admin/Functions dependency tree during release hardening.
+
+## Media infrastructure limitation
+
+The external video processor is represented by a complete authenticated dispatch/callback contract, but no third-party processor endpoint or cloud account credential is committed. Video processing must be deployed and tested using `MEDIA_PROCESSING_SETUP.md` before enabling video publishing in staging or production.
 
 ## Reproduction commands
 
@@ -85,4 +97,4 @@ flutter analyze
 flutter test --coverage
 ```
 
-Deployment remains blocked until Flutter analysis/tests, native device builds, and the complete emulator Rules suite pass on a properly equipped machine.
+Deployment remains blocked until Flutter analysis/tests, physical-device media tests, native builds, the complete emulator Rules suite, and the external media processor integration pass in staging.

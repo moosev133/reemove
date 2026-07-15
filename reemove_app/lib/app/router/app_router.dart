@@ -19,6 +19,8 @@ import '../../features/create/presentation/screens/create_screen.dart';
 import '../../features/discover/presentation/screens/discover_category_screen.dart';
 import '../../features/discover/presentation/screens/discover_screen.dart';
 import '../../features/discover/presentation/screens/discover_search_screen.dart';
+import '../../features/feed/presentation/screens/reels_screen.dart';
+import '../../features/feed/presentation/screens/story_viewer_screen.dart';
 import '../../features/home/presentation/screens/activity_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/home/presentation/screens/post_deep_link_screen.dart';
@@ -160,6 +162,23 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                         key: state.pageKey,
                         child: PostDeepLinkScreen(
                           postId: state.pathParameters['postId'] ?? '',
+                        ),
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'reels',
+                    name: AppRouteNames.reels,
+                    pageBuilder: _page(const ReelsScreen()),
+                  ),
+                  GoRoute(
+                    path: 'stories/:authorId',
+                    name: AppRouteNames.storyGroup,
+                    pageBuilder: (BuildContext context, GoRouterState state) {
+                      return MaterialPage<void>(
+                        key: state.pageKey,
+                        child: StoryViewerScreen(
+                          authorId: state.pathParameters['authorId'] ?? '',
                         ),
                       );
                     },

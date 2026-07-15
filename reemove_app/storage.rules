@@ -48,6 +48,38 @@ service firebase.storage {
         && resource.metadata.ownerId == uid;
     }
 
+    match /content/{uid}/{draftId}/{assetId}/{filename} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.size > 0
+        && request.resource.size < 150 * 1024 * 1024
+        && isImageOrVideo()
+        && validOwnerMetadata(uid)
+        && request.resource.metadata.draftId == draftId
+        && request.resource.metadata.assetId == assetId
+        && request.resource.metadata.kind in ['image', 'video']
+        && ((request.resource.metadata.kind == 'image'
+              && request.resource.contentType.matches('image/.*')
+              && request.resource.size < 15 * 1024 * 1024)
+          || (request.resource.metadata.kind == 'video'
+              && request.resource.contentType.matches('video/.*')));
+      allow update: if false;
+      allow delete: if isOwner(uid)
+        && resource.metadata.ownerId == uid
+        && resource.metadata.draftId == draftId
+        && resource.metadata.assetId == assetId;
+    }
+
+    match /processed_content/{uid}/{assetId}/{filename} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    match /processed/{uid}/{assetId}/{filename} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
     match /posts/{uid}/{postId}/original/{assetId} {
       allow read: if signedIn();
       allow create: if isOwner(uid)

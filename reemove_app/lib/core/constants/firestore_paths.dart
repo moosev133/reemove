@@ -24,6 +24,12 @@ abstract final class FirestoreCollections {
   static const String aiRequests = 'ai_requests';
   static const String aiArtifacts = 'ai_artifacts';
   static const String feedEntries = 'feed_entries';
+  static const String contentReactions = 'content_reactions';
+  static const String reposts = 'reposts';
+  static const String commentReactions = 'comment_reactions';
+  static const String storyViews = 'story_views';
+  static const String mediaAssets = 'media_assets';
+  static const String mediaJobs = 'media_jobs';
   static const String searchDocuments = 'search_documents';
   static const String appConfig = 'app_config';
   static const String featureFlags = 'feature_flags';

@@ -113,5 +113,6 @@ The specification defines **16 mandatory development phases**. Each phase has a 
 - Phase 3: complete.
 - Phase 4: complete.
 - Phase 5: complete.
+- Phase 6: complete.
 
-Phase 5 ships the adaptive six-destination application shell, separate stateful branch navigators, guarded return-to routing, stable nested route contracts, username-based profile links, navigation badges, and repeatable Android/iOS deep-link configuration. Phase 6 begins with the complete social feed and publishing pipeline.
+Phase 6 ships ranked and following feeds, pagination, cache-aware reads, posts, carousels, reels, stories, comments, optimistic reactions, persistent reposts, reports, reciprocal blocking, trusted publishing, and the media-processing contract. Phase 7 begins the complete profile, follow-graph, verification, and profile-settings implementation.

@@ -124,3 +124,23 @@ When an account gate interrupts a protected link, the requested relative route i
 ## ADR-031: Native link configuration is generated after Flutter bootstrap
 
 Android and iOS folders are still generated locally. `configure_deep_links.py` applies verified HTTPS links, the custom scheme, associated-domain entitlements, and Flutter metadata idempotently after generation. Domain-verification files remain explicit deployment artifacts because signing identities are environment-owned secrets/configuration.
+
+## ADR-032: Social counters and publication state are server-owned
+
+Clients upload media but cannot create posts, stories, comments, reactions, feed entries, reposts, view records, or counters directly. Callable Functions revalidate identity, profile state, media ownership, text, audience, and rate limits, then mutate counters transactionally. This prevents modified clients from manufacturing engagement or bypassing moderation and processing state.
+
+## ADR-033: Following feed uses idempotent fan-out; For You remains query-ranked
+
+Following posts fan out into recipient-owned `feed_entries` because the follow graph is viewer-specific and must page predictably. Public discovery reads the ranked post collection directly. Both use the same domain cursor. The ranking policy is deterministic and replaceable by a future ranking service.
+
+## ADR-034: Video processing is an external authenticated adapter
+
+Flutter uploads an original object and publishing links it to server-owned `media_assets` and `media_jobs`. A scheduled Function dispatches private work; only a bearer-authenticated callback may mark output ready. Output paths are derived from the trusted owner and asset ID. The app never trusts client-supplied transcoding metadata.
+
+## ADR-035: Draft media is private; processed media is server-owned
+
+Original draft uploads under `content/{uid}/...` are readable only by their owner and validate path-bound metadata. Processed output paths deny all client writes. Publication documents control which media URLs are discoverable. Stronger short-lived delivery URLs/CDN authorization can replace download URLs later without changing `MediaAsset` in the domain.
+
+## ADR-036: Blocking uses reciprocal private indexes plus direct-read enforcement
+
+A block writes both `blocks` and `blocked_by` records and removes existing follow edges atomically. The app filters both private indexes before rendering broad public feed/story queries. Direct post/story reads still deny either block direction in Security Rules. This avoids making broad Firestore list queries fail while preserving immediate user-visible blocking behavior.

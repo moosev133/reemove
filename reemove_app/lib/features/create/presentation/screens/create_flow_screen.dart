@@ -4,6 +4,8 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/adaptive_page_body.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_page_header.dart';
+import '../../../feed/domain/entities/content_draft.dart';
+import '../../../feed/presentation/screens/content_composer_screen.dart';
 
 class CreateFlowScreen extends StatelessWidget {
   const CreateFlowScreen({required this.creationType, super.key});
@@ -12,23 +14,32 @@ class CreateFlowScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final DraftKind? kind = switch (creationType) {
+      'post' => DraftKind.post,
+      'story' => DraftKind.story,
+      'reel' => DraftKind.reel,
+      _ => null,
+    };
+    if (kind != null) {
+      return ContentComposerScreen(kind: kind);
+    }
     final String title = _titleFor(creationType);
     return Scaffold(
       appBar: AppBar(title: Text(title)),
       body: AdaptivePageBody(
         slivers: <Widget>[
           AppPageHeader(
-            eyebrow: 'Create safely',
+            eyebrow: 'Coming in its dedicated module',
             title: title,
             subtitle:
-                'Set up your $title with the right audience, sport, and visibility.',
+                'The social publishing tools are ready. This creation type will be enabled in its scheduled product phase.',
           ),
           const SizedBox(height: AppSpacing.xl),
           AppEmptyState(
             icon: _iconFor(creationType),
-            title: '$title is temporarily unavailable',
+            title: '$title is not available yet',
             message:
-                'Creation is currently disabled for this account. Nothing has been published or charged, and you can return here later.',
+                'Nothing has been published or charged. Return to Create to share a post, story, or reel now.',
           ),
         ],
       ),
@@ -37,9 +48,6 @@ class CreateFlowScreen extends StatelessWidget {
 }
 
 String _titleFor(String type) => switch (type) {
-  'post' => 'Create post',
-  'story' => 'Create story',
-  'reel' => 'Create reel',
   'event' => 'Create event or match',
   'challenge' => 'Create challenge',
   'listing' => 'Create marketplace listing',
@@ -47,9 +55,6 @@ String _titleFor(String type) => switch (type) {
 };
 
 IconData _iconFor(String type) => switch (type) {
-  'post' => Icons.photo_camera_back_outlined,
-  'story' => Icons.auto_awesome_motion_outlined,
-  'reel' => Icons.video_collection_outlined,
   'event' => Icons.event_available_outlined,
   'challenge' => Icons.emoji_events_outlined,
   'listing' => Icons.sell_outlined,

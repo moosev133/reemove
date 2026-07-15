@@ -39,6 +39,45 @@ service cloud.firestore {
         && data.moderationState == 'active';
     }
 
+    function isBlocked(viewerId, authorId) {
+      return exists(/databases/$(database)/documents/users/$(viewerId)/blocks/$(authorId))
+        || exists(/databases/$(database)/documents/users/$(authorId)/blocks/$(viewerId));
+    }
+
+    function follows(viewerId, authorId) {
+      return exists(/databases/$(database)/documents/users/$(authorId)/followers/$(viewerId));
+    }
+
+    function canReadPublishedContent(data) {
+      return signedIn()
+        && data.moderationState == 'active'
+        && !isBlocked(request.auth.uid, data.authorId)
+        && (
+          request.auth.uid == data.authorId
+          || (
+            data.status == 'published'
+            && (
+              data.visibility == 'public'
+              || (data.visibility == 'followers'
+                && follows(request.auth.uid, data.authorId))
+            )
+          )
+        );
+    }
+
+    function canReadStory(data) {
+      return signedIn()
+        && data.moderationState == 'active'
+        && data.expiresAt > request.time
+        && !isBlocked(request.auth.uid, data.authorId)
+        && (
+          request.auth.uid == data.authorId
+          || data.visibility == 'public'
+          || (data.visibility == 'followers'
+            && follows(request.auth.uid, data.authorId))
+        );
+    }
+
     function validPublicUserCreate(uid) {
       let data = request.resource.data;
       return isOwner(uid)
@@ -173,6 +212,27 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /blocks/{targetUserId} {
+        allow get, list: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /blocked_by/{blockerUserId} {
+        allow get, list: if isOwner(uid);
+        allow write: if false;
+      }
+
+      match /followers/{followerId} {
+        allow get: if signedIn();
+        allow list: if isOwner(uid) && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /following/{followingId} {
+        allow get, list: if isOwner(uid) && request.query.limit <= 100;
+        allow write: if false;
+      }
+
       match /{subcollection}/{documentId} {
         allow read, write: if false;
       }
@@ -248,6 +308,88 @@ service cloud.firestore {
       match /{subcollection}/{documentId} {
         allow read, write: if false;
       }
+    }
+
+    match /posts/{postId} {
+      allow get: if canReadPublishedContent(resource.data);
+      allow list: if signedIn()
+        && resource.data.status == 'published'
+        && resource.data.visibility == 'public'
+        && resource.data.moderationState == 'active'
+        && request.query.limit <= 25;
+      allow write: if false;
+
+      match /comments/{commentId} {
+        allow get: if canReadPublishedContent(
+          get(/databases/$(database)/documents/posts/$(postId)).data
+        ) && resource.data.moderationState == 'active';
+        allow list: if canReadPublishedContent(
+          get(/databases/$(database)/documents/posts/$(postId)).data
+        ) && resource.data.moderationState == 'active'
+          && request.query.limit <= 50;
+        allow write: if false;
+      }
+    }
+
+    match /stories/{storyId} {
+      allow get: if canReadStory(resource.data);
+      allow list: if signedIn()
+        && resource.data.visibility == 'public'
+        && resource.data.moderationState == 'active'
+        && resource.data.expiresAt > request.time
+        && request.query.limit <= 50;
+      allow write: if false;
+    }
+
+    match /feed_entries/{entryId} {
+      allow get: if signedIn()
+        && resource.data.recipientId == request.auth.uid;
+      allow list: if signedIn()
+        && resource.data.recipientId == request.auth.uid
+        && request.query.limit <= 25;
+      allow write: if false;
+    }
+
+    match /content_reactions/{reactionId} {
+      allow get: if signedIn()
+        && reactionId.matches(request.auth.uid + '--.*');
+      allow list: if false;
+      allow write: if false;
+    }
+
+    match /reposts/{repostId} {
+      allow get: if signedIn()
+        && repostId.matches(request.auth.uid + '--.*');
+      allow list: if signedIn()
+        && resource.data.reposterId == request.auth.uid
+        && request.query.limit <= 50;
+      allow write: if false;
+    }
+
+    match /comment_reactions/{reactionId} {
+      allow get: if signedIn()
+        && reactionId.matches(request.auth.uid + '--.*');
+      allow list, write: if false;
+    }
+
+    match /story_views/{viewId} {
+      allow get: if signedIn()
+        && viewId.matches(request.auth.uid + '--.*');
+      allow list, write: if false;
+    }
+
+    match /post_views/{viewId} {
+      allow read, write: if false;
+    }
+
+    match /media_assets/{assetId} {
+      allow get: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow list, write: if false;
+    }
+
+    match /media_jobs/{jobId} {
+      allow get: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow list, write: if false;
     }
 
     match /reports/{reportId} {

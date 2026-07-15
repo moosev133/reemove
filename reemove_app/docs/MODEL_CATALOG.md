@@ -144,3 +144,18 @@ Authentication-specific Firebase objects remain in data mappers and repositories
 - `AppNavigationBadges` — bounded Home activity and Messages badge counts
 
 These models contain no Firebase state and can be overridden or driven by later notification and messaging repositories.
+
+## Phase 6 implemented feed and publishing models
+
+100. `FeedPost` — immutable post/reel aggregate with trusted author snapshot, media, counters, audience, moderation, status, ranking, and viewer state
+101. `FeedAuthor` — denormalized author identity safe for feed rendering
+102. `FeedViewerState` — private liked/saved/reposted state
+103. `FeedPage` / `FeedCursor` / `FeedMode` — stable ranked and following pagination contract
+104. `PostComment` / `CommentPage` — top-level comment paging and viewer-like state
+105. `ReactionMutationResult` / `PostReactionType` — authoritative interaction response
+106. `Story` / `StoryGroup` — expiring media and author-grouped rail state
+107. `ContentDraft` / `DraftKind` / `DraftMediaSelection` — resumable local composer aggregate
+108. `MediaUploadStatus` — upload/processing progress and terminal media result
+109. `ContentReportRequest` / `ContentReportReason` — normalized moderation request
+
+Data-layer DTOs include `FeedPostDto`, `FeedEntryDto`, `ContentReactionDto`, `PostCommentDto`, and `StoryDto`. Firestore and Storage types remain outside these domain entities.

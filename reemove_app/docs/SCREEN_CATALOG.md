@@ -144,7 +144,7 @@ The final product is expected to contain approximately **78 screens and major mo
 
 The count is intentionally larger than a typical MVP because every required capability is represented as a real production flow rather than compressed into generic placeholder pages.
 
-## Implemented routes through Phase 5
+## Implemented routes through Phase 6
 
 | Route | Screen | Purpose |
 |---|---|---|
@@ -175,3 +175,17 @@ The count is intentionally larger than a typical MVP because every required capa
 | `/profile/user/:username` | `PublicProfileScreen` | Username-resolved public profile |
 
 Short aliases `/p/:postId`, `/u/:username`, `/c/:conversationId`, and `/s/:sportId` redirect into the correct stateful branch. All protected links preserve a validated internal return target through sign-in, profile provisioning, verification, and onboarding.
+
+## Phase 6 route implementation updates
+
+| Route | Screen | Phase 6 behavior |
+|---|---|---|
+| `/home` | `HomeScreen` | Ranked For You/Following feed, stories, refresh, pagination, offline and failure states |
+| `/home/reels` | `ReelsScreen` | Vertical paginated reel playback and optimistic interactions |
+| `/home/story/:authorId` | `StoryViewerScreen` | Grouped expiring story playback and viewed state |
+| `/home/post/:postId` | `PostDeepLinkScreen` | Authorized post detail with comments and actions |
+| `/create/post` | `ContentComposerScreen` | Resumable image/video post publishing |
+| `/create/reel` | `ContentComposerScreen` | Resumable single-video reel publishing |
+| `/create/story` | `ContentComposerScreen` | Resumable expiring story publishing |
+
+Comments and report/block controls are modal flows attached to post and reel surfaces rather than independent navigation branches.

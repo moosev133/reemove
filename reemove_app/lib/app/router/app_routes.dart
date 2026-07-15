@@ -12,6 +12,7 @@ abstract final class AppRoutes {
 
   static const String home = '/home';
   static const String activity = '/home/activity';
+  static const String reels = '/home/reels';
   static const String discover = '/discover';
   static const String discoverSearch = '/discover/search';
   static const String sports = '/sports';
@@ -22,6 +23,9 @@ abstract final class AppRoutes {
   static const String accountSecurity = '/account/security';
 
   static String homePost(String postId) => '/home/post/${_segment(postId)}';
+
+  static String storyGroup(String authorId) =>
+      '/home/stories/${_segment(authorId)}';
 
   static String discoverCategory(String category) =>
       '/discover/category/${_segment(category)}';
@@ -109,6 +113,8 @@ abstract final class AppRouteNames {
   static const String home = 'home';
   static const String activity = 'activity';
   static const String homePost = 'home-post';
+  static const String reels = 'reels';
+  static const String storyGroup = 'story-group';
   static const String discover = 'discover';
   static const String discoverSearch = 'discover-search';
   static const String discoverCategory = 'discover-category';

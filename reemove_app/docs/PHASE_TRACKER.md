@@ -7,7 +7,7 @@
 | 3 | Authentication | **Complete in this package** | Email, Google, Apple, usernames, linking, verification, reset, reauthentication, session revocation, account lifecycle |
 | 4 | Onboarding | **Complete in this package** | Resumable ten-step flow, private age/location, avatar, preferences, trusted completion |
 | 5 | Navigation | **Complete in this package** | Six-tab adaptive shell, stateful branches, guarded deep links, native app-link setup |
-| 6 | Feed | Planned | Posts, media, stories, reels, interactions |
+| 6 | Feed | **Complete in this package** | Ranked/following feeds, publishing, media jobs, stories, reels, comments, reactions, reports, blocks |
 | 7 | Profiles | Planned | Profiles, follow graph, verification, settings |
 | 8 | Messaging | Planned | Direct/group chat and media |
 | 9 | Sports hubs | Planned | Football, gym, running and shared module contracts |
@@ -19,18 +19,18 @@
 | 15 | Testing | Planned | Full automated, security, performance, accessibility hardening |
 | 16 | Deployment | Planned | Store releases, CI/CD, staged rollout, operations |
 
-## Phase 5 exit gate
+## Phase 6 exit gate
 
-Phase 5 is complete when:
+Phase 6 is complete when:
 
-- Home, Discover, Sports, Create, Messages, and Profile render in the required order.
-- Every destination owns an independent nested navigator and restores its previous stack.
-- Compact layouts use bottom navigation and larger layouts use a navigation rail.
-- Protected links preserve a validated internal target through every account gate.
-- Post, profile, conversation, and sport aliases resolve into the correct branch.
-- Unknown or unauthorized deep-linked content fails safely.
-- Android App Links, iOS Universal Links, and the custom scheme are configured idempotently.
-- Navigation helpers, badge state, repository validation, and Dart grammar checks pass.
+- For You and Following feeds use stable bounded cursors and preserve authoritative server state.
+- Posts, image carousels, reels, and stories render real media and production states.
+- Drafts survive restarts and uploads expose progress and retry-safe failures.
+- Callable Functions own publishing, counters, reactions, comments, views, reports, and blocks.
+- Videos remain processing until a trusted external processor callback verifies output ownership.
+- Firestore/Storage rules, indexes, seed data, policy tests, and media deployment documentation ship with the feature.
+- Reciprocal block indexes hide both directions without making broad public queries fail.
+- Repository validation, Functions lint/build, backend tests, and Dart grammar checks pass.
 
 ## File ownership rule
 
