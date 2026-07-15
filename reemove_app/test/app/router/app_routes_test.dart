@@ -44,6 +44,26 @@ void main() {
       );
       expect(AppRoutes.createChallenge, '/create/challenge');
       expect(AppRoutes.isProtectedAlias('/ch/weekly-5k'), isTrue);
+      expect(AppRoutes.marketplace, '/discover/marketplace');
+      expect(
+        AppRoutes.marketplaceForSport('gym'),
+        '/discover/marketplace?sport=gym',
+      );
+      expect(
+        AppRoutes.marketplaceListing('bench set'),
+        '/discover/marketplace/bench%20set',
+      );
+      expect(
+        AppRoutes.marketplaceSeller('demo athlete'),
+        '/discover/marketplace/seller/demo%20athlete',
+      );
+      expect(AppRoutes.createMarketplaceListing, '/create/listing');
+      expect(
+        AppRoutes.editMarketplaceListing('listing 1'),
+        '/create/listing/listing%201/edit',
+      );
+      expect(AppRoutes.myMarketplaceListings, '/profile/marketplace');
+      expect(AppRoutes.isProtectedAlias('/m/listing-1'), isTrue);
     });
 
     test('recognizes shell routes and protected aliases', () {

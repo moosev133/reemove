@@ -49,6 +49,9 @@ abstract final class AppRoutes {
 
   static const String challenges = '/discover/challenges';
   static const String challengeRewards = '/discover/challenges/rewards';
+  static const String marketplace = '/discover/marketplace';
+  static const String marketplaceFavorites = '/discover/marketplace/favorites';
+  static const String myMarketplaceListings = '/profile/marketplace';
 
   static String challengesForSport(String sportId) => Uri(
     path: challenges,
@@ -68,6 +71,33 @@ abstract final class AppRoutes {
       '/ch/${_segment(challengeId)}';
 
   static String get createChallenge => createFlow('challenge');
+
+  static String marketplaceForSport(String sportId) => Uri(
+    path: marketplace,
+    queryParameters: <String, String>{'sport': sportId},
+  ).toString();
+
+  static String marketplaceListing(String listingId) =>
+      '$marketplace/${_segment(listingId)}';
+
+  static String marketplaceSeller(String sellerId) =>
+      '$marketplace/seller/${_segment(sellerId)}';
+
+  static String marketplaceAlias(String listingId) =>
+      '/m/${_segment(listingId)}';
+
+  static String get createMarketplaceListing => createFlow('listing');
+
+  static String editMarketplaceListing(String listingId) =>
+      '/create/listing/${_segment(listingId)}/edit';
+
+  static String conversationForListing(
+    String conversationId,
+    String listingId,
+  ) => Uri(
+    path: conversation(conversationId),
+    queryParameters: <String, String>{'listing': listingId},
+  ).toString();
 
   static String sportHub(String sportId) => '/sports/${_segment(sportId)}';
 
@@ -169,6 +199,7 @@ abstract final class AppRoutes {
       '/c/',
       '/s/',
       '/ch/',
+      '/m/',
     ].any((String prefix) => path.startsWith(prefix));
   }
 
@@ -211,6 +242,12 @@ abstract final class AppRouteNames {
   static const String submitChallengeProgress = 'submit-challenge-progress';
   static const String reviewChallengeSubmissions =
       'review-challenge-submissions';
+  static const String marketplace = 'marketplace';
+  static const String marketplaceListing = 'marketplace-listing';
+  static const String marketplaceSeller = 'marketplace-seller';
+  static const String marketplaceFavorites = 'marketplace-favorites';
+  static const String editMarketplaceListing = 'edit-marketplace-listing';
+  static const String myMarketplaceListings = 'my-marketplace-listings';
   static const String sports = 'sports';
   static const String sportHub = 'sport-hub';
   static const String sportPlaces = 'sport-places';
@@ -246,4 +283,5 @@ abstract final class AppRouteNames {
   static const String conversationAlias = 'conversation-alias';
   static const String sportAlias = 'sport-alias';
   static const String challengeAlias = 'challenge-alias';
+  static const String marketplaceAlias = 'marketplace-alias';
 }

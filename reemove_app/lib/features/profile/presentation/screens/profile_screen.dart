@@ -38,6 +38,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         title: const Text('Profile'),
         actions: <Widget>[
           IconButton(
+            tooltip: 'My marketplace listings',
+            onPressed: () => context.push(AppRoutes.myMarketplaceListings),
+            icon: const Icon(Icons.storefront_outlined),
+          ),
+          IconButton(
             tooltip: 'Profile settings',
             onPressed: () => context.push(AppRoutes.profileSettings),
             icon: const Icon(Icons.settings_outlined),

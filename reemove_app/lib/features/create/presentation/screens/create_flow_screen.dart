@@ -7,6 +7,7 @@ import '../../../../core/widgets/app_page_header.dart';
 import '../../../challenges/presentation/screens/create_challenge_screen.dart';
 import '../../../feed/domain/entities/content_draft.dart';
 import '../../../feed/presentation/screens/content_composer_screen.dart';
+import '../../../marketplace/presentation/screens/create_marketplace_listing_screen.dart';
 
 class CreateFlowScreen extends StatelessWidget {
   const CreateFlowScreen({required this.creationType, super.key});
@@ -26,6 +27,9 @@ class CreateFlowScreen extends StatelessWidget {
     }
     if (creationType == 'challenge') {
       return const CreateChallengeScreen();
+    }
+    if (creationType == 'listing') {
+      return const CreateMarketplaceListingScreen();
     }
     final String title = _titleFor(creationType);
     return Scaffold(

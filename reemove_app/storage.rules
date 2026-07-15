@@ -45,6 +45,20 @@ service firebase.storage {
         && firestore.get(/databases/(default)/documents/conversations/$(conversationId)/members/$(request.auth.uid)).data.role in ['owner', 'admin'];
     }
 
+    function marketplaceMediaReadable(ownerUid, listingId) {
+      let listingPath = /databases/(default)/documents/marketplace_listings/$(listingId);
+      return isOwner(ownerUid)
+        || (signedIn()
+          && firestore.exists(listingPath)
+          && firestore.get(listingPath).data.sellerId == ownerUid
+          && firestore.get(listingPath).data.status in ['active', 'reserved']
+          && firestore.get(listingPath).data.moderationState == 'active'
+          && (!('expiresAt' in firestore.get(listingPath).data)
+            || firestore.get(listingPath).data.expiresAt > request.time)
+          && !firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)/blocks/$(ownerUid))
+          && !firestore.exists(/databases/(default)/documents/users/$(ownerUid)/blocks/$(request.auth.uid)));
+    }
+
     match /users/{uid}/avatar/{assetId} {
       allow read: if signedIn();
       allow create: if isOwner(uid)
@@ -139,17 +153,16 @@ service firebase.storage {
     }
 
     match /marketplace/{uid}/{listingId}/{assetId} {
-      allow read: if signedIn();
+      allow read: if marketplaceMediaReadable(uid, listingId);
       allow create: if isOwner(uid)
+        && request.resource.size > 0
         && request.resource.size < 15 * 1024 * 1024
         && isImage()
-        && validOwnerMetadata(uid);
-      allow update: if isOwner(uid)
-        && request.resource.size < 15 * 1024 * 1024
-        && isImage()
-        && preservesOwnerMetadata(uid);
-      allow delete: if isOwner(uid)
-        && resource.metadata.ownerId == uid;
+        && validOwnerMetadata(uid)
+        && request.resource.metadata.listingId == listingId
+        && request.resource.metadata.assetId == assetId
+        && request.resource.metadata.kind == 'image';
+      allow update, delete: if false;
     }
 
     match /verification/{uid}/{requestId}/{assetId} {

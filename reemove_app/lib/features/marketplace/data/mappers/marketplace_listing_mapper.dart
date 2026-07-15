@@ -12,6 +12,7 @@ extension MarketplaceListingDtoMapper on MarketplaceListingDto {
       displayName: seller.displayName,
       avatarUrl: seller.avatarUrl,
       isVerified: seller.isVerified,
+      verificationType: seller.verificationType,
     ),
     title: title,
     description: description,
@@ -21,11 +22,22 @@ extension MarketplaceListingDtoMapper on MarketplaceListingDto {
     price: price.toDomain(),
     media: media.map((item) => item.toDomain()).toList(growable: false),
     location: location.toDomain(),
-    deliveryOptions: deliveryOptions,
+    deliveryOptions: deliveryOptions
+        .map(MarketplaceDeliveryOption.values.byName)
+        .toList(growable: false),
     status: ListingStatus.values.byName(status),
     favoriteCount: favoriteCount,
     viewCount: viewCount,
+    conversationCount: conversationCount,
+    isNegotiable: isNegotiable,
+    isFavorited: isFavorited,
     moderationState: ModerationStateStorageValue.fromStorage(moderationState),
     audit: audit.toDomain(),
+    distanceKm: distanceKm,
+    publishedAt: publishedAt,
+    expiresAt: expiresAt,
+    reservedAt: reservedAt,
+    soldAt: soldAt,
+    rejectionReason: rejectionReason,
   );
 }

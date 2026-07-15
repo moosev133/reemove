@@ -9,6 +9,7 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/result/result.dart';
 import '../../../authentication/application/authentication_providers.dart';
 import '../../../authentication/domain/entities/auth_user.dart';
+import '../../../marketplace/presentation/widgets/marketplace_conversation_banner.dart';
 import '../../application/messaging_providers.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/message.dart';
@@ -20,9 +21,14 @@ import '../widgets/presence_badge.dart';
 import '../widgets/typing_indicator.dart';
 
 class ConversationScreen extends ConsumerStatefulWidget {
-  const ConversationScreen({required this.conversationId, super.key});
+  const ConversationScreen({
+    required this.conversationId,
+    this.marketplaceListingId,
+    super.key,
+  });
 
   final String conversationId;
+  final String? marketplaceListingId;
 
   @override
   ConsumerState<ConversationScreen> createState() => _ConversationScreenState();
@@ -164,6 +170,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           ),
           body: Column(
             children: <Widget>[
+              if (widget.marketplaceListingId != null)
+                MarketplaceConversationBanner(
+                  listingId: widget.marketplaceListingId!,
+                ),
               Expanded(
                 child: messagesValue.when(
                   data: (_) => all.isEmpty

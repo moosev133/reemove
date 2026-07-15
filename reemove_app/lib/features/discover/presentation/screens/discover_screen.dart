@@ -101,6 +101,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 title: 'Challenges',
                 onTap: () => context.push(AppRoutes.challenges),
               ),
+              _CategoryCard(
+                icon: Icons.storefront_outlined,
+                title: 'Marketplace',
+                onTap: () => context.push(AppRoutes.marketplace),
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.xl),

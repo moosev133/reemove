@@ -121,6 +121,19 @@ service cloud.firestore {
         );
     }
 
+    function canReadMarketplaceListing(data) {
+      return signedIn()
+        && !isBlocked(request.auth.uid, data.sellerId)
+        && (
+          data.sellerId == request.auth.uid
+          || (
+            data.moderationState == 'active'
+            && data.status in ['active', 'reserved']
+            && (!('expiresAt' in data) || data.expiresAt > request.time)
+          )
+        );
+    }
+
     function validPublicUserCreate(uid) {
       let data = request.resource.data;
       return isOwner(uid)
@@ -300,6 +313,18 @@ service cloud.firestore {
       match /challenge_badges/{badgeId} {
         allow get: if isOwner(uid);
         allow list: if isOwner(uid) && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /marketplace_favorites/{listingId} {
+        allow get: if isOwner(uid);
+        allow list: if isOwner(uid) && request.query.limit <= 200;
+        allow write: if false;
+      }
+
+      match /marketplace_views/{listingId} {
+        allow get: if isOwner(uid);
+        allow list: if false;
         allow write: if false;
       }
 
@@ -532,19 +557,38 @@ service cloud.firestore {
         && request.query.limit <= 100;
     }
 
-    match /marketplace_listings/{listingId} {
-      allow get: if signedIn()
-        && resource.data.status == 'active'
-        && resource.data.moderationState == 'active';
+    match /marketplace_categories/{categoryId} {
+      allow get: if signedIn() && resource.data.isActive == true;
       allow list: if signedIn()
-        && resource.data.status == 'active'
-        && resource.data.moderationState == 'active'
-        && request.query.limit <= 50;
+        && resource.data.isActive == true
+        && request.query.limit <= 100;
+      allow write: if isAdmin();
+    }
+
+    match /marketplace_listings/{listingId} {
+      allow get: if canReadMarketplaceListing(resource.data) || isAdmin();
+      // Public marketplace discovery is served by a rate-limited callable so
+      // block, expiry, distance, moderation, and pagination checks are applied
+      // consistently. Clients may only fetch a known listing document here.
+      allow list: if isAdmin() && request.query.limit <= 100;
       allow write: if isAdmin();
 
       match /{subcollection}/{documentId} {
         allow read, write: if false;
       }
+    }
+
+    match /marketplace_reports/{reportId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /marketplace_views/{viewId} {
+      allow read, write: if false;
+    }
+
+    match /marketplace_threads/{threadId} {
+      allow read, write: if false;
     }
 
     match /posts/{postId} {

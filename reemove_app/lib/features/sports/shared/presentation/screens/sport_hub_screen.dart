@@ -300,6 +300,11 @@ class _QuickActions extends StatelessWidget {
       (Icons.place_outlined, module.placeLabel, AppRoutes.sportPlaces(sportId)),
       (Icons.explore_outlined, 'Nearby', AppRoutes.nearbyForSport(sportId)),
       (
+        Icons.storefront_outlined,
+        'Marketplace',
+        AppRoutes.marketplaceForSport(sportId),
+      ),
+      (
         Icons.groups_outlined,
         module.communityLabel,
         AppRoutes.sportCommunities(sportId),

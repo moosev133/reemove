@@ -1,5 +1,5 @@
 export const currentSchemaVersion = 1;
-export const seedDatasetVersion = "2026-07-14.phase11.v1";
+export const seedDatasetVersion = "2026-07-14.phase12.v1";
 
 export const collections = {
   users: "users",
@@ -19,6 +19,10 @@ export const collections = {
   challengeRewards: "challenge_rewards",
   rewardClaims: "reward_claims",
   marketplaceListings: "marketplace_listings",
+  marketplaceCategories: "marketplace_categories",
+  marketplaceReports: "marketplace_reports",
+  marketplaceViews: "marketplace_views",
+  marketplaceThreads: "marketplace_threads",
   posts: "posts",
   stories: "stories",
   feedEntries: "feed_entries",

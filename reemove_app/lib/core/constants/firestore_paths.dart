@@ -19,12 +19,16 @@ abstract final class FirestoreCollections {
   static const String challengeBadges = 'challenge_badges';
   static const String challengeRewards = 'challenge_rewards';
   static const String rewardClaims = 'reward_claims';
+  static const String marketplaceListings = 'marketplace_listings';
+  static const String marketplaceCategories = 'marketplace_categories';
+  static const String marketplaceReports = 'marketplace_reports';
+  static const String marketplaceViews = 'marketplace_views';
+  static const String marketplaceThreads = 'marketplace_threads';
   static const String leaderboards = 'leaderboards';
   static const String badges = 'badges';
   static const String rewards = 'rewards';
   static const String trainerProfiles = 'trainer_profiles';
   static const String trainerServices = 'trainer_services';
-  static const String marketplaceListings = 'marketplace_listings';
   static const String reports = 'reports';
   static const String verificationRequests = 'verification_requests';
   static const String moderationQueue = 'moderation_queue';

@@ -1,7 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/marketplace/data/repositories/firebase_marketplace_catalog_repository.dart';
-import '../../features/marketplace/domain/repositories/marketplace_catalog_repository.dart';
 import '../../features/profile/data/repositories/firebase_user_profile_repository.dart';
 import '../../features/profile/domain/repositories/user_profile_repository.dart';
 import '../../features/settings/data/repositories/firebase_app_configuration_repository.dart';
@@ -33,15 +31,6 @@ final Provider<SportsCatalogRepository> sportsCatalogRepositoryProvider =
         events: database.events,
       );
     });
-
-final Provider<MarketplaceCatalogRepository>
-marketplaceCatalogRepositoryProvider = Provider<MarketplaceCatalogRepository>((
-  Ref ref,
-) {
-  return FirebaseMarketplaceCatalogRepository(
-    ref.watch(reeMoveFirestoreProvider).marketplaceListings,
-  );
-});
 
 final Provider<AppConfigurationRepository> appConfigurationRepositoryProvider =
     Provider<AppConfigurationRepository>((Ref ref) {

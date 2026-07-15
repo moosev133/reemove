@@ -2,6 +2,7 @@ import {getAuth} from "firebase-admin/auth";
 import type {Auth} from "firebase-admin/auth";
 import {getFirestore, Timestamp} from "firebase-admin/firestore";
 import type {Firestore} from "firebase-admin/firestore";
+import {getStorage} from "firebase-admin/storage";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 
@@ -36,6 +37,36 @@ async function deleteAuthUser(auth: Auth, uid: string): Promise<void> {
   }
 }
 
+async function removeMarketplaceListingsForAccount(
+  database: Firestore,
+  uid: string,
+): Promise<void> {
+  const snapshot = await database.collection(collections.marketplaceListings)
+    .where("sellerId", "==", uid)
+    .limit(500)
+    .get();
+  for (let offset = 0; offset < snapshot.docs.length; offset += 400) {
+    const batch = database.batch();
+    const updatedAt = Timestamp.now();
+    for (const listing of snapshot.docs.slice(offset, offset + 400)) {
+      batch.update(listing.ref, {
+        status: "removed",
+        moderationState: "removed",
+        seller: {
+          uid,
+          username: "deleted_account",
+          displayName: "Deleted account",
+          isVerified: false,
+          verificationType: "none",
+        },
+        updatedAt,
+      });
+    }
+    await batch.commit();
+  }
+  await getStorage().bucket().deleteFiles({prefix: `marketplace/${uid}/`});
+}
+
 async function completeAccountDeletion(
   database: Firestore,
   auth: Auth,
@@ -45,6 +76,7 @@ async function completeAccountDeletion(
   const userRef = database.collection(collections.users).doc(uid);
   const deletionRef = database.collection(collections.accountDeletions).doc(uid);
 
+  await removeMarketplaceListingsForAccount(database, uid);
   await database.recursiveDelete(userRef);
 
   if (username !== null) {

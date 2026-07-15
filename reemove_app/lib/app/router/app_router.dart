@@ -29,6 +29,11 @@ import '../../features/feed/presentation/screens/story_viewer_screen.dart';
 import '../../features/home/presentation/screens/activity_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/home/presentation/screens/post_deep_link_screen.dart';
+import '../../features/marketplace/presentation/screens/create_marketplace_listing_screen.dart';
+import '../../features/marketplace/presentation/screens/marketplace_library_screens.dart';
+import '../../features/marketplace/presentation/screens/marketplace_listing_screen.dart';
+import '../../features/marketplace/presentation/screens/marketplace_screen.dart';
+import '../../features/marketplace/presentation/screens/marketplace_seller_screen.dart';
 import '../../features/messages/presentation/screens/conversation_details_screen.dart';
 import '../../features/messages/presentation/screens/conversation_screen.dart';
 import '../../features/messages/presentation/screens/create_group_screen.dart';
@@ -335,6 +340,53 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                       ),
                     ],
                   ),
+                  GoRoute(
+                    path: 'marketplace',
+                    name: AppRouteNames.marketplace,
+                    pageBuilder: (BuildContext context, GoRouterState state) {
+                      return MaterialPage<void>(
+                        key: state.pageKey,
+                        child: MarketplaceScreen(
+                          sportId: state.uri.queryParameters['sport'],
+                        ),
+                      );
+                    },
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'favorites',
+                        name: AppRouteNames.marketplaceFavorites,
+                        pageBuilder: _page(const MarketplaceFavoritesScreen()),
+                      ),
+                      GoRoute(
+                        path: 'seller/:sellerId',
+                        name: AppRouteNames.marketplaceSeller,
+                        pageBuilder:
+                            (BuildContext context, GoRouterState state) {
+                              return MaterialPage<void>(
+                                key: state.pageKey,
+                                child: MarketplaceSellerScreen(
+                                  sellerId:
+                                      state.pathParameters['sellerId'] ?? '',
+                                ),
+                              );
+                            },
+                      ),
+                      GoRoute(
+                        path: ':listingId',
+                        name: AppRouteNames.marketplaceListing,
+                        pageBuilder:
+                            (BuildContext context, GoRouterState state) {
+                              return MaterialPage<void>(
+                                key: state.pageKey,
+                                child: MarketplaceListingScreen(
+                                  listingId:
+                                      state.pathParameters['listingId'] ?? '',
+                                ),
+                              );
+                            },
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ],
@@ -560,6 +612,18 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                 pageBuilder: _page(const CreateScreen()),
                 routes: <RouteBase>[
                   GoRoute(
+                    path: 'listing/:listingId/edit',
+                    name: AppRouteNames.editMarketplaceListing,
+                    pageBuilder: (BuildContext context, GoRouterState state) {
+                      return MaterialPage<void>(
+                        key: state.pageKey,
+                        child: CreateMarketplaceListingScreen(
+                          listingId: state.pathParameters['listingId'],
+                        ),
+                      );
+                    },
+                  ),
+                  GoRoute(
                     path: ':creationType',
                     name: AppRouteNames.createFlow,
                     pageBuilder: (BuildContext context, GoRouterState state) {
@@ -625,6 +689,8 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                         child: ConversationScreen(
                           conversationId:
                               state.pathParameters['conversationId'] ?? '',
+                          marketplaceListingId:
+                              state.uri.queryParameters['listing'],
                         ),
                       );
                     },
@@ -642,6 +708,11 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                 name: AppRouteNames.profile,
                 pageBuilder: _page(const ProfileScreen()),
                 routes: <RouteBase>[
+                  GoRoute(
+                    path: 'marketplace',
+                    name: AppRouteNames.myMarketplaceListings,
+                    pageBuilder: _page(const MyMarketplaceListingsScreen()),
+                  ),
                   GoRoute(
                     path: 'edit',
                     name: AppRouteNames.editProfile,
@@ -757,6 +828,12 @@ List<RouteBase> _aliasRoutes() {
       name: AppRouteNames.challengeAlias,
       redirect: (BuildContext context, GoRouterState state) =>
           AppRoutes.challenge(state.pathParameters['challengeId'] ?? ''),
+    ),
+    GoRoute(
+      path: '/m/:listingId',
+      name: AppRouteNames.marketplaceAlias,
+      redirect: (BuildContext context, GoRouterState state) =>
+          AppRoutes.marketplaceListing(state.pathParameters['listingId'] ?? ''),
     ),
   ];
 }

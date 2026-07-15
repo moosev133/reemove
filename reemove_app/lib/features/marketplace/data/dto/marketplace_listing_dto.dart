@@ -13,14 +13,24 @@ class SellerSnapshotDto {
     required this.displayName,
     required this.isVerified,
     this.avatarUrl,
+    this.verificationType,
   });
 
   factory SellerSnapshotDto.fromMap(FirestoreMap data) => SellerSnapshotDto(
-    uid: FirestoreParser.string(data, 'uid'),
-    username: FirestoreParser.string(data, 'username'),
-    displayName: FirestoreParser.string(data, 'displayName'),
+    uid: FirestoreParser.string(
+      data,
+      'uid',
+      fallback: FirestoreParser.string(data, 'id', fallback: ''),
+    ),
+    username: FirestoreParser.string(data, 'username', fallback: ''),
+    displayName: FirestoreParser.string(
+      data,
+      'displayName',
+      fallback: 'Athlete',
+    ),
     avatarUrl: FirestoreParser.nullableString(data, 'avatarUrl'),
     isVerified: FirestoreParser.boolean(data, 'isVerified', fallback: false),
+    verificationType: FirestoreParser.nullableString(data, 'verificationType'),
   );
 
   final String uid;
@@ -28,6 +38,7 @@ class SellerSnapshotDto {
   final String displayName;
   final String? avatarUrl;
   final bool isVerified;
+  final String? verificationType;
 
   FirestoreMap toMap() => <String, Object?>{
     'uid': uid,
@@ -35,6 +46,7 @@ class SellerSnapshotDto {
     'displayName': displayName,
     if (avatarUrl != null) 'avatarUrl': avatarUrl,
     'isVerified': isVerified,
+    if (verificationType != null) 'verificationType': verificationType,
   };
 }
 
@@ -55,20 +67,22 @@ class MarketplaceListingDto {
     required this.status,
     required this.favoriteCount,
     required this.viewCount,
+    required this.conversationCount,
+    required this.isNegotiable,
+    required this.isFavorited,
     required this.moderationState,
     required this.audit,
+    this.distanceKm,
+    this.publishedAt,
+    this.expiresAt,
+    this.reservedAt,
+    this.soldAt,
+    this.rejectionReason,
   });
 
-  factory MarketplaceListingDto.fromFirestore(
-    DocumentSnapshot<FirestoreMap> snapshot,
-    SnapshotOptions? _,
-  ) {
-    final FirestoreMap? data = snapshot.data();
-    if (data == null) {
-      throw FormatException('Listing ${snapshot.id} has no data.');
-    }
+  factory MarketplaceListingDto.fromMap(String id, FirestoreMap data) {
     return MarketplaceListingDto(
-      id: snapshot.id,
+      id: id,
       sellerId: FirestoreParser.string(data, 'sellerId'),
       seller: SellerSnapshotDto.fromMap(FirestoreParser.map(data, 'seller')),
       title: FirestoreParser.string(data, 'title'),
@@ -90,13 +104,47 @@ class MarketplaceListingDto {
         fallback: 0,
       ),
       viewCount: FirestoreParser.integer(data, 'viewCount', fallback: 0),
+      conversationCount: FirestoreParser.integer(
+        data,
+        'conversationCount',
+        fallback: 0,
+      ),
+      isNegotiable: FirestoreParser.boolean(
+        data,
+        'isNegotiable',
+        fallback: false,
+      ),
+      isFavorited: FirestoreParser.boolean(
+        data,
+        'isFavorited',
+        fallback: false,
+      ),
       moderationState: FirestoreParser.string(
         data,
         'moderationState',
         fallback: 'active',
       ),
       audit: EntityAuditDto.fromMap(data),
+      distanceKm: data['distanceKm'] is num
+          ? (data['distanceKm'] as num).toDouble()
+          : null,
+      publishedAt: FirestoreParser.nullableDateTime(data, 'publishedAt'),
+      expiresAt: FirestoreParser.nullableDateTime(data, 'expiresAt'),
+      reservedAt: FirestoreParser.nullableDateTime(data, 'reservedAt'),
+      soldAt: FirestoreParser.nullableDateTime(data, 'soldAt'),
+      rejectionReason: FirestoreParser.nullableString(data, 'rejectionReason'),
     );
+  }
+
+  factory MarketplaceListingDto.fromFirestore(
+    DocumentSnapshot<FirestoreMap> snapshot,
+    SnapshotOptions? _,
+  ) {
+    final FirestoreMap? data = snapshot.data();
+    if (data == null) {
+      throw FormatException('Listing ${snapshot.id} has no data.');
+    }
+    return MarketplaceListingDto.fromMap(snapshot.id, data);
   }
 
   final String id;
@@ -114,8 +162,17 @@ class MarketplaceListingDto {
   final String status;
   final int favoriteCount;
   final int viewCount;
+  final int conversationCount;
+  final bool isNegotiable;
+  final bool isFavorited;
   final String moderationState;
   final EntityAuditDto audit;
+  final double? distanceKm;
+  final DateTime? publishedAt;
+  final DateTime? expiresAt;
+  final DateTime? reservedAt;
+  final DateTime? soldAt;
+  final String? rejectionReason;
 
   FirestoreMap toFirestore([SetOptions? _]) => <String, Object?>{
     'sellerId': sellerId,
@@ -132,7 +189,16 @@ class MarketplaceListingDto {
     'status': status,
     'favoriteCount': favoriteCount,
     'viewCount': viewCount,
+    'conversationCount': conversationCount,
+    'isNegotiable': isNegotiable,
     'moderationState': moderationState,
+    if (publishedAt != null)
+      'publishedAt': Timestamp.fromDate(publishedAt!.toUtc()),
+    if (expiresAt != null) 'expiresAt': Timestamp.fromDate(expiresAt!.toUtc()),
+    if (reservedAt != null)
+      'reservedAt': Timestamp.fromDate(reservedAt!.toUtc()),
+    if (soldAt != null) 'soldAt': Timestamp.fromDate(soldAt!.toUtc()),
+    if (rejectionReason != null) 'rejectionReason': rejectionReason,
     ...audit.toMap(),
   };
 }
