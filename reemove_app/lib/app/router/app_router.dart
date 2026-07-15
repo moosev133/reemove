@@ -29,6 +29,8 @@ import '../../features/messages/presentation/screens/conversation_screen.dart';
 import '../../features/messages/presentation/screens/create_group_screen.dart';
 import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/messages/presentation/screens/new_conversation_screen.dart';
+import '../../features/nearby/presentation/screens/nearby_discovery_screen.dart';
+import '../../features/nearby/presentation/screens/sports_route_detail_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 import '../../features/profile/domain/entities/profile_connection.dart';
 import '../../features/profile/presentation/screens/blocked_profiles_screen.dart';
@@ -234,6 +236,34 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                         ),
                       );
                     },
+                  ),
+                  GoRoute(
+                    path: 'nearby',
+                    name: AppRouteNames.nearby,
+                    pageBuilder: (BuildContext context, GoRouterState state) {
+                      return MaterialPage<void>(
+                        key: state.pageKey,
+                        child: NearbyDiscoveryScreen(
+                          sportId: state.uri.queryParameters['sport'],
+                        ),
+                      );
+                    },
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'routes/:routeId',
+                        name: AppRouteNames.sportsRoute,
+                        pageBuilder:
+                            (BuildContext context, GoRouterState state) {
+                              return MaterialPage<void>(
+                                key: state.pageKey,
+                                child: SportsRouteDetailScreen(
+                                  routeId:
+                                      state.pathParameters['routeId'] ?? '',
+                                ),
+                              );
+                            },
+                      ),
+                    ],
                   ),
                 ],
               ),

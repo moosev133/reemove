@@ -311,6 +311,18 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /nearby_entities/{entityId} {
+      allow read, write: if false;
+    }
+
+    match /sports_routes/{routeId} {
+      allow get: if signedIn() && isPublicActive(resource.data);
+      allow list: if signedIn()
+        && isPublicActive(resource.data)
+        && request.query.limit <= 50;
+      allow write: if isAdmin();
+    }
+
     match /events/{eventId} {
       allow get: if signedIn() && isPublicActive(resource.data)
         && resource.data.status == 'published';

@@ -24,7 +24,16 @@ class SportPlacesScreen extends ConsumerWidget {
       sportPlacesProvider(sportId),
     );
     return Scaffold(
-      appBar: AppBar(title: Text(module.placeLabel)),
+      appBar: AppBar(
+        title: Text(module.placeLabel),
+        actions: <Widget>[
+          IconButton(
+            tooltip: 'Open nearby map',
+            onPressed: () => context.push(AppRoutes.nearbyForSport(sportId)),
+            icon: const Icon(Icons.map_outlined),
+          ),
+        ],
+      ),
       body: AdaptivePageBody(
         restorationId: 'sport_places_$sportId',
         slivers: <Widget>[
@@ -32,7 +41,7 @@ class SportPlacesScreen extends ConsumerWidget {
             eyebrow: module.title,
             title: module.placeLabel,
             subtitle:
-                'Verified locations, facilities, ratings, and pricing. Map distance tools arrive in Phase 10.',
+                'Verified locations, facilities, ratings, pricing, and nearby map discovery.',
           ),
           const SizedBox(height: AppSpacing.lg),
           value.when(

@@ -2,6 +2,8 @@ abstract final class FirestoreCollections {
   static const String users = 'users';
   static const String usernames = 'usernames';
   static const String sports = 'sports';
+  static const String sportsRoutes = 'sports_routes';
+  static const String nearbyEntities = 'nearby_entities';
   static const String posts = 'posts';
   static const String stories = 'stories';
   static const String conversations = 'conversations';

@@ -289,6 +289,7 @@ class _QuickActions extends StatelessWidget {
     final List<(IconData, String, String)>
     actions = <(IconData, String, String)>[
       (Icons.place_outlined, module.placeLabel, AppRoutes.sportPlaces(sportId)),
+      (Icons.explore_outlined, 'Nearby', AppRoutes.nearbyForSport(sportId)),
       (
         Icons.groups_outlined,
         module.communityLabel,

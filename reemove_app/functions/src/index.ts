@@ -69,6 +69,18 @@ import {
 } from "./messaging/messages";
 import {notifyConversationMessage} from "./messaging/notifications";
 import {
+  searchNearby,
+  updateDiscoveryLocation,
+} from "./nearby/nearbySearch";
+import {
+  syncNearbyEvent,
+  syncNearbyPerson,
+  syncNearbyPersonPreferences,
+  syncNearbyPersonPrivateProfile,
+  syncNearbyPlace,
+  syncNearbyRoute,
+} from "./nearby/nearbyIndex";
+import {
   attendSportsEvent,
   createSportCommunity,
   createSportsEvent,
@@ -155,6 +167,14 @@ export {
   upsertTrainerService,
   refreshSportLeaderboards,
   rebuildSportLeaderboardsNow,
+  searchNearby,
+  updateDiscoveryLocation,
+  syncNearbyPlace,
+  syncNearbyEvent,
+  syncNearbyRoute,
+  syncNearbyPerson,
+  syncNearbyPersonPreferences,
+  syncNearbyPersonPrivateProfile,
 };
 
 export const healthCheck = onCall(callableOptions, async (request) => {

@@ -37,6 +37,16 @@ abstract final class AppRoutes {
   static String discoverCategory(String category) =>
       '/discover/category/${_segment(category)}';
 
+  static const String nearby = '/discover/nearby';
+
+  static String nearbyForSport(String sportId) => Uri(
+    path: nearby,
+    queryParameters: <String, String>{'sport': sportId},
+  ).toString();
+
+  static String sportsRoute(String routeId) =>
+      '$nearby/routes/${_segment(routeId)}';
+
   static String sportHub(String sportId) => '/sports/${_segment(sportId)}';
 
   static String sportPlaces(String sportId) => '${sportHub(sportId)}/places';
@@ -170,6 +180,8 @@ abstract final class AppRouteNames {
   static const String discover = 'discover';
   static const String discoverSearch = 'discover-search';
   static const String discoverCategory = 'discover-category';
+  static const String nearby = 'nearby';
+  static const String sportsRoute = 'sports-route';
   static const String sports = 'sports';
   static const String sportHub = 'sport-hub';
   static const String sportPlaces = 'sport-places';

@@ -40,6 +40,36 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             leading: const Icon(Icons.search_rounded),
             onTap: () => context.push(AppRoutes.discoverSearch),
           ),
+          const SizedBox(height: AppSpacing.lg),
+          PremiumSurface(
+            onTap: () => context.push(AppRoutes.nearby),
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  Icons.explore_rounded,
+                  size: 38,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        'Explore nearby',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      const Text(
+                        'See players, places, matches, classes, and routes on one live map.',
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_rounded),
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.xl),
           const AppSectionHeader(
             title: 'Explore by category',
@@ -76,10 +106,10 @@ class _DiscoverScreenState extends State<DiscoverScreen>
           ),
           const SizedBox(height: AppSpacing.xl),
           const AppEmptyState(
-            icon: Icons.travel_explore_rounded,
-            title: 'Your discovery results will appear here',
+            icon: Icons.shield_outlined,
+            title: 'Discovery respects your privacy',
             message:
-                'Results will respect your sports, location, visibility, and discovery preferences.',
+                'Results follow profile visibility, age-segment, blocking, sport, and location preferences.',
           ),
         ],
       ),

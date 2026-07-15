@@ -16,6 +16,15 @@ void main() {
         '/sports/running/events/coastal%2010k',
       );
       expect(AppRoutes.sportLeaderboards('gym'), '/sports/gym/leaderboards');
+      expect(AppRoutes.nearby, '/discover/nearby');
+      expect(
+        AppRoutes.nearbyForSport('running'),
+        '/discover/nearby?sport=running',
+      );
+      expect(
+        AppRoutes.sportsRoute('coastal loop'),
+        '/discover/nearby/routes/coastal%20loop',
+      );
     });
 
     test('recognizes shell routes and protected aliases', () {

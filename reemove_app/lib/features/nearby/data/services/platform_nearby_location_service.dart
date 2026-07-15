@@ -1,0 +1,105 @@
+import 'dart:async';
+
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+
+import '../../../../core/domain/value_objects/geo_location.dart';
+import '../../../../core/errors/failure.dart';
+import '../../../../core/geospatial/geohash_encoder.dart';
+import '../../../../core/result/result.dart';
+import '../../domain/services/nearby_location_service.dart';
+
+class PlatformNearbyLocationService implements NearbyLocationService {
+  const PlatformNearbyLocationService();
+
+  @override
+  Future<Result<NearbyLocationCapture>> requestCurrentLocation() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        return const Success<NearbyLocationCapture>(
+          NearbyLocationCapture(
+            permission: NearbyLocationPermission.serviceDisabled,
+          ),
+        );
+      }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied) {
+        return const Success<NearbyLocationCapture>(
+          NearbyLocationCapture(permission: NearbyLocationPermission.denied),
+        );
+      }
+      if (permission == LocationPermission.deniedForever) {
+        return const Success<NearbyLocationCapture>(
+          NearbyLocationCapture(
+            permission: NearbyLocationPermission.deniedForever,
+          ),
+        );
+      }
+      final Position position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 20),
+        ),
+      );
+      Placemark? placemark;
+      try {
+        final List<Placemark> values = await Geocoding()
+            .placemarkFromCoordinates(position.latitude, position.longitude);
+        if (values.isNotEmpty) {
+          placemark = values.first;
+        }
+      } on Object {
+        // Coordinates remain valid when reverse geocoding is unavailable.
+      }
+      return Success<NearbyLocationCapture>(
+        NearbyLocationCapture(
+          permission: NearbyLocationPermission.granted,
+          location: GeoLocation(
+            latitude: position.latitude,
+            longitude: position.longitude,
+            geohash: GeohashEncoder.encode(
+              position.latitude,
+              position.longitude,
+            ),
+            locality:
+                _clean(placemark?.locality) ??
+                _clean(placemark?.subAdministrativeArea),
+            administrativeArea: _clean(placemark?.administrativeArea),
+            countryCode: _clean(placemark?.isoCountryCode)?.toUpperCase(),
+          ),
+        ),
+      );
+    } on TimeoutException catch (error) {
+      return FailureResult<NearbyLocationCapture>(
+        Failure(
+          message: 'Location took too long. Move near a window and try again.',
+          code: 'nearby/location-timeout',
+          cause: error,
+        ),
+      );
+    } on Object catch (error) {
+      return FailureResult<NearbyLocationCapture>(
+        Failure(
+          message: 'ReeMove could not determine your location.',
+          code: 'nearby/location-unexpected',
+          debugMessage: error.toString(),
+          cause: error,
+        ),
+      );
+    }
+  }
+
+  @override
+  Future<bool> openApplicationSettings() => Geolocator.openAppSettings();
+
+  @override
+  Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
+
+  static String? _clean(String? value) {
+    final String normalized = value?.trim() ?? '';
+    return normalized.isEmpty ? null : normalized;
+  }
+}

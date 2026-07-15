@@ -1,4 +1,5 @@
 import {GeoPoint, Timestamp} from "firebase-admin/firestore";
+import {geohashForLocation} from "geofire-common";
 
 import {currentSchemaVersion, seedDatasetVersion} from "../core/schema";
 import {directConversationId} from "../messaging/messagingPolicy";
@@ -1073,6 +1074,104 @@ export const seedDocuments = [
     path: `activities/${activity.id}`,
     data: {userId: activity.userId, sportId: activity.sportId, status: "verified",
       occurredAt: createdAt, metrics: activity.metrics, source: "seed", ...audit},
+  })),
+  {
+    path: "sports_routes/haifa-coastal-5k-loop",
+    data: {
+      ownerId: "system",
+      name: "Haifa Coastal 5K Loop",
+      description: "A flat, well-known promenade loop for easy runs, tempo sessions, and community meetups.",
+      sportIds: ["running"],
+      routeType: "loop",
+      difficulty: "easy",
+      startLocation: new GeoPoint(32.8191, 34.9569),
+      geohash: geohashForLocation([32.8191, 34.9569]),
+      path: [
+        new GeoPoint(32.8191, 34.9569),
+        new GeoPoint(32.8224, 34.9596),
+        new GeoPoint(32.8257, 34.9631),
+        new GeoPoint(32.8230, 34.9670),
+        new GeoPoint(32.8187, 34.9638),
+        new GeoPoint(32.8191, 34.9569),
+      ],
+      distanceMeters: 5000,
+      elevationGainMeters: 22,
+      estimatedDurationMinutes: 34,
+      surfaceTypes: ["paved", "promenade"],
+      locality: "Haifa Promenade",
+      city: "Haifa",
+      countryCode: "IL",
+      coverUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1600&q=85",
+      isVerified: true,
+      visibility: "public",
+      moderationState: "active",
+      ...audit,
+    },
+  },
+  ...[
+    {
+      id: "place_haifa-performance-gym", type: "place", sourceId: "haifa-performance-gym",
+      title: "Haifa Performance Gym", subtitle: "10 Sports Avenue", location: new GeoPoint(32.7940, 34.9896),
+      sportIds: ["gym"], placeType: "gym", imageUrl: null, verified: true, rating: 4.8,
+      city: "Haifa", countryCode: "IL", approximate: false,
+    },
+    {
+      id: "place_tamra-community-pitch", type: "place", sourceId: "tamra-community-pitch",
+      title: "Tamra Community Pitch", subtitle: "Community Sports Complex", location: new GeoPoint(32.8530, 35.1987),
+      sportIds: ["football"], placeType: "pitch", imageUrl: null, verified: true, rating: 4.5,
+      city: "Tamra", countryCode: "IL", approximate: false,
+    },
+    {
+      id: "place_haifa-coastal-running-track", type: "place", sourceId: "haifa-coastal-running-track",
+      title: "Haifa Coastal Running Track", subtitle: "Haifa Promenade", location: new GeoPoint(32.8191, 34.9569),
+      sportIds: ["running"], placeType: "track", imageUrl: null, verified: true, rating: 4.7,
+      city: "Haifa", countryCode: "IL", approximate: false,
+    },
+    {
+      id: "event_haifa-strength-foundations", type: "event", sourceId: "haifa-strength-foundations",
+      ownerId: "demo-runner", title: "Strength Foundations Workshop", subtitle: "Haifa",
+      location: new GeoPoint(32.7940, 34.9896), sportIds: ["gym"], eventType: "classSession",
+      imageUrl: null, startsAt: Timestamp.fromDate(new Date("2026-08-12T16:30:00.000Z")),
+      endsAt: Timestamp.fromDate(new Date("2026-08-12T18:00:00.000Z")), capacity: 16,
+      attendeeCount: 1, approximate: false,
+    },
+    {
+      id: "event_coastal-10k-social", type: "event", sourceId: "coastal-10k-social",
+      ownerId: "demo-runner", title: "Coastal 10K Social Run", subtitle: "Haifa",
+      location: new GeoPoint(32.8191, 34.9569), sportIds: ["running"], eventType: "meetup",
+      imageUrl: null, startsAt: Timestamp.fromDate(new Date("2026-08-15T03:30:00.000Z")),
+      endsAt: Timestamp.fromDate(new Date("2026-08-15T05:00:00.000Z")), capacity: 60,
+      attendeeCount: 2, approximate: false,
+    },
+    {
+      id: "person_demo-runner", type: "person", sourceId: "demo-runner", ownerId: "demo-runner",
+      title: "Maya Runner", subtitle: "running", username: "maya_runner",
+      location: new GeoPoint(32.82, 34.96), sportIds: ["running", "gym"],
+      imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=320&q=80",
+      verified: true, verificationType: "athlete", audienceSegment: "adult", approximate: true,
+    },
+    {
+      id: "route_haifa-coastal-5k-loop", type: "route", sourceId: "haifa-coastal-5k-loop",
+      ownerId: "system", title: "Haifa Coastal 5K Loop", subtitle: "Haifa Promenade",
+      location: new GeoPoint(32.8191, 34.9569), sportIds: ["running"], routeType: "loop",
+      imageUrl: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1600&q=85",
+      distanceMeters: 5000, elevationGainMeters: 22, difficulty: "easy",
+      path: [
+        new GeoPoint(32.8191, 34.9569), new GeoPoint(32.8224, 34.9596),
+        new GeoPoint(32.8257, 34.9631), new GeoPoint(32.8230, 34.9670),
+        new GeoPoint(32.8187, 34.9638), new GeoPoint(32.8191, 34.9569),
+      ],
+      verified: true, approximate: false,
+    },
+  ].map((entity) => ({
+    path: `nearby_entities/${entity.id}`,
+    data: {
+      ...entity,
+      geohash: geohashForLocation([entity.location.latitude, entity.location.longitude]),
+      active: true,
+      updatedAt: createdAt,
+      schemaVersion: currentSchemaVersion,
+    },
   })),
   {
     path: `data_migrations/${seedDatasetVersion}`,

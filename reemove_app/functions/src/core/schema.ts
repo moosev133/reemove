@@ -1,5 +1,5 @@
 export const currentSchemaVersion = 1;
-export const seedDatasetVersion = "2026-07-14.phase9.v1";
+export const seedDatasetVersion = "2026-07-14.phase10.v1";
 
 export const collections = {
   users: "users",
@@ -7,6 +7,8 @@ export const collections = {
   sports: "sports",
   places: "places",
   events: "events",
+  nearbyEntities: "nearby_entities",
+  sportsRoutes: "sports_routes",
   teams: "teams",
   activities: "activities",
   leaderboards: "leaderboards",
