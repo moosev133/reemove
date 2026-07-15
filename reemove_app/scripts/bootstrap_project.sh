@@ -22,6 +22,7 @@ if [[ ! -d android || ! -d ios || ! -d web ]]; then
   done
 fi
 
+python3 scripts/configure_native_permissions.py
 flutter pub get
 
 if ! command -v flutterfire >/dev/null; then
@@ -41,4 +42,4 @@ popd >/dev/null
 flutter analyze
 flutter test
 
-echo "ReeMove Phase 3 authentication foundation is ready. Configure Firebase providers, then run npm run verify:backend."
+echo "ReeMove Phase 4 onboarding foundation is ready. Configure Firebase providers and native capabilities, then run npm run verify:backend."

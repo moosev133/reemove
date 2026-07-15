@@ -1,13 +1,22 @@
 import {getApps, initializeApp} from "firebase-admin/app";
 import {getAuth} from "firebase-admin/auth";
 
-const demoUser = {
-  uid: "demo-athlete",
-  email: "athlete@demo.reemove.app",
-  password: "ReeMoveDemo123!",
-  displayName: "ReeMove Athlete",
-  emailVerified: true,
-};
+const demoUsers = [
+  {
+    uid: "demo-athlete",
+    email: "athlete@demo.reemove.app",
+    password: "ReeMoveDemo123!",
+    displayName: "ReeMove Athlete",
+    emailVerified: true,
+  },
+  {
+    uid: "demo-newcomer",
+    email: "newcomer@demo.reemove.app",
+    password: "ReeMoveDemo123!",
+    displayName: "ReeMove Newcomer",
+    emailVerified: true,
+  },
+] as const;
 
 async function seedAuth(): Promise<void> {
   const emulatorHost = process.env.FIREBASE_AUTH_EMULATOR_HOST;
@@ -30,23 +39,25 @@ async function seedAuth(): Promise<void> {
   }
 
   const auth = getAuth();
-  try {
-    await auth.getUser(demoUser.uid);
-    await auth.updateUser(demoUser.uid, {
-      email: demoUser.email,
-      password: demoUser.password,
-      displayName: demoUser.displayName,
-      emailVerified: demoUser.emailVerified,
-      disabled: false,
-    });
-    process.stdout.write(`Updated emulator user ${demoUser.email}.\n`);
-  } catch (error: unknown) {
-    const code = typeof error === "object" && error !== null && "code" in error ?
-      String((error as {code?: unknown}).code) : "";
-    if (code !== "auth/user-not-found") throw error;
+  for (const demoUser of demoUsers) {
+    try {
+      await auth.getUser(demoUser.uid);
+      await auth.updateUser(demoUser.uid, {
+        email: demoUser.email,
+        password: demoUser.password,
+        displayName: demoUser.displayName,
+        emailVerified: demoUser.emailVerified,
+        disabled: false,
+      });
+      process.stdout.write(`Updated emulator user ${demoUser.email}.\n`);
+    } catch (error: unknown) {
+      const code = typeof error === "object" && error !== null && "code" in error ?
+        String((error as {code?: unknown}).code) : "";
+      if (code !== "auth/user-not-found") throw error;
 
-    await auth.createUser(demoUser);
-    process.stdout.write(`Created emulator user ${demoUser.email}.\n`);
+      await auth.createUser(demoUser);
+      process.stdout.write(`Created emulator user ${demoUser.email}.\n`);
+    }
   }
 }
 

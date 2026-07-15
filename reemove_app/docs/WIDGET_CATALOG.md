@@ -97,3 +97,15 @@ All reusable widgets must support light/dark mode, text scaling, RTL, semantic l
 73. `LegalConsentFields` — explicit terms, privacy, and minimum-age confirmations
 
 These components use the shared design system and support light/dark mode, keyboard navigation, autofill, text scaling, and semantic labels.
+
+## Phase 4 implemented onboarding components
+
+74. `OnboardingScaffold` — responsive branded shell, progress, title, and privacy context
+75. `OnboardingNavigation` — loading-aware Back/Continue/Finish actions
+76. `OnboardingStepContent` — typed renderer for all ten onboarding steps
+77. `AvatarSelector` — network/initials state, upload progress, and accessible action
+78. `SelectableOptionCard` — reusable selected/unselected sports and goals surface
+79. `PreferenceSwitchTile` — accessible preference row with supporting copy
+80. `SportIcon` — catalog icon-key mapping with safe fallback
+
+The flow also includes reusable privacy cards, review tiles, permission recovery actions, responsive sport grids, skill-level inputs, and discovery controls. All permission requests originate from an explicit user tap.

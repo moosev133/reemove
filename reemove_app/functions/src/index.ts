@@ -6,6 +6,8 @@ import {deleteAccount, retryAccountDeletions} from "./account/deleteAccount";
 import {provisionAccount} from "./account/provisionAccount";
 import {revokeSessions} from "./account/revokeSessions";
 import {syncAuthProviders} from "./account/syncAuthProviders";
+import {completeOnboarding} from "./onboarding/completeOnboarding";
+import {saveOnboardingProgress} from "./onboarding/saveOnboardingProgress";
 import {callableOptions, primaryRegion} from "./core/functionOptions";
 
 initializeApp();
@@ -20,6 +22,8 @@ export {
   retryAccountDeletions,
   revokeSessions,
   syncAuthProviders,
+  saveOnboardingProgress,
+  completeOnboarding,
 };
 
 export const healthCheck = onCall(callableOptions, async (request) => {

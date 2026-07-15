@@ -14,7 +14,7 @@ Do not share Authentication users, Firestore data, Storage buckets, Analytics st
 
 Run `flutterfire configure` separately for each environment. `lib/firebase_options.dart` and native Firebase configuration files are intentionally absent because they must be generated from the owner's real projects.
 
-Generate native platform folders and install dependencies:
+Generate native platform folders, apply Phase 4 permission declarations, and install dependencies:
 
 ```bash
 ./scripts/bootstrap_project.sh
@@ -28,7 +28,7 @@ flutterfire configure --project YOUR_PROJECT_ID
 
 ## Authentication configuration
 
-Complete `AUTHENTICATION_SETUP.md` before testing production authentication. At minimum:
+Complete `AUTHENTICATION_SETUP.md` and `ONBOARDING_SETUP.md` before testing production authentication/onboarding. At minimum:
 
 - Enable Email/Password, Google, and Apple.
 - Register Android SHA-1/SHA-256 fingerprints for every signing key.
@@ -71,13 +71,14 @@ After staging validation, promote the same reviewed commit to production. Never 
 
 ## Seed data
 
-The checked-in seed workflow is emulator-only:
+The checked-in seed workflow is emulator-only. For interactive development, keep all emulators running and seed them from another terminal:
 
 ```bash
-npm run seed:emulator
+npm run emulators:start
+npm run seed:running-emulators
 ```
 
-It starts Auth and Firestore emulators, creates the deterministic demo identity, and writes matching Firestore records. It refuses to run without emulator host variables or against a project ID that does not start with `demo-`.
+`npm run seed:emulator` remains a one-shot CI/smoke command that starts Auth/Firestore, seeds them, and shuts them down. Seed code refuses to run without emulator host variables or against a project ID that does not start with `demo-`.
 
 ## Phase 3 authentication release gates
 
@@ -109,3 +110,19 @@ It starts Auth and Firestore emulators, creates the deterministic demo identity,
 - Monitoring, rollback, backups, and incident ownership are assigned.
 
 A complete store-specific operational runbook is delivered in Phase 16.
+
+## Phase 4 onboarding release gates
+
+- `scripts/configure_native_permissions.py` has been run after native platform generation.
+- Android location and notification declarations appear exactly once in the merged manifest.
+- iOS camera, photo-library, and when-in-use location purpose strings match the reviewed privacy wording.
+- iOS Push Notifications and Remote notifications capabilities are enabled and APNs is configured in Firebase.
+- `app_config/mobile` contains reviewed age limits, onboarding version, and current legal versions.
+- Every selectable sport is active and has a stable document ID.
+- A fresh, incomplete, resumed, and already-completed onboarding account all route correctly.
+- Birthday and exact coordinates are absent from public profile documents.
+- Location denial, permanent denial, disabled services, approximate location, and no-location completion are device tested.
+- Notification authorization/denial is device tested; preference master enablement never contradicts recorded OS permission.
+- Avatar camera/library/cancel/lost-data flows and Storage metadata verification pass.
+- Modified-client attempts cannot directly write private onboarding or completion-owned profile fields.
+- Two-device completion is idempotent and does not regress an already completed profile.

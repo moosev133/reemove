@@ -6,17 +6,15 @@ The canonical deterministic seed data lives in:
 - `functions/src/seed/seedData.ts`
 - `functions/src/seed/seedFirestore.ts`
 
-It includes a matching Firebase Auth Emulator identity, username reservation,
-public profile, owner-private profile and consent records, the three supported
-sports, public places, one event, one challenge, one marketplace listing, app
-configuration, and feature flags.
+It includes two matching Firebase Auth Emulator identities: one completed athlete and one account that enters the Phase 4 onboarding flow. Their username reservations, public profiles, private profile/consent/preferences/onboarding records, three supported sports, places, event, challenge, marketplace listing, app configuration, and feature flags are seeded consistently.
 
-Run from the repository root:
+For interactive development:
 
 ```bash
-npm run seed:emulator
+npm run emulators:start
+npm run seed:running-emulators
 ```
 
-The Auth and Firestore scripts refuse to run unless their emulator host
-variables are present and the project ID begins with `demo-`, preventing
-accidental production writes.
+Run those commands in separate terminals. `npm run seed:emulator` is the one-shot CI/smoke workflow that starts Auth/Firestore, seeds them, and exits.
+
+The seed scripts refuse to run unless emulator host variables are present and the project ID begins with `demo-`, preventing accidental production writes.

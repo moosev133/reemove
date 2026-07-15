@@ -8,6 +8,8 @@
     "test:rules": "npx --yes firebase-tools@15.23.0 emulators:exec --project demo-reemove --only firestore,storage \"npm --prefix firebase_tests test\"",
     "seed:emulator": "npx --yes firebase-tools@15.23.0 emulators:exec --project demo-reemove --only auth,firestore \"npm --prefix functions run seed:emulator\"",
     "verify:backend": "npm run lint:functions && npm run build:functions && npm run test:functions && npm run test:rules",
-    "test:functions": "npm --prefix functions run test:unit"
+    "test:functions": "npm --prefix functions run test:unit",
+    "emulators:start": "npx --yes firebase-tools@15.23.0 emulators:start --project demo-reemove",
+    "seed:running-emulators": "FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIRESTORE_EMULATOR_HOST=127.0.0.1:8180 GCLOUD_PROJECT=demo-reemove npm --prefix functions run seed:emulator"
   }
 }

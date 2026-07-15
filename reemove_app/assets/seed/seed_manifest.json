@@ -1,8 +1,8 @@
 {
-  "datasetVersion": "2026-07-13.phase3.v1",
+  "datasetVersion": "2026-07-13.phase4.v1",
   "schemaVersion": 1,
-  "authEmulatorUsers": 1,
-  "demoUid": "demo-athlete",
+  "authEmulatorUsers": 2,
+  "demoUids": ["demo-athlete", "demo-newcomer"],
   "sports": ["football", "gym", "running"],
   "collections": [
     "app_config",
@@ -16,5 +16,6 @@
     "marketplace_listings",
     "data_migrations"
   ],
-  "serverOnlyCollections": ["account_deletions"]
+  "privateUserDocuments": ["profile", "consents", "preferences", "onboarding"],
+  "serverOnlyCollections": ["account_deletions", "audit_logs", "rate_limits"]
 }

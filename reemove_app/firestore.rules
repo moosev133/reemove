@@ -129,18 +129,7 @@ service cloud.firestore {
         && changed.hasOnly([
           'displayName',
           'bio',
-          'avatarUrl',
-          'favoriteSportIds',
-          'sportLevels',
-          'goals',
-          'location',
-          'geohash',
-          'locality',
-          'administrativeArea',
-          'countryCode',
-          'discoveryRadiusKm',
           'visibility',
-          'onboardingCompleted',
           'updatedAt'
         ])
         && validUpdateAudit()

@@ -144,3 +144,21 @@ The broader catalog above remains the target service inventory for later phases.
 - Emulator-only `seedAuth` and `seedFirestore` tools
 
 `provisionAccount` owns username reservation, profile creation, private metadata, and consent versioning. `syncAuthProviders` derives provider IDs from Firebase Admin. `revokeSessions` owns refresh-token invalidation. `deleteAccount` owns recent-auth validation, identity disable/delete ordering, username release, recursive profile cleanup, and retry state. All privileged mutations use server-side rate limits and audit events.
+
+## Phase 4 implemented onboarding services
+
+- `OnboardingRepository` / `FirebaseOnboardingRepository`
+- `AvatarRepository` / `FirebaseAvatarRepository`
+- `AvatarPickerService` / `PlatformAvatarPickerService`
+- `LocationService` / `PlatformLocationService`
+- `NotificationPermissionService` / `FirebaseNotificationPermissionService`
+- `UnavailableNotificationPermissionService` for emulator/configuration-safe behavior
+- `OnboardingController` Riverpod `AsyncNotifier`
+- `OnboardingValidators`
+- `GeohashEncoder`
+- `saveOnboardingProgress` callable Function
+- `completeOnboarding` callable Function
+- Shared onboarding request parser, age policy, and geohash policy
+- `configure_native_permissions.py` native configuration tool
+
+The callable Functions are the only write path for the private draft and trusted completion transition. Avatar bytes go directly to Storage under owner-scoped rules; completion independently verifies the resulting object metadata.

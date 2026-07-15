@@ -111,5 +111,6 @@ The specification defines **16 mandatory development phases**. Each phase has a 
 - Phase 1: complete.
 - Phase 2: complete.
 - Phase 3: complete.
+- Phase 4: complete.
 
-Phase 3 ships the executable authentication feature, guarded session router, server-owned account bootstrap, username transaction, reauthentication, account deletion, Auth Emulator seed, rules coverage, and provider setup documentation. Phase 4 begins with resumable sports onboarding.
+Phase 4 ships the resumable ten-step onboarding flow, typed draft/domain layer, avatar pipeline, age and legal policy checks, coarse/public versus exact/private location handling, discovery/accessibility/notification preferences, trusted server completion, native permission automation, rules coverage, and complete/incomplete emulator users. Phase 5 begins with the adaptive six-destination application shell.

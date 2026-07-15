@@ -7,7 +7,7 @@ Every application-owned document carries an integer `schemaVersion`. Phase 2 beg
 Dataset and migration runs use a separate immutable identifier, for example:
 
 ```text
-2026-07-13.phase3.v1
+2026-07-13.phase4.v1
 ```
 
 Each successful migration writes a marker to:

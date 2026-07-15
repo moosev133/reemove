@@ -144,9 +144,7 @@ The final product is expected to contain approximately **78 screens and major mo
 
 The count is intentionally larger than a typical MVP because every required capability is represented as a real production flow rather than compressed into generic placeholder pages.
 
-## Phase 3 implemented routes
-
-The following routes are executable in the Phase 3 package:
+## Implemented routes through Phase 4
 
 | Route | Screen | Purpose |
 |---|---|---|
@@ -160,7 +158,7 @@ The following routes are executable in the Phase 3 package:
 | `/auth/username` | `UsernameSetupScreen` | Social-user account provisioning |
 | `/auth/blocked` | `AccountBlockedScreen` | Restricted/removed account state |
 | `/account/security` | `AccountSecurityScreen` | Linked providers, reauthentication, local/global sign-out, deletion |
-| `/onboarding` | `OnboardingHandoffScreen` | Guarded handoff to Phase 4 |
-| `/home` | `AuthenticatedHomeHandoffScreen` | Guarded authenticated destination |
+| `/onboarding` | `OnboardingFlowScreen` | Ten-step resumable onboarding and trusted completion |
+| `/home` | `AuthenticatedHomeHandoffScreen` | Guarded destination replaced by the Phase 5 shell |
 
-Google and Apple authentication are actions inside the welcome flow rather than separate routes. Reset confirmation is rendered inside the forgot-password screen to avoid unnecessary route state.
+The `/onboarding` route renders distinct profile, birthday/legal, sports, levels, goals, location, discovery, accessibility, notifications, and review steps while preserving one guarded route and one typed controller. Google and Apple authentication remain actions inside the welcome flow. Reset confirmation remains inside the forgot-password screen.

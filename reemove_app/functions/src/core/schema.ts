@@ -1,5 +1,5 @@
 export const currentSchemaVersion = 1;
-export const seedDatasetVersion = "2026-07-13.phase3.v1";
+export const seedDatasetVersion = "2026-07-13.phase4.v1";
 
 export const collections = {
   users: "users",

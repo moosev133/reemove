@@ -121,3 +121,19 @@ DTOs remain in the data layer and map into these domain models. Firestore `Times
 88. `AuthDestination` — configuration, signed-out, profile, verification, onboarding, ready, blocked
 
 Authentication-specific Firebase objects remain in data mappers and repositories. No `User`, `AuthCredential`, `FirebaseAuthException`, or `HttpsCallableResult` enters the domain layer.
+
+## Phase 4 implemented onboarding models
+
+89. `OnboardingDraft` — complete resumable client/domain state
+90. `OnboardingStep` — ten ordered steps with next/previous navigation
+91. `OnboardingProgressStatus` — not-started, in-progress, completed
+92. `OnboardingPolicy` — minimum/maximum age and active legal versions
+93. `DiscoveryPreferences` — radius, people/events/trainers, visibility
+94. `AccessibilityPreferences` — motion, contrast, text, screen-reader choices
+95. `NotificationPreferences` — category choices plus OS permission state
+96. `PermissionDecision` / `NotificationPermissionDecision` — normalized platform states
+97. `AvatarUploadSource` / `AvatarAsset` — platform-neutral image input and stored result
+98. `LocationCapture` — optional domain location with normalized permission decision
+99. `OnboardingViewState` — immutable application state for UI and async operations
+
+`OnboardingDraftDto` is a data-layer serializer rather than a domain model. Birthday and exact location remain inside private records; the public profile model receives only area-level discovery fields.

@@ -71,6 +71,21 @@ for shell_file in [ROOT / "scripts/bootstrap_project.sh"]:
     if result.returncode != 0:
         errors.append(f"Invalid shell script {shell_file.relative_to(ROOT)}: {result.stderr}")
 
+for python_file in [
+    ROOT / "scripts/validate_repository.py",
+    ROOT / "scripts/configure_native_permissions.py",
+]:
+    result = subprocess.run(
+        [sys.executable, "-m", "py_compile", str(python_file)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        errors.append(
+            f"Invalid Python script {python_file.relative_to(ROOT)}: {result.stderr}",
+        )
+
 for script in (ROOT / "firebase_tests/src").glob("*.mjs"):
     result = subprocess.run(
         ["node", "--check", str(script)],

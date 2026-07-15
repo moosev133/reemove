@@ -12,10 +12,10 @@ import '../../features/authentication/presentation/screens/auth_welcome_screen.d
 import '../../features/authentication/presentation/screens/authenticated_home_handoff_screen.dart';
 import '../../features/authentication/presentation/screens/email_verification_screen.dart';
 import '../../features/authentication/presentation/screens/forgot_password_screen.dart';
-import '../../features/authentication/presentation/screens/onboarding_handoff_screen.dart';
 import '../../features/authentication/presentation/screens/sign_in_screen.dart';
 import '../../features/authentication/presentation/screens/sign_up_screen.dart';
 import '../../features/authentication/presentation/screens/username_setup_screen.dart';
+import '../../features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 import '../../features/startup/presentation/screens/startup_screen.dart';
 import 'app_routes.dart';
 
@@ -78,7 +78,7 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
       _route(
         path: AppRoutes.onboarding,
         name: AppRouteNames.onboarding,
-        child: const OnboardingHandoffScreen(),
+        child: const OnboardingFlowScreen(),
       ),
       _route(
         path: AppRoutes.home,

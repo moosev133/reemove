@@ -115,7 +115,7 @@
 
 ### `users/{uid}`
 
-`uid`, `username`, `usernameNormalized`, `displayName`, `bio`, `avatarUrl`, `role`, `isVerified`, `verificationType`, `favoriteSportIds`, `sportLevels`, `goals`, `location`, `geohash`, `discoveryRadiusKm`, `visibility`, `followersCount`, `followingCount`, `postsCount`, `onboardingCompleted`, `createdAt`, `updatedAt`, `schemaVersion`, `moderationState`.
+`uid`, `username`, `usernameNormalized`, `displayName`, `bio`, `avatarUrl`, `role`, `isVerified`, `verificationType`, `favoriteSportIds`, `sportLevels`, `goals`, optional coarse `location`, `geohash`, `locality`, `administrativeArea`, `countryCode`, `discoveryRadiusKm`, `visibility`, `followersCount`, `followingCount`, `postsCount`, `onboardingCompleted`, `onboardingVersion`, `createdAt`, `updatedAt`, `schemaVersion`, `moderationState`. Birthday and exact coordinates are never public.
 
 ### `posts/{postId}`
 
@@ -142,6 +142,15 @@
 ### `users/{uid}/private/consents`
 
 `uid`, `termsVersion`, `privacyVersion`, `termsAcceptedAt`, `privacyAcceptedAt`, `minimumAgeConfirmedAt`, `createdAt`, `updatedAt`, `schemaVersion`. Readable only by the owner; writable only by trusted backend code.
+
+
+### `users/{uid}/private/onboarding`
+
+`uid`, `version`, `currentStep`, private `dateOfBirth`, `avatarUrl`, `avatarStoragePath`, selected sports, sport levels, goals, optional exact draft location, permission states, discovery/accessibility/notification preferences, `status`, `completedAt`, `createdAt`, `updatedAt`, `schemaVersion`. Clients may read only their own document; all writes use trusted callable Functions.
+
+### `users/{uid}/private/preferences`
+
+`uid`, `discovery`, `accessibility`, `notifications`, `locationPermission`, optional `exactLocation` (`GeoPoint`, precision-9 geohash, normalized area fields), `updatedAt`, `schemaVersion`. The public profile receives only a rounded area-level position and precision-6 geohash.
 
 ### `account_deletions/{uid}`
 
@@ -186,10 +195,10 @@ The checked-in rules remain deny-by-default. Each later phase must extend rules 
 
 ## Cumulative implementation status
 
-Typed converters and repositories are implemented for `users`, `sports`, `places`, `events`, `challenges`, `marketplace_listings`, `app_config`, and `feature_flags`. Phase 3 additionally implements server-owned `usernames`, user-private `profile` and `consents` documents, `account_deletions`, authentication `audit_logs`, and transactional `rate_limits`. Other cataloged collections remain intentionally denied until their feature phase adds complete code, rules, indexes, and tests.
+Typed converters and repositories are implemented for `users`, `sports`, `places`, `events`, `challenges`, `marketplace_listings`, `app_config`, and `feature_flags`. Phase 3 additionally implements server-owned `usernames`, user-private `profile` and `consents` documents, `account_deletions`, authentication `audit_logs`, and transactional `rate_limits`. Phase 4 implements user-private `onboarding` and `preferences`, trusted personalization writes, and the coarse-public/exact-private location split. Other cataloged collections remain intentionally denied until their feature phase adds complete code, rules, indexes, and tests.
 
 Current schema version: `1`.
 
-Current deterministic seed dataset: `2026-07-13.phase3.v1`.
+Current deterministic seed dataset: `2026-07-13.phase4.v1`.
 
-See `DATABASE_IMPLEMENTATION.md`, `AUTHENTICATION_IMPLEMENTATION.md`, `DATA_MIGRATIONS.md`, and the phase completion reports for executable details.
+See `DATABASE_IMPLEMENTATION.md`, `AUTHENTICATION_IMPLEMENTATION.md`, `ONBOARDING_IMPLEMENTATION.md`, `DATA_MIGRATIONS.md`, and the phase completion reports for executable details.

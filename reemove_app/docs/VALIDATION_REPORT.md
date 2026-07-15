@@ -1,4 +1,4 @@
-# Validation report — Phase 3
+# Validation report — Phase 4
 
 Validation date: 2026-07-13
 
@@ -9,39 +9,43 @@ Validation date: 2026-07-13
 - Relative Dart import resolution.
 - Clean Architecture boundary check preventing Firebase types in domain files.
 - Shell syntax validation.
+- Python syntax validation for repository and native-configuration tools.
 - Node syntax validation for Firestore and Storage Rules tests.
 - Cloud Functions ESLint.
 - Cloud Functions strict TypeScript compilation.
-- Cloud Functions/Auth seed compilation.
-- Backend unit tests: **8 passed**.
+- Cloud Functions/Auth/Firestore seed compilation.
+- Backend unit tests: **15 passed**.
+  - 4 onboarding age/geospatial policy tests.
+  - 3 onboarding request-parser tests.
   - 4 username/display-name policy tests.
   - 4 recent-authentication window tests.
-- Dart tree-sitter grammar parse: **113 files passed** with no syntax-error nodes.
+- Dart tree-sitter grammar parse: **141 files passed** with no syntax-error nodes.
+- Repository architecture/configuration validation passed.
+- Native permission patcher fixture test passed and remained idempotent on a second run.
 - Firebase Rules test dependencies installed with zero npm audit vulnerabilities.
-- Deterministic Auth and Firestore seed identity/document consistency review.
+- Deterministic completed/incomplete Auth and Firestore seed identity consistency review.
 - Callable/export/repository naming consistency review.
 
 ## Security behavior represented by automated tests
 
 - Anonymous and unauthorized profile access is rejected.
 - Active public profile reads are bounded.
-- Client public-profile creation is rejected.
-- Username reservation and private account metadata writes are rejected.
-- Server-owned profile fields cannot be changed by users.
-- `rate_limits`, `audit_logs`, and `account_deletions` are inaccessible to clients.
-- Valid abuse reports are accepted only from their authenticated reporter.
-- Storage ownership, path, content-type, and size policies remain covered.
-- Username normalization/reservation policy and recent-login expiry are unit tested.
+- Client profile creation, username reservation, and private metadata writes are rejected.
+- Owners may read only their own private onboarding draft and cannot write it directly.
+- Clients cannot set `onboardingCompleted` or onboarding-owned profile personalization fields.
+- Server-owned counters, verification, moderation, rate-limit, audit, and deletion records remain protected.
+- Avatar Storage ownership, path, content type, metadata, and size policies remain covered.
+- Onboarding request version, goal catalog, coordinate range, list bounds, age policy, and geohash behavior are unit tested.
 
 ## Rules emulator execution result
 
-`npm run test:rules` reached Firebase Emulator startup but could not download:
+`npm run test:rules` was attempted. The command timed out during Firebase Emulator startup in this execution environment before the Firestore/Storage assertions ran. Test source, configuration, JavaScript syntax, dependencies, ports, and CI wiring are complete, but this report does not claim the Rules assertions executed here.
 
-```text
-cloud-firestore-emulator-v1.21.0.jar
+Run the suite on a machine where Firebase emulator binaries can be downloaded and cached:
+
+```bash
+npm run test:rules
 ```
-
-The request to Google Storage failed in this execution environment. The test source and configuration are complete, dependencies install successfully, and JavaScript syntax passes, but the Firestore/Storage Rules assertions are not claimed as executed here.
 
 ## Flutter limitation
 
@@ -57,13 +61,13 @@ flutter build ipa
 flutter build web
 ```
 
-They remain mandatory before staging.
+Dart grammar parsing is not a replacement for Flutter analysis, package resolution, widget tests, or native builds. Those checks remain mandatory before staging.
 
 ## Dependency audit
 
 - `firebase_tests`: zero known npm vulnerabilities.
-- `functions`: no high or critical production advisories; eight moderate transitive advisories are reported through the Firebase Admin dependency tree.
-- The Functions package uses the mutually supported pair `firebase-admin ^13.10.0` and `firebase-functions ^7.2.5`. Upgrading Admin to v14 removes some advisories but is outside the declared peer range of the current Functions SDK, so the repository does not force an unsupported combination. Re-evaluate when the Functions SDK declares Admin v14 compatibility.
+- `functions` production dependency tree: 9 moderate, 0 high, and 0 critical advisories.
+- No unsupported forced major upgrades were applied. Re-evaluate Firebase Admin/Functions versions during each release dependency review.
 
 ## Reproduction commands
 
@@ -76,7 +80,7 @@ npm --prefix functions run test:unit
 npm --prefix firebase_tests ci
 npm run test:rules
 flutter analyze
-flutter test
+flutter test --coverage
 ```
 
-Deployment is blocked until the Flutter checks and full emulator Rules suite pass in CI or on a properly equipped development machine.
+Deployment is blocked until the Flutter checks, native device matrix, and full emulator Rules suite pass in CI or on a properly equipped development machine.

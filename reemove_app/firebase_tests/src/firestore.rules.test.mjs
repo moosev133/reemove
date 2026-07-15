@@ -54,6 +54,20 @@ async function seedFirestore() {
     await Promise.all([
       setDoc(doc(db, "users/public-user"), publicUser("public-user")),
       setDoc(doc(db, "users/private-user"), publicUser("private-user", "private")),
+      setDoc(doc(db, "users/incomplete-user"), {
+        ...publicUser("incomplete-user"),
+        onboardingCompleted: false,
+      }),
+      setDoc(doc(db, "users/public-user/private/onboarding"), {
+        uid: "public-user",
+        version: 1,
+        currentStep: "sports",
+        favoriteSportIds: ["football"],
+        status: "in_progress",
+        createdAt: new Date("2026-07-13T12:00:00Z"),
+        updatedAt: new Date("2026-07-13T12:00:00Z"),
+        schemaVersion: 1,
+      }),
       setDoc(doc(db, "usernames/alice"), {uid: "alice"}),
       setDoc(doc(db, "sports/football"), {
         slug: "football",
@@ -133,6 +147,37 @@ describe("user profile rules", () => {
     }));
     await assertFails(updateDoc(profile, {
       followersCount: 999,
+      updatedAt: serverTimestamp(),
+    }));
+  });
+
+  it("allows owners to resume private onboarding without exposing it", async () => {
+    await seedFirestore();
+    const owner = testEnv.authenticatedContext("public-user").firestore();
+    const other = testEnv.authenticatedContext("other-user").firestore();
+    const draftPath = "users/public-user/private/onboarding";
+
+    await assertSucceeds(getDoc(doc(owner, draftPath)));
+    await assertFails(getDoc(doc(other, draftPath)));
+    await assertFails(updateDoc(doc(owner, draftPath), {
+      currentStep: "goals",
+      updatedAt: serverTimestamp(),
+    }));
+  });
+
+  it("prevents clients from bypassing trusted onboarding completion", async () => {
+    await seedFirestore();
+    const owner = testEnv.authenticatedContext("incomplete-user").firestore();
+    const profile = doc(owner, "users/incomplete-user");
+
+    await assertFails(updateDoc(profile, {
+      onboardingCompleted: true,
+      updatedAt: serverTimestamp(),
+    }));
+    await assertFails(updateDoc(profile, {
+      favoriteSportIds: ["running"],
+      sportLevels: {running: "advanced"},
+      goals: ["performance"],
       updatedAt: serverTimestamp(),
     }));
   });

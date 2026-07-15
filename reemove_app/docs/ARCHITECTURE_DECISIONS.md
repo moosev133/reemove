@@ -88,3 +88,23 @@ Transaction-backed rate limits live in `rate_limits`; privileged identity mutati
 ## ADR-022: Authentication analytics is privacy-minimized and opt-in
 
 Authentication analytics emits only event/action and provider categories. It is disabled by default and in emulator mode. Email, username, display name, UID, raw credentials, and tokens are prohibited parameters. Product/legal configuration must explicitly enable collection for a release environment.
+
+## ADR-023: Onboarding progress is private and server-persisted
+
+The complete draft is stored at `users/{uid}/private/onboarding` after each navigation action. A single document is appropriate because the bounded draft is one transactional aggregate, while Firestore Rules deny client writes so validation and versioning remain centralized in callable Functions.
+
+## ADR-024: Onboarding completion is a trusted atomic transition
+
+Clients cannot set `onboardingCompleted`, sports, levels, goals, discovery radius, or location directly. `completeOnboarding` revalidates app configuration, consent versions, active sports, avatar ownership, age, permissions, and account state, then atomically writes public profile, private profile, preferences, and draft status. This prevents modified clients from bypassing required steps.
+
+## ADR-025: Exact and public location use different precision and storage
+
+Exact coordinates are stored only under the owner-readable private preferences document with a precision-9 geohash. Public profiles receive coordinates rounded to two decimal places and a precision-6 geohash. Non-granted permission removes stale public location. Nearby queries must still apply exact distance filtering and visibility policy in later phases.
+
+## ADR-026: Permission requests are contextual and optional
+
+Location and notification APIs are invoked only from explicit controls on their dedicated steps. Denied, permanently denied, unavailable, and emulator states are modeled rather than treated as exceptions. Users may finish onboarding without either permission; settings recovery actions are offered where supported.
+
+## ADR-027: Native permission configuration is generated idempotently
+
+Native project folders are intentionally not committed before the owner configures FlutterFire. `configure_native_permissions.py` patches generated Android/iOS files after `flutter create`, including when-in-use-only iOS location settings, without duplicating declarations on repeated bootstrap runs.
