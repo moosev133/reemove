@@ -64,6 +64,24 @@ macos/Runner/GoogleService-Info.plist
 functions/.env
 functions/.env.*
 
+# Signing / local release secrets
+android/key.properties
+**/*.jks
+**/*.keystore
+ios/ExportOptions.plist
+!ios/ExportOptions.plist.template
+
+# Dart defines with real owner values
+dart_defines/*.json
+!dart_defines/*.json.example
+
+# Release outputs / evidence
+release_evidence/
+build/symbols/
+**/*.aab
+**/*.ipa
+**/*.dSYM.zip
+
 # Logs
 firebase-debug.log
 firestore-debug.log

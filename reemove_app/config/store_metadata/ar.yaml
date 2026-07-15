@@ -1,0 +1,17 @@
+locale: ar
+app_name: "ReeMove"
+subtitle: "عالمك الرياضي في مكان واحد"
+short_description: "تواصل، تدرب، تنافس واكتشف الأنشطة الرياضية من حولك."
+keywords: "رياضة,لياقة,جري,كرة القدم,نادي,تحديات,مجتمع,تدريب"
+promotional_text: "ابنِ حياتك الرياضية في مكان واحد."
+full_description: |
+  ReeMove هو البيت الرقمي لأسلوب الحياة الرياضي. تابع الرياضيين والأصدقاء، شارك تقدمك، اكتشف الأماكن والأنشطة القريبة، انضم إلى التحديات، تواصل عبر الرسائل والمجموعات، استكشف المعدات الرياضية، واستخدم أدوات ذكاء اصطناعي تراعي السلامة للحصول على أفكار تدريبية.
+
+  يبدأ ReeMove بتجارب متكاملة لكرة القدم والنادي الرياضي والجري، مع بنية قابلة للتوسع إلى رياضات إضافية. تتضمن التجربة إعدادات الخصوصية والإبلاغ والحظر والإشراف وحذف الحساب.
+
+  تعتمد بعض الميزات على أذونات الموقع أو الإشعارات أو الكاميرا أو الصور. يمكنك التحكم بهذه الأذونات وتغييرها من إعدادات جهازك.
+support_url: https://REPLACE.example/support
+privacy_url: https://REPLACE.example/privacy
+terms_url: https://REPLACE.example/terms
+account_deletion_url: https://REPLACE.example/delete-account
+status: REVIEW_AGAINST_FINAL_FEATURES_AND_STORE_LIMITS

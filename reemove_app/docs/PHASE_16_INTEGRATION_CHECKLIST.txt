@@ -1,0 +1,26 @@
+REEMOVE PHASE 16 INTEGRATION CHECKLIST
+
+[ ] Merge all Phase 1-16 folders into a single clean repository.
+[ ] Resolve every .template, .snippet, and placeholder against the real app identifiers.
+[ ] Confirm Android applicationId and iOS bundle identifier are final and owned.
+[ ] Create/verify separate Firebase dev, staging, and prod projects.
+[ ] Generate environment-specific Firebase options with FlutterFire CLI.
+[ ] Enable only required APIs and Authentication providers in production.
+[ ] Merge and test final Firestore/Storage rules and Firestore indexes.
+[ ] Configure Functions parameters and Secret Manager; never commit secret values.
+[ ] Configure Google Maps restrictions per platform and per environment.
+[ ] Configure FCM/APNs, universal links/app links, and Sign in with Apple.
+[ ] Register App Check providers and review metrics before enforcement.
+[ ] Configure Crashlytics symbols, Performance Monitoring, Analytics consent, and alerts.
+[ ] Publish Remote Config defaults before the production app requests them.
+[ ] Configure GitHub protected environments and Workload Identity Federation.
+[ ] Create Android upload key, enable Play App Signing, and document recovery ownership.
+[ ] Configure Apple certificates/profiles/App Store Connect API access and backup ownership.
+[ ] Complete privacy policy, Terms, Community Guidelines, support, and deletion URLs.
+[ ] Complete App Store privacy and Google Play Data safety answers from the final inventory.
+[ ] Run Phase 15 pre-release gate and sign RELEASE_READINESS_SCORECARD.
+[ ] Build and test signed Android AAB and iOS IPA using production configuration.
+[ ] Complete internal/beta testing and production-config smoke tests.
+[ ] Rehearse backup, restore, rollback, kill switch, and incident escalation.
+[ ] Launch gradually; expand only while health gates remain green.
+[ ] Store release artifacts, symbols, manifests, approvals, and audit evidence securely.

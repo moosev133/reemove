@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "phase15BudgetsMs": {
+    "warmStartP95": 1500,
+    "coldStartP95": 3000,
+    "feedFirstContentP95": 2500,
+    "feedNextPageP95": 2000,
+    "messageAckP95": 1500,
+    "notificationRouteP95": 2500,
+    "standardCallableP95": 3000,
+    "aiCallableP95": 15000
+  },
+  "releaseAlerts": {
+    "crashFreeUsersWarningBelowPercent": 99.5,
+    "crashFreeUsersRollbackCandidateBelowPercent": 99.0,
+    "callableErrorWarningAbovePercent": 2.0,
+    "callableErrorRollbackCandidateAbovePercent": 5.0,
+    "accountDeletionOldestJobWarningMinutes": 60,
+    "moderationQueueOldestItemWarningMinutes": 30,
+    "budgetSpendWarningPercent": 70,
+    "budgetSpendCriticalPercent": 90
+  },
+  "note": "Initial thresholds. Replace with approved measured baselines and separate noisy non-critical endpoints."
+}

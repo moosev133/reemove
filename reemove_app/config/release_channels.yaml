@@ -1,0 +1,18 @@
+schema_version: 1
+channels:
+  internal:
+    audience: engineering_qa
+    production_data: false
+    approval: engineering
+  beta:
+    audience: invited_testers
+    production_data: limited_consented_testers_only
+    approval: product_qa_privacy
+  production:
+    stages_percent: [5, 20, 50, 100]
+    approval_each_stage: product_engineering
+    automatic_expansion: false
+rollback:
+  stop_on_p0_or_p1: true
+  stop_on_critical_or_high_security: true
+  require_documented_decision: true

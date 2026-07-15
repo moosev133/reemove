@@ -3,7 +3,12 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <application android:icon="@mipmap/ic_launcher" android:label="reemove_app" android:name="${applicationName}">
+    <application
+        android:icon="@mipmap/ic_launcher"
+        android:label="reemove_app"
+        android:name="${applicationName}"
+        android:allowBackup="false"
+        android:usesCleartextTraffic="false">
         <activity android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode" android:exported="true" android:hardwareAccelerated="true" android:launchMode="singleTop" android:name=".MainActivity" android:taskAffinity="" android:theme="@style/LaunchTheme" android:windowSoftInputMode="adjustResize">
             
             <meta-data android:name="io.flutter.embedding.android.NormalTheme" android:resource="@style/NormalTheme" />

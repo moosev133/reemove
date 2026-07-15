@@ -1,0 +1,17 @@
+locale: en-US
+app_name: "ReeMove"
+subtitle: "Your world of sports"
+short_description: "Connect, train, compete, and discover sports around you."
+keywords: "sports,fitness,running,football,gym,challenges,community,training"
+promotional_text: "Build your sports life in one place."
+full_description: |
+  ReeMove is the digital home of sports lifestyle. Follow athletes and friends, share your progress, discover nearby places and activities, join challenges, connect through messages and groups, explore sports equipment, and use safety-aware AI tools for training inspiration.
+
+  ReeMove launches with rich experiences for football, gym, and running, with an architecture designed to expand to more sports. Privacy, reporting, blocking, moderation, and account controls are built into the experience.
+
+  Some features depend on location, notification, camera, or photo permissions. You stay in control and can change permissions in your device settings.
+support_url: https://REPLACE.example/support
+privacy_url: https://REPLACE.example/privacy
+terms_url: https://REPLACE.example/terms
+account_deletion_url: https://REPLACE.example/delete-account
+status: REVIEW_AGAINST_FINAL_FEATURES_AND_STORE_LIMITS

@@ -1,0 +1,42 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-staging-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment: staging
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: reemove_app
+    steps:
+      - uses: actions/checkout@v4
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_FIREBASE_DEPLOYER_SERVICE_ACCOUNT }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --global firebase-tools
+      - name: Select staging project
+        run: firebase use staging
+      - name: Deploy staging backend
+        run: firebase deploy --only firestore:indexes,firestore:rules,storage,database,functions,remoteconfig
+      - name: Post-deploy smoke
+        if: ${{ vars.PUBLIC_STATUS_BASE_URL != '' }}
+        run: ./scripts/firebase/post_deploy_smoke.sh
+        env:
+          PUBLIC_STATUS_BASE_URL: ${{ vars.PUBLIC_STATUS_BASE_URL }}

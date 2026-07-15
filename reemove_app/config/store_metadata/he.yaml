@@ -1,0 +1,17 @@
+locale: he
+app_name: "ReeMove"
+subtitle: "עולם הספורט שלך במקום אחד"
+short_description: "להתחבר, להתאמן, להתחרות ולגלות ספורט בסביבה."
+keywords: "ספורט,כושר,ריצה,כדורגל,חדר כושר,אתגרים,קהילה,אימון"
+promotional_text: "בנו את חיי הספורט שלכם במקום אחד."
+full_description: |
+  ReeMove הוא הבית הדיגיטלי של אורח החיים הספורטיבי. עקבו אחרי ספורטאים וחברים, שתפו התקדמות, גלו מקומות ופעילויות בקרבת מקום, הצטרפו לאתגרים, התחברו בהודעות ובקבוצות, חפשו ציוד ספורט והשתמשו בכלי AI עם מנגנוני בטיחות לקבלת רעיונות לאימון.
+
+  ReeMove מושק עם חוויות עשירות לכדורגל, חדר כושר וריצה, ובנוי להתרחב לענפי ספורט נוספים. פרטיות, דיווח, חסימה, ניהול תוכן ומחיקת חשבון הם חלק מהחוויה.
+
+  חלק מהתכונות תלויות בהרשאות מיקום, התראות, מצלמה או תמונות. השליטה נשארת בידיכם וניתן לשנות הרשאות בהגדרות המכשיר.
+support_url: https://REPLACE.example/support
+privacy_url: https://REPLACE.example/privacy
+terms_url: https://REPLACE.example/terms
+account_deletion_url: https://REPLACE.example/delete-account
+status: REVIEW_AGAINST_FINAL_FEATURES_AND_STORE_LIMITS

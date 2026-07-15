@@ -1,0 +1,50 @@
+name: Deploy Firebase Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Approved immutable release tag
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment: production
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: reemove_app
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_FIREBASE_DEPLOYER_SERVICE_ACCOUNT }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --global firebase-tools
+      - name: Verify signed tag
+        working-directory: .
+        run: git tag -v "${{ inputs.release_tag }}"
+      - name: Deploy approved backend
+        run: ./scripts/firebase/deploy_production.sh
+        env:
+          RELEASE_APPROVED: "true"
+          GITHUB_REF_TYPE: tag
+      - name: Smoke checks
+        if: ${{ vars.PUBLIC_STATUS_BASE_URL != '' }}
+        run: ./scripts/firebase/post_deploy_smoke.sh
+        env:
+          PUBLIC_STATUS_BASE_URL: ${{ vars.PUBLIC_STATUS_BASE_URL }}

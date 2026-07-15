@@ -1,0 +1,64 @@
+name: Build Android Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+      build_number:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    environment: android-release
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: reemove_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.0"
+          channel: stable
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Restore upload keystore
+        env:
+          ANDROID_UPLOAD_KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
+        run: echo "$ANDROID_UPLOAD_KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+      - name: Create key properties
+        run: |
+          cat > android/key.properties <<EOF
+          storeFile=$RUNNER_TEMP/upload.jks
+          storePassword=${{ secrets.ANDROID_STORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+      - name: Materialize prod dart defines
+        env:
+          PROD_DART_DEFINES_JSON: ${{ secrets.PROD_DART_DEFINES_JSON }}
+        run: |
+          if [[ -n "${PROD_DART_DEFINES_JSON}" ]]; then
+            printf '%s\n' "$PROD_DART_DEFINES_JSON" > dart_defines/prod.json
+          else
+            echo "PROD_DART_DEFINES_JSON secret is required for signed release builds." >&2
+            exit 1
+          fi
+      - name: Build AAB
+        run: ./scripts/build_android_release.sh "${{ inputs.version }}" "${{ inputs.build_number }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reemove-android-${{ inputs.version }}-${{ inputs.build_number }}
+          path: |
+            reemove_app/build/app/outputs/bundle/release/*.aab
+            reemove_app/build/symbols/android/**
+            reemove_app/release_evidence/**
+          if-no-files-found: error
+          retention-days: 90

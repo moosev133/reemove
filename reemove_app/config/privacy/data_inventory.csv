@@ -1,0 +1,11 @@
+data_category,example_fields,collected,linked_to_user,purpose,shared,retention,deletion_behavior,controller_or_sdk,app_store_mapping,play_mapping,verified_by
+Account identifiers,uid email username,REVIEW,REVIEW,authentication and account,REVIEW,REVIEW,delete or retain documented minimum,Firebase Auth,Contact Info/User ID,Personal info,
+Profile data,name bio sports skill goals,REVIEW,REVIEW,profile and matching,REVIEW,REVIEW,delete/anonymize per approved model,Firestore,User Content/Other Data,Personal info,
+User content,photos videos captions comments stories,REVIEW,REVIEW,social features and moderation,REVIEW,REVIEW,delete with account/content controls,Storage Firestore,Photos or Videos/User Content,Photos and videos,
+Messages,message text attachments metadata,REVIEW,REVIEW,messaging and safety,REVIEW,REVIEW,approved conversation/deletion model,Firestore Storage,User Content,Messages,
+Location,approximate or precise location,REVIEW,REVIEW,nearby discovery and maps,REVIEW,REVIEW,minimize and expire,Maps Firestore,Precise/Coarse Location,Location,
+Diagnostics,crashes performance device app version,REVIEW,REVIEW,reliability and security,REVIEW,REVIEW,time limited,Crashlytics Performance,Diagnostics,App info and performance,
+Usage analytics,screen and feature events,REVIEW,REVIEW,product analytics,REVIEW,REVIEW,time limited and consent controlled,Firebase Analytics,Usage Data,App activity,
+Marketplace,listings seller chat favorites,REVIEW,REVIEW,marketplace functionality and safety,REVIEW,REVIEW,delete/retain disputes per policy,Firestore Storage,User Content/Purchases,App activity,
+AI input output,prompts profile context generated plans,REVIEW,REVIEW,AI modules safety and quality,REVIEW,REVIEW,minimize and user deletion,Cloud Functions AI provider,User Content/Other Data,App activity,
+Moderation reports,report reason evidence outcome,REVIEW,REVIEW,safety fraud and appeals,REVIEW,REVIEW,restricted retention,Firestore admin tools,User Content/Identifiers,App activity,

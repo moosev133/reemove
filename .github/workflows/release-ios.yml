@@ -1,0 +1,60 @@
+name: Build iOS Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+      build_number:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    environment: ios-release
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: reemove_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.0"
+          channel: stable
+          cache: true
+      - name: Configure signing
+        run: |
+          echo "Install the organization-approved certificate/profile mechanism here."
+          echo "Do not print or persist signing secrets in logs."
+      - name: Materialize prod dart defines and ExportOptions
+        env:
+          PROD_DART_DEFINES_JSON: ${{ secrets.PROD_DART_DEFINES_JSON }}
+          IOS_EXPORT_OPTIONS_PLIST: ${{ secrets.IOS_EXPORT_OPTIONS_PLIST }}
+        run: |
+          if [[ -n "${PROD_DART_DEFINES_JSON}" ]]; then
+            printf '%s\n' "$PROD_DART_DEFINES_JSON" > dart_defines/prod.json
+          else
+            echo "PROD_DART_DEFINES_JSON secret is required for signed release builds." >&2
+            exit 1
+          fi
+          if [[ -n "${IOS_EXPORT_OPTIONS_PLIST}" ]]; then
+            printf '%s\n' "$IOS_EXPORT_OPTIONS_PLIST" > ios/ExportOptions.plist
+          else
+            echo "IOS_EXPORT_OPTIONS_PLIST secret is required (see ios/ExportOptions.plist.template)." >&2
+            exit 1
+          fi
+      - name: Build IPA
+        run: ./scripts/build_ios_release.sh "${{ inputs.version }}" "${{ inputs.build_number }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reemove-ios-${{ inputs.version }}-${{ inputs.build_number }}
+          path: |
+            reemove_app/build/ios/ipa/*.ipa
+            reemove_app/build/ios/archive/*.xcarchive/**
+            reemove_app/build/symbols/ios/**
+            reemove_app/release_evidence/**
+          if-no-files-found: error
+          retention-days: 90

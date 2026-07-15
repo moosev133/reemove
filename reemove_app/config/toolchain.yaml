@@ -1,0 +1,10 @@
+schema_version: 1
+baseline_reviewed: 2026-07-14
+flutter: 3.44.0
+dart: bundled_with_flutter
+java: 17
+node: 22
+notes:
+  - Preserve the actual repository lockfiles.
+  - Verify Flutter/Firebase compatibility before upgrading.
+  - Record Xcode, CocoaPods, Gradle, and Android SDK versions in release evidence.

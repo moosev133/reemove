@@ -1,0 +1,9 @@
+order,feature,required_state,locale_variants,privacy_check
+1,Personalized feed,Safe populated feed,en ar he,No private names or precise location
+2,Discover and nearby,Representative places and activities,en ar he,Use fictional or consented data
+3,Sports hubs,Football gym running cards,en ar he,No misleading availability
+4,Challenges,Active challenge and leaderboard,en ar he,No unsafe challenge
+5,Messaging,Safe group conversation,en ar he,No real personal messages
+6,Marketplace,Safe sports listing,en ar he,No phone or address
+7,AI tools,Coach/workout/challenge result,en ar he,Show safety-aware disclaimer
+8,Profile controls,Profile plus privacy/report/delete,en ar he,No real account data

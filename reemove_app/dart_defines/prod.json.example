@@ -1,0 +1,10 @@
+{
+  "APP_FLAVOR": "production",
+  "FIREBASE_FUNCTIONS_REGION": "europe-west1",
+  "ENABLE_APP_CHECK": true,
+  "ENABLE_ANALYTICS": true,
+  "USE_FIREBASE_EMULATORS": false,
+  "SUPPORT_URL": "https://REPLACE.example/support",
+  "STATUS_URL": "https://REPLACE.example/status",
+  "STORE_URL": "https://REPLACE.example/download"
+}

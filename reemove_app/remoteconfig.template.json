@@ -1,0 +1,104 @@
+{
+  "conditions": [],
+  "parameters": {
+    "maintenance_mode": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "maintenance_title": {
+      "defaultValue": {
+        "value": "ReeMove is temporarily unavailable"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "maintenance_message": {
+      "defaultValue": {
+        "value": "We are working to restore service. Please try again shortly."
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "minimum_supported_android_build": {
+      "defaultValue": {
+        "value": "1"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "minimum_supported_ios_build": {
+      "defaultValue": {
+        "value": "1"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "recommended_android_build": {
+      "defaultValue": {
+        "value": "1"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "recommended_ios_build": {
+      "defaultValue": {
+        "value": "1"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "force_update": {
+      "defaultValue": {
+        "value": "false"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "ai_modules_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "nearby_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "marketplace_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "messaging_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "story_upload_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "new_user_registration_enabled": {
+      "defaultValue": {
+        "value": "true"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "support_url": {
+      "defaultValue": {
+        "value": "https://REPLACE.example/support"
+      },
+      "description": "ReeMove Phase 16 release control"
+    },
+    "status_url": {
+      "defaultValue": {
+        "value": "https://REPLACE.example/status"
+      },
+      "description": "ReeMove Phase 16 release control"
+    }
+  },
+  "version": {
+    "description": "Phase 16 initial production-safe defaults"
+  }
+}

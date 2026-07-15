@@ -1,0 +1,14 @@
+schema_version: 1
+status: REVIEW_FINAL_CODE_AND_SDKS
+privacy_policy_url: https://REPLACE.example/privacy
+account_deletion_url: https://REPLACE.example/delete-account
+instructions:
+  - Complete the global form from the union of all distributed app versions and regions.
+  - Include data collection or sharing performed by third-party SDKs.
+  - Verify encryption in transit, deletion support, optional/required collection, purpose, and sharing.
+  - Keep responses accurate after every SDK or feature change.
+data_types: []
+security_practices:
+  encrypted_in_transit: REVIEW
+  account_deletion_available: true
+  independent_security_review: false

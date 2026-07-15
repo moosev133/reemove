@@ -24,6 +24,9 @@ class AppEnvironment {
     required this.useFirebaseEmulators,
     required this.firebaseEmulatorHost,
     required this.firebaseDatabaseUrl,
+    this.supportUrl,
+    this.statusUrl,
+    this.storeUrl,
   });
 
   factory AppEnvironment.fromCompileTime() {
@@ -58,6 +61,9 @@ class AppEnvironment {
       defaultValue: '127.0.0.1',
     );
     const String databaseUrl = String.fromEnvironment('FIREBASE_DATABASE_URL');
+    const String supportUrl = String.fromEnvironment('SUPPORT_URL');
+    const String statusUrl = String.fromEnvironment('STATUS_URL');
+    const String storeUrl = String.fromEnvironment('STORE_URL');
 
     return AppEnvironment(
       flavor: AppFlavor.parse(rawFlavor),
@@ -75,6 +81,9 @@ class AppEnvironment {
       firebaseDatabaseUrl: databaseUrl.trim().isEmpty
           ? null
           : databaseUrl.trim(),
+      supportUrl: supportUrl.trim().isEmpty ? null : supportUrl.trim(),
+      statusUrl: statusUrl.trim().isEmpty ? null : statusUrl.trim(),
+      storeUrl: storeUrl.trim().isEmpty ? null : storeUrl.trim(),
     );
   }
 
@@ -87,6 +96,9 @@ class AppEnvironment {
   final bool useFirebaseEmulators;
   final String firebaseEmulatorHost;
   final String? firebaseDatabaseUrl;
+  final String? supportUrl;
+  final String? statusUrl;
+  final String? storeUrl;
 
   bool get isDevelopment => flavor == AppFlavor.development;
   bool get isProduction => flavor == AppFlavor.production;

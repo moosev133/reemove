@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "maintenance_mode": false,
+  "maintenance_title": "ReeMove is temporarily unavailable",
+  "maintenance_message": "We are working to restore service. Please try again shortly.",
+  "minimum_supported_android_build": 1,
+  "minimum_supported_ios_build": 1,
+  "recommended_android_build": 1,
+  "recommended_ios_build": 1,
+  "force_update": false,
+  "ai_modules_enabled": true,
+  "nearby_enabled": true,
+  "marketplace_enabled": true,
+  "messaging_enabled": true,
+  "story_upload_enabled": true,
+  "new_user_registration_enabled": true,
+  "support_url": "https://REPLACE.example/support",
+  "status_url": "https://REPLACE.example/status"
+}

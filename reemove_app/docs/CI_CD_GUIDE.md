@@ -1,5 +1,7 @@
 > **Production merge note:** Primary GitHub Actions workflows live at the repository root under `.github/workflows/` with `working-directory: reemove_app`. Package-local mirrors also exist under `reemove_app/.github/` for reference. Coverage gate reporting is non-blocking until global coverage meets `quality/quality_gates.json`.
 
+> **Phase 16:** Additional workflows cover staging deploy, production deploy (signed tag + approval), Android/iOS release builds, and post-release smoke checks. See `docs/CI_CD_RELEASE_PIPELINE.md`.
+
 # CI/CD Testing Guide
 
 ## Workflow files

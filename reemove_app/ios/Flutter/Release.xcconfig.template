@@ -1,0 +1,4 @@
+#include "Generated.xcconfig"
+PRODUCT_BUNDLE_IDENTIFIER = REPLACE_WITH_FINAL_BUNDLE_ID
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) RELEASE
+// Keep secrets out of xcconfig committed to source control.

@@ -1,0 +1,32 @@
+name: Post Release Verification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    environment: production-readonly
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: reemove_app
+    steps:
+      - uses: actions/checkout@v4
+      - name: Production smoke
+        if: ${{ vars.PUBLIC_STATUS_BASE_URL != '' }}
+        run: ./scripts/production_smoke_check.sh
+        env:
+          PUBLIC_STATUS_BASE_URL: ${{ vars.PUBLIC_STATUS_BASE_URL }}
+      - name: Skip notice when status URL missing
+        if: ${{ vars.PUBLIC_STATUS_BASE_URL == '' }}
+        run: echo "PUBLIC_STATUS_BASE_URL is not configured; smoke checks skipped."
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: production-smoke-evidence
+          path: reemove_app/release_evidence/
+          if-no-files-found: ignore
+          retention-days: 90

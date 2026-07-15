@@ -1,7 +1,15 @@
 {
   "functions": {
     "source": "functions",
-    "runtime": "nodejs22"
+    "runtime": "nodejs22",
+    "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"],
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log",
+      "*.local"
+    ]
   },
   "firestore": {
     "rules": "firestore.rules",
@@ -12,6 +20,9 @@
   },
   "database": {
     "rules": "database.rules.json"
+  },
+  "remoteconfig": {
+    "template": "remoteconfig.template.json"
   },
   "emulators": {
     "auth": {

@@ -1,0 +1,13 @@
+schema_version: 1
+order:
+  - preflight_and_phase15_gates
+  - firestore_indexes
+  - firestore_and_storage_rules
+  - functions
+  - remote_config_defaults
+  - production_safe_smoke_tests
+notes:
+  - Use the merged final repository paths, not this standalone package path.
+  - Index creation can take time; deploy and verify before enabling dependent features.
+  - Never deploy broad temporary rules to unblock a mobile release.
+  - Deploy backend compatibility before releasing clients that depend on it.

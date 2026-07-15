@@ -1,0 +1,12 @@
+schema_version: 1
+status: REVIEW_FINAL_CODE_AND_SDKS
+privacy_policy_url: https://REPLACE.example/privacy
+user_privacy_choices_url: https://REPLACE.example/privacy-choices
+instructions:
+  - Derive every answer from data_inventory.csv and final SDK behavior.
+  - Declare data collected for app functionality even when it is not advertising data.
+  - Include third-party partners such as Firebase, Maps, and the selected AI provider.
+  - Decide accurately whether each type is linked to the user or used for tracking.
+  - Update App Store Connect whenever practices change.
+data_types: []
+tracking: REVIEW

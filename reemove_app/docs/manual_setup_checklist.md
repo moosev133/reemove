@@ -36,6 +36,48 @@ Pending configuration that must be completed outside Git before Firebase-backed 
 - [ ] Configure FCM/APNs for message push notifications (see `docs/MESSAGING_SETUP.md`)
 - [ ] Optionally set `FIREBASE_DATABASE_URL` for non-default Realtime Database instances
 - [ ] Optionally seed emulator messaging fixtures (direct conversation, group, presence ACL)
+- [ ] Deploy sports / nearby / challenges / marketplace / notifications / AI Functions, rules, and indexes per prior phase docs
+- [ ] Configure Google Maps API keys for Android/iOS/web (never commit keys)
+- [ ] Set Cloud Functions secret `OPENAI_API_KEY` for AI modules
+- [ ] Enable Crashlytics and Performance Monitoring in Firebase console
+- [ ] Sign Phase 15 `docs/RELEASE_READINESS_SCORECARD.md` before production launch
+
+## Phase 16 — Production release (owner actions)
+
+### Firebase environments
+- [ ] Create isolated Firebase projects for development, staging, and production
+- [ ] Copy `.firebaserc.example` → local `.firebaserc` and fill real project IDs (do not commit `.firebaserc`)
+- [ ] Run FlutterFire configure per environment; keep `firebase_options.dart` and platform config files out of Git
+- [ ] Publish Remote Config from `remoteconfig.template.json` before enabling Remote Config clients in prod
+- [ ] Configure App Check (debug in dev; real providers in staging/prod — monitor then enforce) — see `docs/APP_CHECK_ROLLOUT.md`
+- [ ] Configure Functions secrets/params per `docs/FUNCTIONS_PRODUCTION_CONFIG.md` (OpenAI, media processor, etc.)
+- [ ] Point GitHub Environments (`staging`, `production`) at Workload Identity Federation secrets (`GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_FIREBASE_DEPLOYER_SERVICE_ACCOUNT`)
+- [ ] Set `PUBLIC_STATUS_BASE_URL` repository variable when a public `/health` + `/version` status surface exists
+
+### Android
+- [ ] Replace `com.example.reemove_app` applicationId/namespace with the final Play Store ID
+- [ ] Create upload keystore; keep `android/key.properties` local only (see `android/key.properties.example`)
+- [ ] Store CI secrets: `ANDROID_UPLOAD_KEYSTORE_B64`, `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, `PROD_DART_DEFINES_JSON`
+- [ ] Enroll Play App Signing and complete store listing using `config/store_metadata/` + `config/privacy/play_data_safety.yaml`
+
+### iOS
+- [ ] Replace bundle identifier; finish capabilities in `docs/IOS_PRODUCTION_CAPABILITIES_CHECKLIST.md`
+- [ ] Create distribution certificate + App Store profile; materialize `ios/ExportOptions.plist` from the template (do not commit)
+- [ ] Store CI secret `IOS_EXPORT_OPTIONS_PLIST` (+ Apple signing mechanism of record)
+- [ ] Complete App Store Connect privacy answers from `config/privacy/app_store_privacy_answers.yaml`
+
+### Maps / AI / FCM
+- [ ] Restrict Maps API keys by package/bundle and ship via CI secrets / dart-defines — never commit
+- [ ] Confirm `OPENAI_API_KEY` is only in Secret Manager / Functions secrets
+- [ ] Complete FCM + APNs for production apps and upload APNs key to Firebase
+- [ ] Verify notification deep links against staging before production rollout
+
+### Store / legal / ops
+- [ ] Host privacy policy, terms, community guidelines, and account-deletion pages (start from `legal_templates/`)
+- [ ] Fill SUPPORT_URL / STATUS_URL / STORE_URL in local `dart_defines/*.json` (never commit filled files)
+- [ ] Rehearse backup/restore and rollback using `docs/BACKUP_RESTORE_DISASTER_RECOVERY.md` and `docs/ROLLBACK_INCIDENT_RESPONSE.md`
+- [ ] Follow staged rollout in `config/release_channels.yaml` and `docs/STAGED_LAUNCH_RUNBOOK.md`
+- [ ] Complete ownership handoff in `docs/OWNERSHIP_ACCESS_HANDOFF.md`
 
 ## Do not commit
 
@@ -44,5 +86,8 @@ Pending configuration that must be completed outside Git before Firebase-backed 
 - `android/app/google-services.json`
 - `ios/Runner/GoogleService-Info.plist`
 - `macos/Runner/GoogleService-Info.plist`
+- `android/key.properties`, `*.jks`, `*.keystore`
+- `ios/ExportOptions.plist` (use the `.template` only in Git)
+- `dart_defines/*.json` (examples only)
 - `.env` and other secret files
-- Function or CI secrets / API keys
+- Function or CI secrets / API keys / service-account JSON

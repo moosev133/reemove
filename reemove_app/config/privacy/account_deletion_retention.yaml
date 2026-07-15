@@ -1,0 +1,26 @@
+schema_version: 1
+status: LEGAL_AND_ENGINEERING_REVIEW_REQUIRED
+entry_points:
+  in_app: Settings > Account > Delete account
+  web: https://REPLACE.example/delete-account
+states:
+  - requested
+  - reauthentication_required
+  - queued
+  - processing
+  - completed
+  - partially_failed_requires_retry
+immediate_actions:
+  - revoke sessions where supported
+  - prevent new writes except deletion status/support
+  - hide public profile/content according to approved policy
+categories:
+  firebase_auth: delete
+  profile_social_graph: delete_or_anonymize
+  posts_stories_media: delete_or_anonymize
+  messages: approved_conversation_model_required
+  marketplace_and_disputes: retention_policy_required
+  moderation_fraud_security: restricted_retention_may_apply
+  analytics_diagnostics: aggregate_or_delete_per_sdk_policy
+  backups: expire_through_documented_backup_retention
+completion_sla: DEFINE_WITH_LEGAL_AND_OPERATIONS

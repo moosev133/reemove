@@ -1,0 +1,11 @@
+{
+  "APP_FLAVOR": "development",
+  "FIREBASE_FUNCTIONS_REGION": "europe-west1",
+  "ENABLE_APP_CHECK": false,
+  "ENABLE_ANALYTICS": false,
+  "USE_FIREBASE_EMULATORS": true,
+  "FIREBASE_EMULATOR_HOST": "127.0.0.1",
+  "SUPPORT_URL": "https://REPLACE.example/support",
+  "STATUS_URL": "https://REPLACE.example/status",
+  "STORE_URL": "https://REPLACE.example/download"
+}
