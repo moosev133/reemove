@@ -105,3 +105,17 @@
 - Account deletion/anonymization
 - AI request dispatch, quotas, and audit
 - Scheduled maintenance and data migrations
+
+## Phase 2 implemented repository names
+
+The executable Phase 2 data layer currently provides:
+
+- `UserProfileRepository` / `FirebaseUserProfileRepository`
+- `SportsCatalogRepository` / `FirebaseSportsCatalogRepository`
+- `ChallengeRepository` / `FirebaseChallengeRepository`
+- `MarketplaceCatalogRepository` / `FirebaseMarketplaceCatalogRepository`
+- `AppConfigurationRepository` / `FirebaseAppConfigurationRepository`
+- `ReeMoveFirestore` typed collection registry
+- `FirestoreFailureMapper`
+
+The broader catalog above remains the target service inventory for later phases.

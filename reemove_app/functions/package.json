@@ -11,7 +11,8 @@
     "lint": "eslint src --ext .ts",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
-    "deploy": "firebase deploy --only functions"
+    "deploy": "firebase deploy --only functions",
+    "seed:emulator": "npm run build && node lib/seed/seedFirestore.js"
   },
   "dependencies": {
     "firebase-admin": "^13.4.0",

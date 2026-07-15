@@ -39,3 +39,19 @@ All layout primitives must support large text, screen readers, RTL, sufficient c
 ## ADR-010: Environments are isolated
 
 Development, staging, and production use separate Firebase projects, App Check settings, API keys, analytics streams, and signing configurations.
+
+## ADR-011: Manual immutable DTOs before code generation
+
+Phase 2 uses explicit immutable DTOs and mappers rather than requiring generated source files. This keeps the checked-in project immediately inspectable and avoids build-runner output becoming a hidden prerequisite. Code generation may be introduced later if model volume justifies it, but the domain/data boundary and converter contracts remain unchanged.
+
+## ADR-012: Typed Firestore registry
+
+All implemented top-level collections are created through `ReeMoveFirestore` with `withConverter`. Repositories receive typed references through Riverpod and presentation code never constructs collection paths.
+
+## ADR-013: Rules and feature code ship together
+
+A data feature is incomplete until its document shape, query index, Security Rules, and emulator tests are committed together. The final catch-all deny remains permanent.
+
+## ADR-014: Node built-in runner for rules tests
+
+Security Rules tests use Node 22's built-in test runner plus the official Firebase rules-testing library. This minimizes tooling while preserving authenticated/unauthenticated emulator contexts and rules-disabled fixture setup.

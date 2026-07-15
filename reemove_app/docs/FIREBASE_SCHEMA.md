@@ -153,3 +153,14 @@ reports/{reporterUid}/{reportId}/{assetId}
 - Notifications: user subcollection ordered by `createdAt desc`, filtered by `readAt` when needed.
 
 The checked-in rules remain deny-by-default. Each later phase must extend rules and add emulator tests together.
+
+
+## Phase 2 implementation status
+
+The schema is now implemented with typed converters and repositories for `users`, `sports`, `places`, `events`, `challenges`, `marketplace_listings`, `app_config`, and `feature_flags`. Other cataloged collections remain intentionally denied until their feature phase adds complete code, rules, indexes, and tests.
+
+Current schema version: `1`.
+
+Current deterministic seed dataset: `2026-07-13.phase2.v1`.
+
+See `DATABASE_IMPLEMENTATION.md`, `DATA_MIGRATIONS.md`, and `PHASE_2_COMPLETION.md` for executable details.

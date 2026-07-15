@@ -4,22 +4,24 @@ ReeMove is a production-oriented Flutter/Firebase sports social network. The pro
 
 ## Current implementation status
 
-**Phase 1 - Project architecture and engineering foundation: complete.**
+- **Phase 1 — Project architecture: complete**
+- **Phase 2 — Database design and typed Firebase foundation: complete**
+- **Phase 3 — Authentication: next**
 
-This repository currently contains:
+The repository now contains:
 
-- A feature-first Clean Architecture foundation.
+- Feature-first Clean Architecture.
 - Riverpod dependency injection and application state.
 - GoRouter navigation infrastructure.
-- A premium adaptive light/dark design system.
-- Environment/flavor configuration.
-- Firebase bootstrap with optional App Check enforcement.
-- Deny-by-default Firestore and Storage rules.
-- Cloud Functions TypeScript foundation.
-- Complete product roadmaps, screen catalog, model catalog, service catalog, widget catalog, and database schema.
-- Unit-test foundations and CI workflow.
-
-Later phases are intentionally tracked in `docs/PHASE_TRACKER.md`. Files completed in one phase should be modified only when a later feature genuinely requires a change.
+- Premium adaptive light/dark design system.
+- Environment/flavor configuration and Firebase App Check bootstrap.
+- Typed Firestore DTOs, domain models, mappers, and `withConverter` references.
+- Firebase repository implementations for profiles, sports catalogs, events, places, challenges, marketplace discovery, app configuration, and feature flags.
+- Composite indexes for implemented production queries.
+- Firestore and Storage rules with field-level invariants and deny-by-default fallbacks.
+- Emulator rules tests and deterministic seed data.
+- TypeScript Cloud Functions foundation and migration conventions.
+- Product, architecture, screen, model, service, widget, schema, deployment, and phase documentation.
 
 ## Architecture
 
@@ -30,16 +32,16 @@ presentation -> application -> domain <- data
                          repositories
 ```
 
-The domain layer contains business entities and repository contracts. The data layer implements those contracts through Firebase or other providers. Riverpod wires dependencies together. Widgets never call Firebase directly.
+Firebase SDK types stay in the data layer. Domain entities use plain Dart values. Riverpod wires repository contracts to Firebase implementations. Widgets never call Firebase directly.
 
 ## Requirements
 
 - Flutter 3.44 or newer
 - Dart 3.10 or newer
 - Node.js 22
-- Firebase CLI
-- FlutterFire CLI
-- A Firebase project for each environment: development, staging, production
+- Java 21 or newer for the current Firebase Emulator Suite
+- Firebase CLI / FlutterFire CLI
+- Separate Firebase projects for development, staging, and production
 
 ## First-time setup
 
@@ -49,7 +51,16 @@ firebase login
 dart pub global activate flutterfire_cli
 flutterfire configure --project YOUR_FIREBASE_PROJECT_ID
 cp .firebaserc.example .firebaserc
-cd functions && npm install && cd ..
+
+cd functions
+npm install
+npm run lint
+npm run build
+cd ..
+
+cd firebase_tests
+npm install
+cd ..
 ```
 
 Run development mode:
@@ -60,23 +71,16 @@ flutter run \
   --dart-define=ENABLE_APP_CHECK=false
 ```
 
-Run production mode:
+## Local Firebase verification
 
 ```bash
-flutter run --release \
-  --dart-define=APP_FLAVOR=production \
-  --dart-define=ENABLE_APP_CHECK=true \
-  --dart-define=FIREBASE_WEB_RECAPTCHA_V3_SITE_KEY=YOUR_KEY
+npm run test:rules
+npm run seed:emulator
 ```
 
-## Firebase safety
-
-The initial rules are deliberately restrictive. Collections that have not yet been implemented are denied by the final catch-all rule. Each feature phase must add its rule changes and emulator tests in the same commit as the feature.
-
-Deploy only after emulator tests pass:
+Deploy only after the Flutter suite, Functions build, and emulator rules tests pass:
 
 ```bash
-firebase emulators:exec "flutter test" \
 firebase deploy --only firestore:rules,firestore:indexes,storage,functions
 ```
 
@@ -86,9 +90,12 @@ firebase deploy --only firestore:rules,firestore:indexes,storage,functions
 - `docs/PROJECT_STRUCTURE.md`
 - `docs/SCREEN_CATALOG.md`
 - `docs/FIREBASE_SCHEMA.md`
+- `docs/DATABASE_IMPLEMENTATION.md`
+- `docs/DATA_MIGRATIONS.md`
 - `docs/MODEL_CATALOG.md`
 - `docs/SERVICE_CATALOG.md`
 - `docs/WIDGET_CATALOG.md`
 - `docs/ARCHITECTURE_DECISIONS.md`
 - `docs/PHASE_TRACKER.md`
+- `docs/PHASE_2_COMPLETION.md`
 - `docs/DEPLOYMENT_GUIDE.md`

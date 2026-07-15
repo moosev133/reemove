@@ -1,0 +1,17 @@
+{
+  "datasetVersion": "2026-07-13.phase2.v1",
+  "schemaVersion": 1,
+  "sports": ["football", "gym", "running"],
+  "collections": [
+    "app_config",
+    "feature_flags",
+    "sports",
+    "usernames",
+    "users",
+    "places",
+    "events",
+    "challenges",
+    "marketplace_listings",
+    "data_migrations"
+  ]
+}

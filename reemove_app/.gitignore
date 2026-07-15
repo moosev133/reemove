@@ -67,3 +67,10 @@ functions/.env.*
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Node / Firebase tooling
+node_modules/
+functions/node_modules/
+firebase_tests/node_modules/
+functions/lib/
+*.tsbuildinfo

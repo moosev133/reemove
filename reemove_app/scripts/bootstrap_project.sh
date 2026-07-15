@@ -34,7 +34,11 @@ npm run lint
 npm run build
 popd >/dev/null
 
+pushd firebase_tests >/dev/null
+npm install
+popd >/dev/null
+
 flutter analyze
 flutter test
 
-echo "ReeMove Phase 1 foundation is ready. Run flutterfire configure next."
+echo "ReeMove Phase 2 database foundation is ready. Run flutterfire configure and npm run test:rules next."

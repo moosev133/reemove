@@ -23,6 +23,9 @@ reemove/
 │   ├── SCREEN_CATALOG.md
 │   ├── SERVICE_CATALOG.md
 │   └── WIDGET_CATALOG.md
+├── firebase_tests/                 # Firestore/Storage emulator rules tests
+│   ├── src/
+│   └── package.json
 ├── functions/
 │   ├── src/
 │   │   ├── core/
@@ -38,6 +41,8 @@ reemove/
 │   │   └── reemove_app.dart
 │   ├── core/
 │   │   ├── config/
+│   ├── database/                  # Typed Firestore registry, DTO helpers, providers
+│   ├── domain/                    # Shared provider-neutral value objects
 │   │   ├── constants/
 │   │   ├── errors/
 │   │   ├── extensions/
@@ -68,6 +73,7 @@ reemove/
 │   │   └── settings/
 │   ├── bootstrap.dart
 │   └── main.dart
+├── package.json                    # Firebase emulator/seed orchestration
 ├── scripts/
 ├── test/
 │   ├── core/

@@ -10,40 +10,126 @@ service firebase.storage {
     }
 
     function isImage() {
-      return request.resource.contentType.matches('image/.*');
+      return request.resource != null
+        && request.resource.contentType.matches('image/.*');
     }
 
     function isImageOrVideo() {
-      return request.resource.contentType.matches('image/.*')
-        || request.resource.contentType.matches('video/.*');
+      return request.resource != null
+        && (request.resource.contentType.matches('image/.*')
+          || request.resource.contentType.matches('video/.*'));
+    }
+
+    function validOwnerMetadata(uid) {
+      return request.resource != null
+        && request.resource.metadata.ownerId == uid
+        && request.resource.metadata.schemaVersion == '1';
+    }
+
+    function preservesOwnerMetadata(uid) {
+      return resource != null
+        && resource.metadata.ownerId == uid
+        && request.resource != null
+        && request.resource.metadata.ownerId == uid
+        && request.resource.metadata.schemaVersion == resource.metadata.schemaVersion;
     }
 
     match /users/{uid}/avatar/{assetId} {
       allow read: if signedIn();
-      allow write: if isOwner(uid)
+      allow create: if isOwner(uid)
         && request.resource.size < 10 * 1024 * 1024
-        && isImage();
+        && isImage()
+        && validOwnerMetadata(uid);
+      allow update: if isOwner(uid)
+        && request.resource.size < 10 * 1024 * 1024
+        && isImage()
+        && preservesOwnerMetadata(uid);
+      allow delete: if isOwner(uid)
+        && resource.metadata.ownerId == uid;
     }
 
-    match /posts/{uid}/{postId}/{variant}/{assetId} {
+    match /posts/{uid}/{postId}/original/{assetId} {
       allow read: if signedIn();
-      allow write: if isOwner(uid)
+      allow create: if isOwner(uid)
         && request.resource.size < 250 * 1024 * 1024
-        && isImageOrVideo();
+        && isImageOrVideo()
+        && validOwnerMetadata(uid);
+      allow update: if isOwner(uid)
+        && request.resource.size < 250 * 1024 * 1024
+        && isImageOrVideo()
+        && preservesOwnerMetadata(uid);
+      allow delete: if isOwner(uid)
+        && resource.metadata.ownerId == uid;
+    }
+
+    match /posts/{uid}/{postId}/processed/{assetId} {
+      allow read: if signedIn();
+      allow write: if false;
     }
 
     match /stories/{uid}/{storyId}/{assetId} {
       allow read: if signedIn();
-      allow write: if isOwner(uid)
+      allow create: if isOwner(uid)
         && request.resource.size < 150 * 1024 * 1024
-        && isImageOrVideo();
+        && isImageOrVideo()
+        && validOwnerMetadata(uid);
+      allow update: if isOwner(uid)
+        && request.resource.size < 150 * 1024 * 1024
+        && isImageOrVideo()
+        && preservesOwnerMetadata(uid);
+      allow delete: if isOwner(uid)
+        && resource.metadata.ownerId == uid;
     }
 
     match /marketplace/{uid}/{listingId}/{assetId} {
       allow read: if signedIn();
-      allow write: if isOwner(uid)
+      allow create: if isOwner(uid)
         && request.resource.size < 15 * 1024 * 1024
-        && isImage();
+        && isImage()
+        && validOwnerMetadata(uid);
+      allow update: if isOwner(uid)
+        && request.resource.size < 15 * 1024 * 1024
+        && isImage()
+        && preservesOwnerMetadata(uid);
+      allow delete: if isOwner(uid)
+        && resource.metadata.ownerId == uid;
+    }
+
+    match /verification/{uid}/{requestId}/{assetId} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.size < 15 * 1024 * 1024
+        && isImage()
+        && validOwnerMetadata(uid);
+      allow update: if false;
+      allow delete: if isOwner(uid)
+        && resource.metadata.ownerId == uid;
+    }
+
+    match /reports/{uid}/{reportId}/{assetId} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid)
+        && request.resource.size < 25 * 1024 * 1024
+        && isImageOrVideo()
+        && validOwnerMetadata(uid);
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /messages/{conversationId}/{messageId}/{assetId} {
+      allow read, write: if false;
+    }
+
+    match /groups/{groupId}/{assetId} {
+      allow read, write: if false;
+    }
+
+    match /events/{eventId}/{assetId} {
+      allow read, write: if false;
+    }
+
+    match /routes/{routeId}/{assetId} {
+      allow read, write: if false;
     }
 
     match /{allPaths=**} {

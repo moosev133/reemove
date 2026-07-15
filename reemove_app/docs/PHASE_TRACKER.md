@@ -3,7 +3,7 @@
 | Phase | Name | Status | Primary deliverable |
 |---:|---|---|---|
 | 1 | Project architecture | **Complete in this package** | App foundation, design system, routing, environment, Firebase bootstrap, CI/docs |
-| 2 | Database design | Planned | Typed schema, converters, rules tests, indexes, seeds |
+| 2 | Database design | **Complete in this package** | Typed schema, converters, repositories, rules tests, indexes, seeds |
 | 3 | Authentication | Planned | Email, Google, Apple, usernames, account lifecycle |
 | 4 | Onboarding | Planned | Sports, level, location, goals, permissions |
 | 5 | Navigation | Planned | Six-tab adaptive shell and guarded nested routing |
