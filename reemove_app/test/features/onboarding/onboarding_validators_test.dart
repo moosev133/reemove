@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:reemove/features/onboarding/application/onboarding_validators.dart';
 import 'package:reemove/features/onboarding/domain/entities/onboarding_draft.dart';
 import 'package:reemove/features/onboarding/domain/entities/onboarding_policy.dart';
+import 'package:reemove/features/onboarding/domain/onboarding_validators.dart';
 import 'package:reemove/features/profile/domain/entities/user_profile.dart';
 
 void main() {

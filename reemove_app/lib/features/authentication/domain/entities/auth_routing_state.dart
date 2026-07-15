@@ -1,6 +1,5 @@
 enum AuthDestination {
   configurationRequired,
-  loading,
   signedOut,
   profileRequired,
   emailVerificationRequired,

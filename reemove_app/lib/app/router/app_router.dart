@@ -124,7 +124,11 @@ String? _redirect(Ref ref, String location) {
   final AsyncValue<AuthRoutingState> routing = ref.read(
     authRoutingStateProvider,
   );
-  if (routing.isLoading || routing.hasError) {
+  if (routing.isLoading) {
+    return location == AppRoutes.startup ? null : AppRoutes.startup;
+  }
+  if (routing.hasError) {
+    // Surface the failure on the startup screen with a retry action.
     return location == AppRoutes.startup ? null : AppRoutes.startup;
   }
 
@@ -139,8 +143,6 @@ String? _redirect(Ref ref, String location) {
   return switch (destination) {
     AuthDestination.configurationRequired =>
       location == AppRoutes.authUnavailable ? null : AppRoutes.authUnavailable,
-    AuthDestination.loading =>
-      location == AppRoutes.startup ? null : AppRoutes.startup,
     AuthDestination.signedOut =>
       signedOutRoutes.contains(location) ? null : AppRoutes.authWelcome,
     AuthDestination.profileRequired =>

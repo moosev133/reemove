@@ -36,4 +36,14 @@ abstract final class FirestoreFailureMapper {
     debugMessage: error.toString(),
     cause: error,
   );
+
+  static Failure fromUnknown(Object error) {
+    if (error is FirebaseException) {
+      return fromFirebaseException(error);
+    }
+    if (error is FormatException) {
+      return fromFormatException(error);
+    }
+    return unexpected(error);
+  }
 }

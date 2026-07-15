@@ -110,12 +110,6 @@ class FirebaseSportsCatalogRepository implements SportsCatalogRepository {
   }
 
   static Failure _mapError(Object error) {
-    if (error is FirebaseException) {
-      return FirestoreFailureMapper.fromFirebaseException(error);
-    }
-    if (error is FormatException) {
-      return FirestoreFailureMapper.fromFormatException(error);
-    }
-    return FirestoreFailureMapper.unexpected(error);
+    return FirestoreFailureMapper.fromUnknown(error);
   }
 }

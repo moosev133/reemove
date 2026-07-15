@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/app_environment.dart';
+import '../../../core/constants/firestore_paths.dart';
 import '../../../core/database/database_providers.dart';
 import '../../../core/domain/value_objects/content_policy.dart';
 import '../../../core/firebase/firebase_bootstrap.dart';
@@ -88,7 +89,9 @@ final Provider<AuthRepository> authRepositoryProvider =
 final Provider<UsernameRepository> usernameRepositoryProvider =
     Provider<UsernameRepository>((Ref ref) {
       final FirebaseFirestore firestore = ref.watch(firebaseFirestoreProvider);
-      return FirestoreUsernameRepository(firestore.collection('usernames'));
+      return FirestoreUsernameRepository(
+        firestore.collection(FirestoreCollections.usernames),
+      );
     });
 
 final Provider<AccountLifecycleRepository> accountLifecycleRepositoryProvider =

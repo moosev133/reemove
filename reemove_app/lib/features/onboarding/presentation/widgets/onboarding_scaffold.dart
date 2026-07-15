@@ -8,8 +8,8 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../app/theme/theme_mode_controller.dart';
 import '../../../../core/responsive/app_breakpoints.dart';
 import '../../../../core/widgets/reemove_logo.dart';
-import '../../application/onboarding_catalog.dart';
 import '../../domain/entities/onboarding_draft.dart';
+import '../onboarding_catalog.dart';
 
 class OnboardingScaffold extends ConsumerWidget {
   const OnboardingScaffold({

@@ -20,12 +20,12 @@ import '../data/services/platform_location_service.dart';
 import '../domain/entities/avatar_asset.dart';
 import '../domain/entities/onboarding_draft.dart';
 import '../domain/entities/onboarding_policy.dart';
+import '../domain/onboarding_validators.dart';
 import '../domain/repositories/avatar_repository.dart';
 import '../domain/repositories/onboarding_repository.dart';
 import '../domain/services/avatar_picker_service.dart';
 import '../domain/services/location_service.dart';
 import '../domain/services/notification_permission_service.dart';
-import 'onboarding_validators.dart';
 import 'onboarding_view_state.dart';
 
 final Provider<FirebaseStorage>

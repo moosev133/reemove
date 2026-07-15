@@ -1,14 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/reemove_logo.dart';
+import '../../../authentication/application/authentication_providers.dart';
+import '../../../authentication/domain/entities/auth_routing_state.dart';
 
-class StartupScreen extends StatelessWidget {
+class StartupScreen extends ConsumerWidget {
   const StartupScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<AuthRoutingState> routing = ref.watch(
+      authRoutingStateProvider,
+    );
+
+    if (routing.hasError) {
+      return AppErrorView(
+        title: 'Something went wrong',
+        message: routing.error.toString(),
+        actionLabel: 'Try again',
+        onAction: () {
+          ref.invalidate(currentAuthUserProvider);
+          ref.invalidate(currentUserProfileProvider);
+          ref.invalidate(authRoutingStateProvider);
+        },
+      );
+    }
+
     final ColorScheme scheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: DecoratedBox(

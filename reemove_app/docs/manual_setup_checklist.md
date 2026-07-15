@@ -15,9 +15,9 @@ Pending configuration that must be completed outside Git before Firebase-backed 
 - [ ] Install/configure Xcode before testing iOS or macOS
 - [ ] Configure Google Sign-In (OAuth client IDs / `GOOGLE_SERVER_CLIENT_ID`)
 - [ ] Configure Apple Sign-In capability for iOS/macOS builds
-- [ ] Run `scripts/configure_native_permissions.py` (or `./scripts/bootstrap_project.sh`) for location/camera/photos/notification permissions
-- [ ] Android: confirm `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, and `POST_NOTIFICATIONS` are declared
-- [ ] iOS: confirm Info.plist strings for camera, photo library, and when-in-use location; enable Push Notifications + Background Modes → Remote notifications
+- [x] Android: `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, and `POST_NOTIFICATIONS` declared in the app manifest
+- [x] iOS: Info.plist camera, photo library, and when-in-use location usage strings applied
+- [ ] Re-run `scripts/configure_native_permissions.py` after regenerating native folders (idempotent); enable Push Notifications + Background Modes → Remote notifications in Xcode
 - [ ] Deploy Phase 4 Functions, Firestore rules/indexes, and Storage rules before testing completion flows
 - [ ] Ensure `app_config/mobile` includes `minimumAge`, `maximumAge`, `onboardingVersion`, `termsVersion`, and `privacyVersion`
 - [ ] Ensure enabled `sports/{sportId}` documents exist for favorite-sport selection

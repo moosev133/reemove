@@ -1,6 +1,6 @@
 import '../../profile/domain/entities/user_profile.dart';
-import '../domain/entities/onboarding_draft.dart';
-import '../domain/entities/onboarding_policy.dart';
+import 'entities/onboarding_draft.dart';
+import 'entities/onboarding_policy.dart';
 
 abstract final class OnboardingValidators {
   static String? validateStep(

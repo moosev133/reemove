@@ -66,5 +66,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>ReeMove uses the camera when you choose to take a profile photo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ReeMove lets you select a profile photo from your library.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ReeMove uses your location to show nearby sports people, places, and events.</string>
 </dict>
 </plist>

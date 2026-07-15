@@ -40,7 +40,8 @@ def configure_android() -> None:
             root.insert(insert_at, node)
             insert_at += 1
 
-    ET.indent(tree, space="    ")
+    if hasattr(ET, "indent"):
+        ET.indent(tree, space="    ")
     tree.write(manifest, encoding="utf-8", xml_declaration=True)
     print(f"Configured {manifest.relative_to(ROOT)}")
 
