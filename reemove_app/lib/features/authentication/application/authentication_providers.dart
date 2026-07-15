@@ -1,7 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart' hide Result;
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/app_environment.dart';
@@ -9,6 +7,7 @@ import '../../../core/constants/firestore_paths.dart';
 import '../../../core/database/database_providers.dart';
 import '../../../core/domain/value_objects/content_policy.dart';
 import '../../../core/firebase/firebase_bootstrap.dart';
+import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/result/result.dart';
 import '../../profile/domain/entities/user_profile.dart';
@@ -25,35 +24,8 @@ import '../domain/repositories/auth_repository.dart';
 import '../domain/repositories/username_repository.dart';
 import '../domain/services/auth_analytics.dart';
 
-final Provider<FirebaseAuth> firebaseAuthProvider = Provider<FirebaseAuth>((
-  Ref ref,
-) {
-  final FirebaseBootstrapReport report = ref.watch(
-    firebaseBootstrapReportProvider,
-  );
-  if (!report.isReady) {
-    throw StateError(
-      'Firebase Authentication is unavailable because Firebase failed to initialize.',
-    );
-  }
-  return FirebaseAuth.instance;
-});
-
-final Provider<FirebaseFunctions>
-firebaseFunctionsProvider = Provider<FirebaseFunctions>((Ref ref) {
-  final FirebaseBootstrapReport report = ref.watch(
-    firebaseBootstrapReportProvider,
-  );
-  if (!report.isReady) {
-    throw StateError(
-      'Cloud Functions is unavailable because Firebase failed to initialize.',
-    );
-  }
-  final AppEnvironment environment = ref.watch(appEnvironmentProvider);
-  return FirebaseFunctions.instanceFor(
-    region: environment.firebaseFunctionsRegion,
-  );
-});
+export '../../../core/firebase/firebase_providers.dart'
+    show firebaseAuthProvider, firebaseFunctionsProvider;
 
 final Provider<AuthAnalytics> authAnalyticsProvider = Provider<AuthAnalytics>((
   Ref ref,

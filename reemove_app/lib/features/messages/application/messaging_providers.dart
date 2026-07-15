@@ -1,19 +1,15 @@
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/config/app_environment.dart';
-import '../../../core/database/database_providers.dart';
 import '../../../core/errors/failure.dart';
 import '../../../core/firebase/firebase_bootstrap.dart';
+import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/result/result.dart';
 import '../../authentication/application/authentication_providers.dart';
 import '../../authentication/domain/entities/auth_user.dart';
-import '../../onboarding/application/onboarding_providers.dart';
 import '../data/repositories/firebase_message_attachment_repository.dart';
 import '../data/repositories/firebase_messaging_device_repository.dart';
 import '../data/repositories/firebase_messaging_presence_repository.dart';
@@ -30,25 +26,8 @@ import '../domain/repositories/messaging_presence_repository.dart';
 import '../domain/repositories/messaging_repository.dart';
 import '../domain/services/messaging_media_picker.dart';
 
-final Provider<FirebaseDatabase>
-firebaseDatabaseProvider = Provider<FirebaseDatabase>((Ref ref) {
-  final FirebaseBootstrapReport report = ref.watch(
-    firebaseBootstrapReportProvider,
-  );
-  if (!report.isReady) {
-    throw StateError(
-      'Realtime Database is unavailable because Firebase failed to initialize.',
-    );
-  }
-  final AppEnvironment environment = ref.watch(appEnvironmentProvider);
-  final String? databaseUrl = environment.firebaseDatabaseUrl;
-  return databaseUrl == null
-      ? FirebaseDatabase.instance
-      : FirebaseDatabase.instanceFor(
-          app: Firebase.app(),
-          databaseURL: databaseUrl,
-        );
-});
+export '../../../core/firebase/firebase_providers.dart'
+    show firebaseDatabaseProvider;
 
 final Provider<MessagingRepository> messagingRepositoryProvider =
     Provider<MessagingRepository>((Ref ref) {
@@ -109,6 +88,13 @@ final messagingInboxProvider =
 final StreamProvider<int> messagingUnreadCountProvider = StreamProvider<int>((
   Ref ref,
 ) async* {
+  final FirebaseBootstrapReport report = ref.watch(
+    firebaseBootstrapReportProvider,
+  );
+  if (!report.isReady) {
+    yield 0;
+    return;
+  }
   final AuthUser? user = await ref.watch(currentAuthUserProvider.future);
   if (user == null) {
     yield 0;
@@ -199,6 +185,12 @@ final attachmentDownloadUrlProvider = FutureProvider.family<String, String>((
 
 final FutureProvider<void>
 messagingDeviceRegistrationProvider = FutureProvider<void>((Ref ref) async {
+  final FirebaseBootstrapReport report = ref.watch(
+    firebaseBootstrapReportProvider,
+  );
+  if (!report.isReady) {
+    return;
+  }
   final AuthUser? user = await ref.watch(currentAuthUserProvider.future);
   if (user == null) {
     return;
@@ -226,6 +218,12 @@ messagingDeviceRegistrationProvider = FutureProvider<void>((Ref ref) async {
 
 final StreamProvider<String> messagingOpenedConversationProvider =
     StreamProvider<String>((Ref ref) async* {
+      final FirebaseBootstrapReport report = ref.watch(
+        firebaseBootstrapReportProvider,
+      );
+      if (!report.isReady) {
+        return;
+      }
       final RemoteMessage? initial = await FirebaseMessaging.instance
           .getInitialMessage();
       final String? initialId = _conversationId(initial);

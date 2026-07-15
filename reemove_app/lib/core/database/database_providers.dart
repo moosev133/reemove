@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/challenges/data/repositories/firebase_challenge_repository.dart';
@@ -11,22 +10,10 @@ import '../../features/settings/data/repositories/firebase_app_configuration_rep
 import '../../features/settings/domain/repositories/app_configuration_repository.dart';
 import '../../features/sports/shared/data/repositories/firebase_sports_catalog_repository.dart';
 import '../../features/sports/shared/domain/repositories/sports_catalog_repository.dart';
-import '../firebase/firebase_bootstrap.dart';
-import '../providers/core_providers.dart';
+import '../firebase/firebase_providers.dart';
 import 'reemove_firestore.dart';
 
-final Provider<FirebaseFirestore>
-firebaseFirestoreProvider = Provider<FirebaseFirestore>((Ref ref) {
-  final FirebaseBootstrapReport report = ref.watch(
-    firebaseBootstrapReportProvider,
-  );
-  if (!report.isReady) {
-    throw StateError(
-      'Cloud Firestore is unavailable because Firebase failed to initialize.',
-    );
-  }
-  return FirebaseFirestore.instance;
-});
+export '../firebase/firebase_providers.dart' show firebaseFirestoreProvider;
 
 final Provider<ReeMoveFirestore> reeMoveFirestoreProvider =
     Provider<ReeMoveFirestore>((Ref ref) {
@@ -36,10 +23,7 @@ final Provider<ReeMoveFirestore> reeMoveFirestoreProvider =
 final Provider<UserProfileRepository> userProfileRepositoryProvider =
     Provider<UserProfileRepository>((Ref ref) {
       final ReeMoveFirestore database = ref.watch(reeMoveFirestoreProvider);
-      return FirebaseUserProfileRepository(
-        users: database.users,
-        usernames: database.usernames,
-      );
+      return FirebaseUserProfileRepository(users: database.users);
     });
 
 final Provider<SportsCatalogRepository> sportsCatalogRepositoryProvider =

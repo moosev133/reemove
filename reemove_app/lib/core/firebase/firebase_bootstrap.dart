@@ -58,28 +58,10 @@ abstract final class FirebaseBootstrap {
         environment.enableAnalytics && !environment.useFirebaseEmulators,
       );
 
-      bool appCheckEnabled = false;
-      if (environment.enableAppCheck) {
-        if (kIsWeb && environment.webRecaptchaV3SiteKey == null) {
-          throw StateError(
-            'FIREBASE_WEB_RECAPTCHA_V3_SITE_KEY is required when App Check '
-            'is enabled for web.',
-          );
-        }
-
-        await FirebaseAppCheck.instance.activate(
-          providerAndroid: kDebugMode
-              ? const AndroidDebugProvider()
-              : const AndroidPlayIntegrityProvider(),
-          providerApple: kDebugMode
-              ? const AppleDebugProvider()
-              : const AppleAppAttestWithDeviceCheckFallbackProvider(),
-          providerWeb: environment.webRecaptchaV3SiteKey == null
-              ? null
-              : ReCaptchaV3Provider(environment.webRecaptchaV3SiteKey!),
-        );
-        appCheckEnabled = true;
-      }
+      final bool appCheckEnabled = await _activateAppCheck(
+        environment: environment,
+        logger: logger,
+      );
 
       logger.info('Firebase initialized successfully.');
       return FirebaseBootstrapReport(
@@ -102,6 +84,43 @@ abstract final class FirebaseBootstrap {
     }
   }
 
+  static Future<bool> _activateAppCheck({
+    required AppEnvironment environment,
+    required AppLogger logger,
+  }) async {
+    if (!environment.enableAppCheck) {
+      return false;
+    }
+    try {
+      if (kIsWeb && environment.webRecaptchaV3SiteKey == null) {
+        logger.warning(
+          'App Check skipped on web: FIREBASE_WEB_RECAPTCHA_V3_SITE_KEY is missing.',
+        );
+        return false;
+      }
+
+      await FirebaseAppCheck.instance.activate(
+        providerAndroid: kDebugMode
+            ? const AndroidDebugProvider()
+            : const AndroidPlayIntegrityProvider(),
+        providerApple: kDebugMode
+            ? const AppleDebugProvider()
+            : const AppleAppAttestWithDeviceCheckFallbackProvider(),
+        providerWeb: environment.webRecaptchaV3SiteKey == null
+            ? null
+            : ReCaptchaV3Provider(environment.webRecaptchaV3SiteKey!),
+      );
+      return true;
+    } on Object catch (error, stackTrace) {
+      logger.warning(
+        'App Check failed to activate; continuing without it.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return false;
+    }
+  }
+
   static Future<void> _connectEmulators(
     AppEnvironment environment,
     AppLogger logger,
@@ -113,7 +132,17 @@ abstract final class FirebaseBootstrap {
       region: environment.firebaseFunctionsRegion,
     ).useFunctionsEmulator(host, 5001);
     await FirebaseStorage.instance.useStorageEmulator(host, 9199);
-    FirebaseDatabase.instance.useDatabaseEmulator(host, 9000);
+    // Must match [FirebaseSdk.databaseFor] so emulator binding and runtime share
+    // the same Realtime Database instance.
+    final String? databaseUrl = environment.firebaseDatabaseUrl;
+    final FirebaseDatabase database =
+        databaseUrl == null || environment.useFirebaseEmulators
+        ? FirebaseDatabase.instance
+        : FirebaseDatabase.instanceFor(
+            app: Firebase.app(),
+            databaseURL: databaseUrl,
+          );
+    database.useDatabaseEmulator(host, 9000);
     logger.info('Connected Firebase SDKs to local emulators at $host.');
   }
 }

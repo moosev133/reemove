@@ -1,11 +1,11 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/config/app_environment.dart';
 import '../../../core/database/database_providers.dart';
 import '../../../core/errors/failure.dart';
 import '../../../core/firebase/firebase_bootstrap.dart';
+import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/result/result.dart';
 import '../../authentication/application/authentication_providers.dart';
@@ -28,18 +28,8 @@ import '../domain/services/location_service.dart';
 import '../domain/services/notification_permission_service.dart';
 import 'onboarding_view_state.dart';
 
-final Provider<FirebaseStorage>
-firebaseStorageProvider = Provider<FirebaseStorage>((Ref ref) {
-  final FirebaseBootstrapReport report = ref.watch(
-    firebaseBootstrapReportProvider,
-  );
-  if (!report.isReady) {
-    throw StateError(
-      'Firebase Storage is unavailable because Firebase failed to initialize.',
-    );
-  }
-  return FirebaseStorage.instance;
-});
+export '../../../core/firebase/firebase_providers.dart'
+    show firebaseStorageProvider;
 
 final Provider<OnboardingRepository> onboardingRepositoryProvider =
     Provider<OnboardingRepository>((Ref ref) {

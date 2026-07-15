@@ -9,8 +9,8 @@ import '../../../../core/database/firestore_failure_mapper.dart';
 import '../../../../core/domain/value_objects/content_policy.dart';
 import '../../../../core/domain/value_objects/media_asset.dart';
 import '../../../../core/errors/failure.dart';
+import '../../../../core/firebase/functions_failure_mapper.dart';
 import '../../../../core/result/result.dart';
-import '../../../authentication/data/services/firebase_auth_failure_mapper.dart';
 import '../../domain/entities/content_draft.dart';
 import '../../domain/entities/feed_post.dart';
 import '../../domain/entities/story.dart';
@@ -149,7 +149,7 @@ class FirebaseContentPublishingRepository
       return Success<FeedPost>(post.toDomain());
     } on FirebaseFunctionsException catch (error) {
       return FailureResult<FeedPost>(
-        FirebaseAuthFailureMapper.fromFunctionsException(error),
+        FunctionsFailureMapper.fromException(error),
       );
     } on FirebaseException catch (error) {
       return FailureResult<FeedPost>(
@@ -180,9 +180,7 @@ class FirebaseContentPublishingRepository
       }
       return Success<Story>(story.toDomain(isViewed: false));
     } on FirebaseFunctionsException catch (error) {
-      return FailureResult<Story>(
-        FirebaseAuthFailureMapper.fromFunctionsException(error),
-      );
+      return FailureResult<Story>(FunctionsFailureMapper.fromException(error));
     } on FirebaseException catch (error) {
       return FailureResult<Story>(
         FirestoreFailureMapper.fromFirebaseException(error),

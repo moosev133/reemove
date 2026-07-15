@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database_providers.dart';
 import '../../../core/errors/failure.dart';
+import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/result/result.dart';
 import '../../authentication/application/authentication_providers.dart';
 import '../../authentication/domain/entities/auth_user.dart';
-import '../../onboarding/application/onboarding_providers.dart';
 import '../data/repositories/firebase_content_publishing_repository.dart';
 import '../data/repositories/firebase_feed_repository.dart';
 import '../data/repositories/firebase_post_interaction_repository.dart';

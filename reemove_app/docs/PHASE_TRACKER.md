@@ -8,8 +8,8 @@
 | 4 | Onboarding | **Complete in this package** | Resumable ten-step flow, private age/location, avatar, preferences, trusted completion |
 | 5 | Navigation | **Complete in this package** | Six-tab adaptive shell, stateful branches, guarded deep links, native app-link setup |
 | 6 | Feed | **Complete in this package** | Ranked/following feeds, publishing, media jobs, stories, reels, comments, reactions, reports, blocks |
-| 7 | Profiles | Planned | Profiles, follow graph, verification, settings |
-| 8 | Messaging | Planned | Direct/group chat and media |
+| 7 | Profiles | **Complete in this package** | Profiles, follow graph, verification, settings |
+| 8 | Messaging | **Complete in this package** | Direct/group chat and media |
 | 9 | Sports hubs | Planned | Football, gym, running and shared module contracts |
 | 10 | Nearby maps | Planned | Places, people, matches, routes, filters |
 | 11 | Challenges | Planned | Weekly/community/AI challenges and rewards |

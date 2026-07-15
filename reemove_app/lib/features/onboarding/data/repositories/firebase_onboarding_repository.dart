@@ -3,8 +3,8 @@ import 'package:cloud_functions/cloud_functions.dart' hide Result;
 
 import '../../../../core/database/firestore_failure_mapper.dart';
 import '../../../../core/errors/failure.dart';
+import '../../../../core/firebase/functions_failure_mapper.dart';
 import '../../../../core/result/result.dart';
-import '../../../authentication/data/services/firebase_auth_failure_mapper.dart';
 import '../../domain/entities/onboarding_draft.dart';
 import '../../domain/entities/onboarding_policy.dart';
 import '../../domain/repositories/onboarding_repository.dart';
@@ -93,7 +93,7 @@ class FirebaseOnboardingRepository implements OnboardingRepository {
       );
     } on FirebaseFunctionsException catch (error) {
       return FailureResult<OnboardingDraft>(
-        FirebaseAuthFailureMapper.fromFunctionsException(error),
+        FunctionsFailureMapper.fromException(error),
       );
     } catch (error) {
       return FailureResult<OnboardingDraft>(_unexpected(error));
@@ -108,9 +108,7 @@ class FirebaseOnboardingRepository implements OnboardingRepository {
           .call<Object?>(OnboardingDraftDto(draft).toRequestMap());
       return const Success<void>(null);
     } on FirebaseFunctionsException catch (error) {
-      return FailureResult<void>(
-        FirebaseAuthFailureMapper.fromFunctionsException(error),
-      );
+      return FailureResult<void>(FunctionsFailureMapper.fromException(error));
     } catch (error) {
       return FailureResult<void>(_unexpected(error));
     }

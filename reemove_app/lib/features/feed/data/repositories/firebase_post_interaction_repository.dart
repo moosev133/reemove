@@ -4,8 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../../core/database/firestore_failure_mapper.dart';
 import '../../../../core/errors/failure.dart';
+import '../../../../core/firebase/functions_failure_mapper.dart';
 import '../../../../core/result/result.dart';
-import '../../../authentication/data/services/firebase_auth_failure_mapper.dart';
 import '../../domain/entities/content_report.dart';
 import '../../domain/entities/post_comment.dart';
 import '../../domain/repositories/post_interaction_repository.dart';
@@ -46,7 +46,7 @@ class FirebasePostInteractionRepository implements PostInteractionRepository {
       );
     } on FirebaseFunctionsException catch (error) {
       return FailureResult<ReactionMutationResult>(
-        FirebaseAuthFailureMapper.fromFunctionsException(error),
+        FunctionsFailureMapper.fromException(error),
       );
     } catch (error) {
       return FailureResult<ReactionMutationResult>(_unexpected(error));
@@ -166,7 +166,7 @@ class FirebasePostInteractionRepository implements PostInteractionRepository {
       return Success<PostComment>(comment.toDomain(isLiked: false));
     } on FirebaseFunctionsException catch (error) {
       return FailureResult<PostComment>(
-        FirebaseAuthFailureMapper.fromFunctionsException(error),
+        FunctionsFailureMapper.fromException(error),
       );
     } on FirebaseException catch (error) {
       return FailureResult<PostComment>(
@@ -198,7 +198,7 @@ class FirebasePostInteractionRepository implements PostInteractionRepository {
       );
     } on FirebaseFunctionsException catch (error) {
       return FailureResult<ReactionMutationResult>(
-        FirebaseAuthFailureMapper.fromFunctionsException(error),
+        FunctionsFailureMapper.fromException(error),
       );
     } catch (error) {
       return FailureResult<ReactionMutationResult>(_unexpected(error));
@@ -236,9 +236,7 @@ class FirebasePostInteractionRepository implements PostInteractionRepository {
       await _functions.httpsCallable(name).call<Object?>(data);
       return const Success<void>(null);
     } on FirebaseFunctionsException catch (error) {
-      return FailureResult<void>(
-        FirebaseAuthFailureMapper.fromFunctionsException(error),
-      );
+      return FailureResult<void>(FunctionsFailureMapper.fromException(error));
     } catch (error) {
       return FailureResult<void>(_unexpected(error));
     }

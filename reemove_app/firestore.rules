@@ -54,18 +54,6 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/conversations/$(conversationId)/members/$(request.auth.uid)).data.removedAt == null;
     }
 
-    function canReadUserProfile(uid, data) {
-      return signedIn()
-        && data.moderationState == 'active'
-        && !isBlocked(request.auth.uid, uid)
-        && (
-          request.auth.uid == uid
-          || data.visibility == 'public'
-          || (data.visibility == 'followers'
-            && follows(request.auth.uid, uid))
-        );
-    }
-
     function canReadPublishedContent(data) {
       return signedIn()
         && data.moderationState == 'active'

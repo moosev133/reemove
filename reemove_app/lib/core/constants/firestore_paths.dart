@@ -39,4 +39,31 @@ abstract final class FirestoreCollections {
   static const String dataMigrations = 'data_migrations';
   static const String accountDeletions = 'account_deletions';
   static const String rateLimits = 'rate_limits';
+
+  /// User subcollections (path segment after `/users/{uid}/`).
+  static const String conversationInbox = 'conversation_inbox';
+  static const String messageReactions = 'message_reactions';
+  static const String followRequests = 'follow_requests';
+  static const String members = 'members';
+  static const String messages = 'messages';
+}
+
+/// Canonical Firestore path helpers for shared document locations.
+abstract final class FirestorePaths {
+  static String user(String uid) => '${FirestoreCollections.users}/$uid';
+
+  static String userConversationInbox(String uid) =>
+      '${user(uid)}/${FirestoreCollections.conversationInbox}';
+
+  static String userMessageReactions(String uid) =>
+      '${user(uid)}/${FirestoreCollections.messageReactions}';
+
+  static String conversation(String conversationId) =>
+      '${FirestoreCollections.conversations}/$conversationId';
+
+  static String conversationMembers(String conversationId) =>
+      '${conversation(conversationId)}/${FirestoreCollections.members}';
+
+  static String conversationMessages(String conversationId) =>
+      '${conversation(conversationId)}/${FirestoreCollections.messages}';
 }

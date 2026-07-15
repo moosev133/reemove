@@ -3,8 +3,8 @@ import 'package:cloud_functions/cloud_functions.dart' hide Result;
 
 import '../../../../core/database/firestore_failure_mapper.dart';
 import '../../../../core/errors/failure.dart';
+import '../../../../core/firebase/functions_failure_mapper.dart';
 import '../../../../core/result/result.dart';
-import '../../../authentication/data/services/firebase_auth_failure_mapper.dart';
 import '../../domain/entities/story.dart';
 import '../../domain/repositories/story_repository.dart';
 import '../dto/story_dto.dart';
@@ -142,9 +142,7 @@ class FirebaseStoryRepository implements StoryRepository {
       await _functions.httpsCallable(name).call<Object?>(data);
       return const Success<void>(null);
     } on FirebaseFunctionsException catch (error) {
-      return FailureResult<void>(
-        FirebaseAuthFailureMapper.fromFunctionsException(error),
-      );
+      return FailureResult<void>(FunctionsFailureMapper.fromException(error));
     } catch (error) {
       return FailureResult<void>(_unexpected(error));
     }

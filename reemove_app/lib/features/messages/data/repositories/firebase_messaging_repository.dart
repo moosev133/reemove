@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart' hide Result;
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../../../../core/constants/firestore_paths.dart';
 import '../../../../core/database/firestore_parser.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/result/result.dart';
@@ -424,16 +425,16 @@ class FirebaseMessagingRepository implements MessagingRepository {
   });
 
   CollectionReference<ConversationSummaryDto> _inbox(String uid) => _firestore
-      .collection('users')
+      .collection(FirestoreCollections.users)
       .doc(uid)
-      .collection('conversation_inbox')
+      .collection(FirestoreCollections.conversationInbox)
       .withConverter<ConversationSummaryDto>(
         fromFirestore: ConversationSummaryDto.fromFirestore,
         toFirestore: (_, unused) => throw UnsupportedError('Server managed.'),
       );
 
   CollectionReference<ConversationDto> get _conversations => _firestore
-      .collection('conversations')
+      .collection(FirestoreCollections.conversations)
       .withConverter<ConversationDto>(
         fromFirestore: ConversationDto.fromFirestore,
         toFirestore: (_, unused) => throw UnsupportedError('Server managed.'),
@@ -441,9 +442,9 @@ class FirebaseMessagingRepository implements MessagingRepository {
 
   CollectionReference<ConversationMemberDto> _members(String conversationId) =>
       _firestore
-          .collection('conversations')
+          .collection(FirestoreCollections.conversations)
           .doc(conversationId)
-          .collection('members')
+          .collection(FirestoreCollections.members)
           .withConverter<ConversationMemberDto>(
             fromFirestore: ConversationMemberDto.fromFirestore,
             toFirestore: (_, unused) =>
@@ -451,9 +452,9 @@ class FirebaseMessagingRepository implements MessagingRepository {
           );
 
   CollectionReference<MessageDto> _messages(String conversationId) => _firestore
-      .collection('conversations')
+      .collection(FirestoreCollections.conversations)
       .doc(conversationId)
-      .collection('messages')
+      .collection(FirestoreCollections.messages)
       .withConverter<MessageDto>(
         fromFirestore: MessageDto.fromFirestore,
         toFirestore: (_, unused) => throw UnsupportedError('Server managed.'),
@@ -478,9 +479,9 @@ class FirebaseMessagingRepository implements MessagingRepository {
           .map((String messageId) => '$conversationId--$messageId')
           .toList(growable: false);
       final QuerySnapshot<FirestoreMap> snapshot = await _firestore
-          .collection('users')
+          .collection(FirestoreCollections.users)
           .doc(viewerId)
-          .collection('message_reactions')
+          .collection(FirestoreCollections.messageReactions)
           .where(FieldPath.documentId, whereIn: keys)
           .get();
       for (final QueryDocumentSnapshot<FirestoreMap> document
