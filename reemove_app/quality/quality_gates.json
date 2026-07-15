@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "project": "ReeMove",
+  "phase": 15,
+  "coverage": {
+    "globalLinePercent": 80,
+    "criticalLinePercent": 90,
+    "securityRulesBranchesPercent": 90,
+    "excluded": [
+      "generated/**",
+      "**/*.g.dart",
+      "**/*.freezed.dart",
+      "lib/firebase_options.dart",
+      "lib/l10n/generated/**"
+    ]
+  },
+  "defects": {
+    "maxP0": 0,
+    "maxP1": 0
+  },
+  "security": {
+    "maxCritical": 0,
+    "maxHigh": 0,
+    "secretFindings": 0
+  },
+  "automation": {
+    "required": [
+      "format",
+      "analyze",
+      "flutter_tests",
+      "functions_build",
+      "functions_tests",
+      "firestore_rules",
+      "storage_rules",
+      "secret_scan"
+    ]
+  },
+  "performanceBudgetsMs": {
+    "warmStartP95": 1500,
+    "coldStartP95": 3000,
+    "feedFirstContentP95": 2500,
+    "feedNextPageP95": 2000,
+    "messageAckP95": 1500,
+    "notificationRouteP95": 2500,
+    "standardCallableP95": 3000,
+    "aiCallableP95": 15000
+  },
+  "criticalJourneysPassPercent": 100,
+  "aiSafetyReleaseBlockingPassPercent": 100
+}

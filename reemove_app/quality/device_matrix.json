@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "android": [
+    {
+      "tier": "minimum-supported",
+      "formFactor": "phone",
+      "orientation": [
+        "portrait"
+      ]
+    },
+    {
+      "tier": "common-midrange",
+      "formFactor": "phone",
+      "orientation": [
+        "portrait",
+        "landscape"
+      ]
+    },
+    {
+      "tier": "current-flagship",
+      "formFactor": "phone",
+      "orientation": [
+        "portrait"
+      ]
+    },
+    {
+      "tier": "large-screen",
+      "formFactor": "tablet-or-foldable",
+      "orientation": [
+        "portrait",
+        "landscape"
+      ]
+    }
+  ],
+  "ios": [
+    {
+      "tier": "minimum-supported",
+      "formFactor": "phone"
+    },
+    {
+      "tier": "current-standard",
+      "formFactor": "phone"
+    },
+    {
+      "tier": "current-large",
+      "formFactor": "phone"
+    },
+    {
+      "tier": "tablet-if-supported",
+      "formFactor": "tablet"
+    }
+  ],
+  "locales": [
+    "en",
+    "ar",
+    "he"
+  ],
+  "themes": [
+    "light",
+    "dark"
+  ],
+  "networkProfiles": [
+    "offline",
+    "slow",
+    "normal",
+    "wifi-mobile-transition"
+  ]
+}

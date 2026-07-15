@@ -1,0 +1,21 @@
+// Rename to .dart after connecting the real app and stable TestKeys.
+import 'dart:io';
+import 'package:integration_test/integration_test.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets('feed scroll performance smoke', (tester) async {
+    // TODO_REEMOVE: pump signed-in app with enough seeded feed items.
+    await binding.traceAction(
+      () async {
+        // TODO_REEMOVE: fling TestKeys.feedList repeatedly and settle minimally.
+      },
+      reportKey: 'feed_scroll',
+    );
+
+    // CI may collect responseData and compare it with the agreed frame budget.
+    expect(Platform.environment['FIREBASE_PROJECT_ID'], isNot('reemove-production'));
+  });
+}

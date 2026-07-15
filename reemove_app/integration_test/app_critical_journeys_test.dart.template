@@ -1,0 +1,25 @@
+// Rename to .dart after connecting the real app and emulator seed/reset API.
+import 'package:integration_test/integration_test.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  group('ReeMove critical journeys', () {
+    testWidgets('new athlete activation', (tester) async {
+      // Register, complete onboarding, and reach the feed.
+    });
+
+    testWidgets('social publish and messaging', (tester) async {
+      // Publish, react, open profile, send message, and verify notification route.
+    });
+
+    testWidgets('sports discovery and challenge progress', (tester) async {
+      // Open hub, use nearby, join event/challenge, submit progress.
+    });
+
+    testWidgets('marketplace contact and AI request', (tester) async {
+      // Search listing, contact seller, request safe AI output.
+    });
+  });
+}

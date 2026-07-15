@@ -1,0 +1,24 @@
+REEMOVE PHASE 15 — INTEGRATION CHECKLIST
+
+[ ] Copy quality/, docs/, scripts/, and CI files into the main repository.
+[ ] Merge Flutter dependency additions into pubspec.yaml.
+[ ] Merge observability services into the existing dependency injection / Riverpod layer.
+[ ] Add stable TestKeys to critical buttons, fields, tabs, lists, and dialogs.
+[ ] Replace all TODO_REEMOVE imports and provider overrides in .dart.template files.
+[ ] Rename connected .dart.template files to .dart.
+[ ] Confirm Firebase Emulator ports do not conflict with local services.
+[ ] Update firebase_tests/test_config.mjs if Phase 2 collection names differ.
+[ ] Point root firestore.rules and storage.rules (via firebase_tests) to the merged production rules.
+[ ] Install rules-test dependencies and execute the emulator test suite.
+[ ] Merge functions test additions into the existing functions package.json.
+[ ] Confirm Phase 14 AI functions compile and their regression tests run.
+[ ] Run Flutter format, analyze, unit, widget, and integration tests.
+[ ] Generate lcov.info and enforce the agreed coverage thresholds.
+[ ] Run Android and iOS critical journeys on the supported device matrix.
+[ ] Run accessibility checks with screen reader, large text, and reduced motion.
+[ ] Run Arabic, Hebrew, and English localization and RTL checks.
+[ ] Complete the security and privacy test plan.
+[ ] Complete performance profiling and compare results with quality budgets.
+[ ] Resolve every P0/P1 defect and all confirmed high/critical security findings.
+[ ] Complete RELEASE_READINESS_SCORECARD.md.
+[ ] Review docs/PHASE_16_HANDOFF.md before starting production deployment.

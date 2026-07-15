@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/testing/test_keys.dart';
 import '../router/app_routes.dart';
 
 enum AppDestination {
@@ -9,6 +10,15 @@ enum AppDestination {
   create,
   messages,
   profile;
+
+  Key get testKey => switch (this) {
+    AppDestination.home => TestKeys.navHome,
+    AppDestination.discover => TestKeys.navDiscover,
+    AppDestination.sports => TestKeys.navSports,
+    AppDestination.create => TestKeys.navCreate,
+    AppDestination.messages => TestKeys.navMessages,
+    AppDestination.profile => TestKeys.navProfile,
+  };
 
   int get branchIndex => index;
 

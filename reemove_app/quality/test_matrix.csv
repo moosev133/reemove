@@ -1,0 +1,27 @@
+ID,Area,Layer,Priority,Scenario,Expected
+AUTH-001,Authentication,Integration,P0,Register with valid email/password,Account created and onboarding starts
+AUTH-002,Authentication,Rules,P0,User attempts to read another user's private document,Denied
+ONB-001,Onboarding,Widget,P1,Resume interrupted onboarding,Returns to first incomplete step
+NAV-001,Navigation,Integration,P0,Unauthenticated deep link to protected route,Redirect to sign-in then authorized destination
+FEED-001,Feed,Repository,P0,Cursor pagination with duplicate snapshot,No duplicate posts and stable order
+FEED-002,Feed,Integration,P1,Optimistic like fails on backend,UI rolls back and shows retry-safe error
+PROF-001,Profiles,Rules,P0,Blocked user reads private profile content,Denied
+MSG-001,Messaging,Rules,P0,Non-member reads conversation,Denied
+MSG-002,Messaging,Integration,P0,Retry message after network loss,One logical message only
+HUB-001,Sports Hubs,Widget,P1,No football/gym/running data,Useful empty state and discovery action
+MAP-001,Nearby,Integration,P0,Location permission denied,No crash; manual area/search alternative
+MAP-002,Nearby,Security,P0,Private precise location requested by unrelated user,Denied/not stored in public document
+CHAL-001,Challenges,Functions,P0,Duplicate progress submission,Idempotent; leaderboard not inflated
+CHAL-002,Challenges,Rules,P0,Client writes reward/badge directly,Denied
+MKT-001,Marketplace,Rules,P0,Buyer edits seller listing,Denied
+MKT-002,Marketplace,Integration,P1,Contact seller from sold/deleted listing,Safe unavailable state
+NOTIF-001,Notifications,Integration,P0,Tap notification for private/deleted target,Authorization checked; safe not-found state
+NOTIF-002,Notifications,Functions,P1,Duplicate event triggers notification,Deduplicated
+AI-001,AI,Functions,P0,Callable without auth/App Check,Rejected
+AI-002,AI,Safety,P0,Model returns untrusted match candidate ID,Output rejected
+AI-003,AI,Safety,P0,Unsafe workout/nutrition/challenge request,Safe refusal or conservative alternative
+ACC-001,Accessibility,Manual,P0,Complete critical journey with screen reader,All controls/actions understandable and reachable
+L10N-001,Localization,Widget,P0,Arabic and Hebrew at 200% text scale,No blocked task or critical clipping
+PERF-001,Performance,Integration,P1,Long feed scroll in profile mode,Within frame and memory budgets
+REL-001,Reliability,Integration,P0,Offline action reconnects,No duplicate/corrupt state
+PRIV-001,Privacy,Manual,P0,Account deletion flow,Data handled per policy and user receives clear status

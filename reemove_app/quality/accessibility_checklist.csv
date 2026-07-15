@@ -1,0 +1,11 @@
+ID,Check,Automated/Manual,Required
+A11Y-01,All critical controls have semantic labels/roles,Both,Yes
+A11Y-02,Logical focus order,Manual,Yes
+A11Y-03,Task completion at 200% text scale,Both,Yes
+A11Y-04,Light and dark contrast review,Both,Yes
+A11Y-05,No information conveyed by color alone,Manual,Yes
+A11Y-06,Errors announced and linked to fields,Manual,Yes
+A11Y-07,TalkBack critical journeys,Manual,Yes
+A11Y-08,VoiceOver critical journeys,Manual,Yes
+A11Y-09,Reduced-motion behavior,Manual,Yes
+A11Y-10,RTL Arabic and Hebrew task completion,Both,Yes

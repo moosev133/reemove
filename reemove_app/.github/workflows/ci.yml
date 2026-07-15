@@ -5,9 +5,17 @@ on:
   push:
     branches: [main, develop]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-package-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   flutter:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -19,9 +27,23 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed lib test
       - run: flutter analyze
       - run: flutter test --coverage
+      - name: Coverage report
+        continue-on-error: true
+        run: python3 scripts/check_coverage.py coverage/lcov.info quality/quality_gates.json
+      - name: Secret scan
+        run: python3 scripts/scan_secrets.py .
+      - name: Package validation
+        run: python3 scripts/validate_package.py .
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flutter-coverage
+          path: coverage/lcov.info
+          if-no-files-found: ignore
 
   functions:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: functions
@@ -39,6 +61,7 @@ jobs:
 
   firebase-rules:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

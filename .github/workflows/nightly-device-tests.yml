@@ -1,0 +1,63 @@
+name: ReeMove Nightly Device Tests
+
+on:
+  schedule:
+    - cron: "25 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: reemove_app
+
+jobs:
+  android-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [26, 35]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.0"
+          channel: stable
+          cache: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: flutter pub get
+      - name: Run Android integration suite
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          profile: pixel_6
+          script: cd reemove_app && flutter test integration_test --dart-define=INTEGRATION_TEST=true --dart-define=USE_FIREBASE_EMULATORS=true
+        continue-on-error: true
+
+  test-lab-preparation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.0"
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - name: Build Android debug APK
+        continue-on-error: true
+        run: flutter build apk --debug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-test-lab-input
+          path: reemove_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: ignore

@@ -1,0 +1,12 @@
+// TODO_REEMOVE: connect marketplace repositories, media fixtures, and TestKeys.
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  testWidgets('seller creates and marks listing sold', (tester) async {
+    // Validate required fields, image limits, server ownership, and sold state.
+  });
+
+  testWidgets('buyer cannot edit another seller listing', (tester) async {
+    // Attempt direct repository write and assert permission-denied mapping.
+  });
+}

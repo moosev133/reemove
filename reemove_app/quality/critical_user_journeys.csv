@@ -1,0 +1,14 @@
+ID,Journey,Preconditions,Steps summary,Release gate
+CJ-01,New athlete activation,Fresh app,Register; complete sports/level/goals; permission choice; reach feed,Yes
+CJ-02,Social publishing,Authenticated,Create media post; view feed; like/comment/save; delete own post,Yes
+CJ-03,Follow and privacy,Public/private/blocked users,Follow; request/private behavior; block; verify visibility,Yes
+CJ-04,Direct messaging,Two eligible users,Open profile; message; receive; unread; notification deep link,Yes
+CJ-05,Football discovery,Location configured,Open hub; nearby filter; event; join/leave,Yes
+CJ-06,Gym discovery,Location configured,Open gym hub; place/trainer; favorite/contact,Yes
+CJ-07,Running route/challenge,Location configured,Open route; join challenge; submit valid progress; leaderboard,Yes
+CJ-08,Marketplace,Seller and buyer,Create listing; search; favorite; contact seller; mark sold,Yes
+CJ-09,Notifications,Triggering accounts,Receive multiple types; mark read; open authorized destination,Yes
+CJ-10,AI workout,Adult/minor accounts,Submit valid request; validate safe structured result; history,Yes
+CJ-11,AI matchmaker,Trusted candidate set,Generate ranking; verify IDs subset and privacy/block filters,Yes
+CJ-12,Offline recovery,Authenticated with cached data,Disconnect; browse cache; queue safe action; reconnect; reconcile,Yes
+CJ-13,Account safety,Authenticated,Report content; block user; sign out; verify local cleanup,Yes

@@ -1,0 +1,24 @@
+// Rename to .dart after replacing TODO_REEMOVE imports/providers.
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+// TODO_REEMOVE: import the actual ProviderScope/Bloc providers and App widget.
+
+Future<void> pumpReeMoveApp(
+  WidgetTester tester, {
+  required Widget app,
+  Size surfaceSize = const Size(390, 844),
+  double textScale = 1.0,
+  Locale locale = const Locale('en'),
+}) async {
+  await tester.binding.setSurfaceSize(surfaceSize);
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+
+  await tester.pumpWidget(
+    MediaQuery(
+      data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+      child: MaterialApp(locale: locale, home: app),
+    ),
+  );
+  await tester.pump();
+}

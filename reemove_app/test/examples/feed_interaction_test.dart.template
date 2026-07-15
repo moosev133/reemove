@@ -1,0 +1,15 @@
+// TODO_REEMOVE: connect real feed providers, repositories, and TestKeys.
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  testWidgets('feed handles pagination and optimistic-like rollback', (tester) async {
+    // Seed two pages with an overlapping cursor item.
+    // Assert stable order and no duplicate cards.
+    // Tap like, return a backend error, and assert rollback plus safe retry state.
+  });
+
+  testWidgets('blocked or deleted content disappears safely', (tester) async {
+    // Seed a visible post, then apply block/delete update.
+    // Assert no unauthorized content remains in the UI or cache.
+  });
+}

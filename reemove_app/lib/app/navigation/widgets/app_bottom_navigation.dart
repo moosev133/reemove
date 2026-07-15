@@ -35,11 +35,14 @@ class AppBottomNavigation extends StatelessWidget {
                 final bool isCreate = destination == AppDestination.create;
                 return NavigationDestination(
                   tooltip: destination.tooltip,
-                  icon: _DestinationIcon(
-                    destination: destination,
-                    count: badges.countFor(destination),
-                    selected: false,
-                    emphasize: isCreate,
+                  icon: KeyedSubtree(
+                    key: destination.testKey,
+                    child: _DestinationIcon(
+                      destination: destination,
+                      count: badges.countFor(destination),
+                      selected: false,
+                      emphasize: isCreate,
+                    ),
                   ),
                   selectedIcon: _DestinationIcon(
                     destination: destination,

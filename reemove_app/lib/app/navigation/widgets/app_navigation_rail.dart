@@ -58,7 +58,10 @@ class AppNavigationRail extends StatelessWidget {
             .map((AppDestination destination) {
               final int count = badges.countFor(destination);
               return NavigationRailDestination(
-                icon: _RailIcon(icon: destination.icon, count: count),
+                icon: KeyedSubtree(
+                  key: destination.testKey,
+                  child: _RailIcon(icon: destination.icon, count: count),
+                ),
                 selectedIcon: _RailIcon(
                   icon: destination.selectedIcon,
                   count: count,

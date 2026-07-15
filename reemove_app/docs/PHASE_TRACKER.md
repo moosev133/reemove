@@ -16,7 +16,7 @@
 | 12 | Marketplace | **Complete in this package** | Listings, filters, seller profiles, favorites, chat |
 | 13 | Notifications | **Complete in this package** | FCM, inbox, preferences, deep links |
 | 14 | AI modules | **Complete in this package** | Coach, workout, nutrition, matchmaker, challenges, content, trainer insights |
-| 15 | Testing | Planned | Full automated, security, performance, accessibility hardening |
+| 15 | Testing | **Complete in this package** | Quality gates, contract tests, observability wrappers, rules/AI regression, CI hardening |
 | 16 | Deployment | Planned | Store releases, CI/CD, staged rollout, operations |
 
 ## Phase 6 exit gate

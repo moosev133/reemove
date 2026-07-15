@@ -60,6 +60,7 @@ macos/Runner/GoogleService-Info.plist
 .env
 .env.*
 !.env.example
+!.env.test.example
 functions/.env
 functions/.env.*
 

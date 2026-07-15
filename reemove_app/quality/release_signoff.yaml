@@ -1,0 +1,22 @@
+schema_version: 1
+project: ReeMove
+phase: 15
+release_candidate: ""
+commit: ""
+date: ""
+owners:
+  product: ""
+  engineering: ""
+  qa: ""
+  security_privacy: ""
+gates:
+  automated_tests: pending
+  coverage: pending
+  critical_journeys: pending
+  security_privacy: pending
+  accessibility_localization: pending
+  performance_reliability: pending
+  ai_safety: pending
+  rollback_rehearsal: pending
+open_exceptions: []
+decision: pending

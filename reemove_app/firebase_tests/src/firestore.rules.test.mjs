@@ -460,3 +460,59 @@ describe("reports and deny-by-default", () => {
     await assertFails(setDoc(doc(athlete, "unknown/document"), {value: true}));
   });
 });
+
+describe("Phase 15 AI and server-only collections", () => {
+  it("client cannot create AI usage or audit documents", async () => {
+    const athlete = testEnv.authenticatedContext("athlete").firestore();
+    await assertFails(
+      setDoc(doc(athlete, "ai_usage/athlete/days/2026-07-14"), {calls: 0}),
+    );
+    await assertFails(
+      setDoc(doc(athlete, "ai_audit_logs/log-1"), {uid: "athlete"}),
+    );
+  });
+
+  it("client cannot write trainer metrics directly", async () => {
+    const trainer = testEnv.authenticatedContext("trainer-1").firestore();
+    await assertFails(
+      setDoc(doc(trainer, "trainer_metrics/trainer-1"), {revenueCents: 999999}),
+    );
+  });
+
+  it("owner can read own trainer metrics when seeded by server", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "trainer_metrics/trainer-1"), {
+        sessionsCompleted: 3,
+        schemaVersion: 1,
+      });
+    });
+    const trainer = testEnv.authenticatedContext("trainer-1").firestore();
+    await assertSucceeds(getDoc(doc(trainer, "trainer_metrics/trainer-1")));
+  });
+
+  it("admin can read AI audit logs; regular user cannot", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "ai_audit_logs/log-1"), {
+        uid: "athlete",
+        module: "coach",
+      });
+    });
+    const admin = testEnv.authenticatedContext("admin-1", {admin: true})
+      .firestore();
+    const athlete = testEnv.authenticatedContext("athlete").firestore();
+    await assertSucceeds(getDoc(doc(admin, "ai_audit_logs/log-1")));
+    await assertFails(getDoc(doc(athlete, "ai_audit_logs/log-1")));
+  });
+
+  it("clients cannot write notification deliveries or moderation queue", async () => {
+    const athlete = testEnv.authenticatedContext("athlete").firestore();
+    await assertFails(
+      setDoc(doc(athlete, "notification_deliveries/delivery-1"), {
+        recipientId: "athlete",
+      }),
+    );
+    await assertFails(
+      setDoc(doc(athlete, "moderation_queue/item-1"), {status: "open"}),
+    );
+  });
+});

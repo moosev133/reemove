@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "collections": {
+    "users": "users",
+    "posts": "posts",
+    "conversations": "conversations",
+    "notifications": "notifications",
+    "challenges": "challenges",
+    "marketplaceListings": "marketplace_listings",
+    "reports": "reports",
+    "aiUsage": "ai_usage",
+    "aiAuditLogs": "ai_audit_logs",
+    "trainerMetrics": "trainer_metrics",
+    "notificationDeliveries": "notification_deliveries",
+    "moderationQueue": "moderation_queue"
+  },
+  "storagePaths": {
+    "avatars": "users/{uid}/avatar/{file}",
+    "posts": "posts/{uid}/{postId}/{file}",
+    "messages": "messages/{conversationId}/{uid}/{file}",
+    "marketplace": "marketplace/{uid}/{listingId}/{file}",
+    "challengeProofs": "challenge_proofs/{uid}/{challengeId}/{proofId}/{file}"
+  },
+  "serverOnly": [
+    "ai_usage",
+    "ai_audit_logs",
+    "notification_deliveries",
+    "moderation_queue"
+  ],
+  "ownerOrAdminReadable": [
+    "trainer_metrics"
+  ],
+  "notes": "Mapped to production Phase 2–14 schema. Challenge participants live under challenges/{id}/participants; proofs use challenge_proofs storage. trainer_metrics allows owner/admin read with server-only writes."
+}

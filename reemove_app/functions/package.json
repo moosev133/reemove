@@ -13,7 +13,8 @@
     "shell": "npm run build && firebase functions:shell",
     "deploy": "firebase deploy --only functions",
     "seed:emulator": "npm run build && node lib/seed/seedAuth.js && node lib/seed/seedFirestore.js",
-    "test:unit": "npm run build && node --test test/*.test.cjs"
+    "test:unit": "npm run build && node --test test/*.test.cjs",
+    "test:load-smoke": "node load/callable_load_smoke.mjs"
   },
   "dependencies": {
     "firebase-admin": "^13.10.0",
@@ -26,6 +27,7 @@
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "@typescript-eslint/parser": "^8.36.0",
     "eslint": "^9.30.0",
+    "firebase": "^12.16.0",
     "typescript": "^5.8.3"
   }
 }

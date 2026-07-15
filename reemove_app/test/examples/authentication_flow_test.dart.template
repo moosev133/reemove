@@ -1,0 +1,17 @@
+// TODO_REEMOVE: connect to the real app, emulator configuration, and TestKeys.
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  testWidgets('new user registers and resumes onboarding', (tester) async {
+    // 1. Pump ReeMove with emulator-backed auth/repositories.
+    // 2. Enter a unique synthetic email and valid password.
+    // 3. Submit registration.
+    // 4. Complete one onboarding step, restart providers/app.
+    // 5. Assert the first incomplete step is restored.
+  });
+
+  testWidgets('protected deep link requires authentication', (tester) async {
+    // Open a protected event/profile/challenge link while signed out.
+    // Assert sign-in, then authorized destination after successful authentication.
+  });
+}

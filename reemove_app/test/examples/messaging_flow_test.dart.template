@@ -1,0 +1,15 @@
+// TODO_REEMOVE: connect real conversation/message repositories and TestKeys.
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  testWidgets('message retry is idempotent after reconnect', (tester) async {
+    // Submit with a deterministic clientMessageId while offline.
+    // Reconnect and retry.
+    // Assert one logical message and correct unread state.
+  });
+
+  testWidgets('non-member cannot open conversation from deep link', (tester) async {
+    // Route to a conversation not containing the current user.
+    // Assert safe unavailable/permission state and no message rendering.
+  });
+}

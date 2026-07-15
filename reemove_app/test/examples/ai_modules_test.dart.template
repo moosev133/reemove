@@ -1,0 +1,15 @@
+// TODO_REEMOVE: connect Phase 14 providers and Firebase Functions emulator.
+import 'package:flutter_test/flutter_test.dart';
+
+void main() {
+  testWidgets('AI module renders loading, safe success, and stable error states',
+      (tester) async {
+    // Exercise authenticated callable with App Check debug token in emulator mode.
+    // Assert structured result and no automatic publish/send action.
+  });
+
+  testWidgets('matchmaker shows only trusted candidate IDs', (tester) async {
+    // Seed trusted candidates plus blocked/private candidates.
+    // Assert output is a subset of the trusted eligible IDs.
+  });
+}
