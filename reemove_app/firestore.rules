@@ -310,6 +310,16 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      match /notifications/{notificationId} {
+        allow get: if isOwner(uid);
+        allow list: if isOwner(uid) && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /notification_events/{eventId} {
+        allow read, write: if false;
+      }
+
       match /challenge_badges/{badgeId} {
         allow get: if isOwner(uid);
         allow list: if isOwner(uid) && request.query.limit <= 100;

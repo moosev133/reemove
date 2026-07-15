@@ -14,7 +14,7 @@
 | 10 | Nearby maps | **Complete in this package** | Places, people, matches, routes, filters |
 | 11 | Challenges | **Complete in this package** | Weekly/community/AI challenges and rewards |
 | 12 | Marketplace | **Complete in this package** | Listings, filters, seller profiles, favorites, chat |
-| 13 | Notifications | Planned | FCM, inbox, preferences, deep links |
+| 13 | Notifications | **Complete in this package** | FCM, inbox, preferences, deep links |
 | 14 | AI modules | Planned | Seven AI feature families behind a typed gateway |
 | 15 | Testing | Planned | Full automated, security, performance, accessibility hardening |
 | 16 | Deployment | Planned | Store releases, CI/CD, staged rollout, operations |

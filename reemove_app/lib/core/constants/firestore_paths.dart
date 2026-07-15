@@ -9,6 +9,8 @@ abstract final class FirestoreCollections {
   static const String conversations = 'conversations';
   static const String messageReports = 'message_reports';
   static const String notificationDeliveries = 'notification_deliveries';
+  static const String notifications = 'notifications';
+  static const String notificationEvents = 'notification_events';
   static const String groups = 'groups';
   static const String places = 'places';
   static const String teams = 'teams';

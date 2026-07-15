@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,7 +7,7 @@ import '../../core/firebase/firebase_bootstrap.dart';
 import '../../core/providers/core_providers.dart';
 import '../../core/responsive/app_breakpoints.dart';
 import '../../features/messages/application/messaging_providers.dart';
-import '../router/app_routes.dart';
+import '../../features/notifications/application/notification_providers.dart';
 import 'app_navigation_badges.dart';
 import 'widgets/app_bottom_navigation.dart';
 import 'widgets/app_navigation_rail.dart';
@@ -33,14 +34,45 @@ class AppShell extends ConsumerWidget {
               .updateMessages(count),
         );
       });
-      ref.listen<AsyncValue<String>>(messagingOpenedConversationProvider, (
+      ref.listen<AsyncValue<int>>(notificationUnreadCountProvider, (
+        AsyncValue<int>? previous,
+        AsyncValue<int> next,
+      ) {
+        next.whenData(
+          (int count) => ref
+              .read(appNavigationBadgesProvider.notifier)
+              .updateActivity(count),
+        );
+      });
+      // Unified FCM open routing (includes message deep links via data.route).
+      ref.listen<AsyncValue<String>>(notificationOpenedRouteProvider, (
         AsyncValue<String>? previous,
         AsyncValue<String> next,
       ) {
-        next.whenData(
-          (String conversationId) =>
-              context.go(AppRoutes.conversation(conversationId)),
-        );
+        next.whenData(context.go);
+      });
+      ref.listen<AsyncValue<RemoteMessage>>(foregroundNotificationProvider, (
+        AsyncValue<RemoteMessage>? previous,
+        AsyncValue<RemoteMessage> next,
+      ) {
+        next.whenData((RemoteMessage message) {
+          final String title =
+              message.notification?.title ?? 'New ReeMove update';
+          final String body =
+              message.notification?.body ?? 'Open Activity to view it.';
+          final String? route = notificationRoute(message);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$title\n$body'),
+              action: route == null
+                  ? null
+                  : SnackBarAction(
+                      label: 'Open',
+                      onPressed: () => context.go(route),
+                    ),
+            ),
+          );
+        });
       });
     }
 

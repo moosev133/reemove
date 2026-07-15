@@ -12,6 +12,7 @@ abstract final class AppRoutes {
 
   static const String home = '/home';
   static const String activity = '/home/activity';
+  static const String notificationSettings = '/home/activity/settings';
   static const String reels = '/home/reels';
   static const String discover = '/discover';
   static const String discoverSearch = '/discover/search';
@@ -233,6 +234,7 @@ abstract final class AppRouteNames {
 
   static const String home = 'home';
   static const String activity = 'activity';
+  static const String notificationSettings = 'notification-settings';
   static const String homePost = 'home-post';
   static const String reels = 'reels';
   static const String storyGroup = 'story-group';

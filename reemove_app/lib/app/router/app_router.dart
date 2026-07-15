@@ -41,6 +41,7 @@ import '../../features/messages/presentation/screens/messages_screen.dart';
 import '../../features/messages/presentation/screens/new_conversation_screen.dart';
 import '../../features/nearby/presentation/screens/nearby_discovery_screen.dart';
 import '../../features/nearby/presentation/screens/sports_route_detail_screen.dart';
+import '../../features/notifications/presentation/screens/notification_settings_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 import '../../features/profile/domain/entities/profile_connection.dart';
 import '../../features/profile/presentation/screens/blocked_profiles_screen.dart';
@@ -187,6 +188,13 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                     path: 'activity',
                     name: AppRouteNames.activity,
                     pageBuilder: _page(const ActivityScreen()),
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'settings',
+                        name: AppRouteNames.notificationSettings,
+                        pageBuilder: _page(const NotificationSettingsScreen()),
+                      ),
+                    ],
                   ),
                   GoRoute(
                     path: 'post/:postId',

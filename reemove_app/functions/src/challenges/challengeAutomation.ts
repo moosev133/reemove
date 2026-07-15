@@ -1,5 +1,4 @@
 import {getFirestore, Timestamp, type QueryDocumentSnapshot} from "firebase-admin/firestore";
-import {getMessaging, type MulticastMessage} from "firebase-admin/messaging";
 import {logger} from "firebase-functions";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
@@ -8,6 +7,7 @@ import {writeAuditEvent} from "../core/audit";
 import {callableOptions, primaryRegion} from "../core/functionOptions";
 import {collections, currentSchemaVersion} from "../core/schema";
 import {requireUid} from "../messaging/conversationAccess";
+import {createAndDeliverNotification} from "../notifications/notificationService";
 import {progressPercent} from "./challengePolicy";
 
 const safeTemplates = [
@@ -51,11 +51,6 @@ const safeTemplates = [
     badgeId: "football-rhythm",
   },
 ] as const;
-
-const invalidTokenCodes = new Set([
-  "messaging/invalid-registration-token",
-  "messaging/registration-token-not-registered",
-]);
 
 function weekKey(date: Date): string {
   const utc = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -286,68 +281,23 @@ export const sendChallengeReminders = onSchedule({
     const uid = String(participant.get("userId") ?? "");
     const challengeId = String(participant.get("challengeId") ?? "");
     if (!uid || !challengeId) continue;
-    const [preferences, challenge, tokens] = await Promise.all([
-      database.doc(`users/${uid}/private/preferences`).get(),
-      database.collection(collections.challenges).doc(challengeId).get(),
-      database.collection(`users/${uid}/device_tokens`)
-        .where("messagingEnabled", "==", true)
-        .limit(10)
-        .get(),
-    ]);
-    const notifications = preferences.get("notifications") as Record<string, unknown> | undefined;
-    if (notifications?.masterEnabled === false || notifications?.challenges === false ||
-        !challenge.exists || challenge.get("status") !== "active" || tokens.empty) {
-      continue;
-    }
-    const tokenRecords = tokens.docs
-      .map((document) => ({document, token: document.get("token")}))
-      .filter((item): item is {document: QueryDocumentSnapshot; token: string} =>
-        typeof item.token === "string" && item.token.length > 0,
-      );
-    if (tokenRecords.length === 0) continue;
-    const registrationTokens = tokenRecords.map((item) => item.token);
-    const payload: MulticastMessage = {
-      tokens: registrationTokens,
-      notification: {
-        title: "Your challenge is active",
-        body: `${String(challenge.get("title") ?? "Challenge")}: add progress when you are ready. Rest and safety come first.`,
-      },
-      data: {
-        type: "challenge_reminder",
-        challengeId,
-        route: `/ch/${challengeId}`,
-      },
-      android: {
-        priority: "normal",
-        notification: {tag: `challenge_${challengeId}`},
-      },
-      apns: {
-        payload: {aps: {sound: "default", threadId: challengeId}},
-      },
-    };
-    const response = await getMessaging().sendEachForMulticast(payload);
-    const cleanup = database.batch();
-    response.responses.forEach((result, index) => {
-      if (!result.success && result.error && invalidTokenCodes.has(result.error.code)) {
-        cleanup.delete(tokenRecords[index].document.ref);
-      }
+    const challenge = await database.collection(collections.challenges)
+      .doc(challengeId).get();
+    if (!challenge.exists || challenge.get("status") !== "active") continue;
+    await createAndDeliverNotification({
+      eventId: `challenge-reminder:${challengeId}:${uid}:${now.toDate().toISOString().slice(0, 13)}`,
+      recipientId: uid,
+      category: "challenges",
+      kind: "challenge_reminder",
+      title: "Your challenge is active",
+      body: `${String(challenge.get("title") ?? "Challenge")}: add progress when you are ready. Rest and safety come first.`,
+      route: `/ch/${challengeId}`,
+      groupKey: `challenge_reminder:${challengeId}`,
+      entityType: "challenge",
+      entityId: challengeId,
+      data: {challengeId},
     });
-    cleanup.update(participant.ref, {lastReminderAt: now, updatedAt: now});
-    cleanup.set(
-      database.collection(collections.notificationDeliveries)
-        .doc(`challenge-${challengeId}-${uid}-${now.toMillis()}`),
-      {
-        type: "challenge_reminder",
-        recipientId: uid,
-        challengeId,
-        tokenCount: registrationTokens.length,
-        status: "submitted",
-        createdAt: now,
-        updatedAt: now,
-        schemaVersion: currentSchemaVersion,
-      },
-    );
-    await cleanup.commit();
+    await participant.ref.update({lastReminderAt: now, updatedAt: now});
   }
   logger.info("Challenge reminder pass completed.", {eligible: eligible.length});
 });

@@ -86,6 +86,29 @@ import {
 } from "./messaging/messages";
 import {notifyConversationMessage} from "./messaging/notifications";
 import {
+  clearReadNotifications,
+  deleteNotification,
+  markAllNotificationsRead,
+  markNotificationRead,
+  updateNotificationPreferences,
+} from "./notifications/notificationCallables";
+import {
+  cleanupNotificationData,
+  flushDeferredNotifications,
+} from "./notifications/notificationAutomation";
+import {
+  notifyChallengeRewardCreated,
+  notifyChallengeSubmissionCreated,
+  notifyChallengeSubmissionReviewed,
+  notifyFollowerCreated,
+  notifyFollowRequestCreated,
+  notifyMarketplaceListingWritten,
+  notifyPostCommentCreated,
+  notifyPostReactionWritten,
+  notifyScheduledEventStarting,
+  notifySportsEventAttendanceCreated,
+} from "./notifications/notificationTriggers";
+import {
   changeMarketplaceListingStatus,
   createMarketplaceListing,
   expireMarketplaceListings,
@@ -200,6 +223,23 @@ export {
   registerMessagingDevice,
   unregisterMessagingDevice,
   notifyConversationMessage,
+  updateNotificationPreferences,
+  markNotificationRead,
+  markAllNotificationsRead,
+  deleteNotification,
+  clearReadNotifications,
+  flushDeferredNotifications,
+  cleanupNotificationData,
+  notifyFollowRequestCreated,
+  notifyFollowerCreated,
+  notifyPostCommentCreated,
+  notifyPostReactionWritten,
+  notifyChallengeSubmissionCreated,
+  notifyChallengeSubmissionReviewed,
+  notifyChallengeRewardCreated,
+  notifySportsEventAttendanceCreated,
+  notifyScheduledEventStarting,
+  notifyMarketplaceListingWritten,
   onContentUpload,
   processQueuedMedia,
   completeMediaProcessing,
