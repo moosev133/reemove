@@ -1,0 +1,130 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function hasOnlyKeys(allowedKeys) {
+      return request.resource.data.keys().hasOnly(allowedKeys);
+    }
+
+    function validPublicUserCreate(uid) {
+      return isOwner(uid)
+        && hasOnlyKeys([
+          'uid',
+          'username',
+          'usernameNormalized',
+          'displayName',
+          'bio',
+          'avatarUrl',
+          'role',
+          'isVerified',
+          'verificationType',
+          'favoriteSportIds',
+          'sportLevels',
+          'goals',
+          'location',
+          'geohash',
+          'discoveryRadiusKm',
+          'visibility',
+          'followersCount',
+          'followingCount',
+          'postsCount',
+          'onboardingCompleted',
+          'createdAt',
+          'updatedAt',
+          'schemaVersion',
+          'moderationState'
+        ])
+        && request.resource.data.uid == uid
+        && exists(/databases/$(database)/documents/usernames/$(request.resource.data.usernameNormalized))
+        && get(/databases/$(database)/documents/usernames/$(request.resource.data.usernameNormalized)).data.uid == uid
+        && request.resource.data.isVerified == false
+        && request.resource.data.followersCount == 0
+        && request.resource.data.followingCount == 0
+        && request.resource.data.postsCount == 0
+        && request.resource.data.moderationState == 'active';
+    }
+
+    function validPublicUserUpdate(uid) {
+      return isOwner(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.username == resource.data.username
+        && request.resource.data.usernameNormalized == resource.data.usernameNormalized
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.isVerified == resource.data.isVerified
+        && request.resource.data.verificationType == resource.data.verificationType
+        && request.resource.data.followersCount == resource.data.followersCount
+        && request.resource.data.followingCount == resource.data.followingCount
+        && request.resource.data.postsCount == resource.data.postsCount
+        && request.resource.data.moderationState == resource.data.moderationState
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create: if validPublicUserCreate(uid);
+      allow update: if validPublicUserUpdate(uid);
+      allow delete: if false;
+
+      match /private/{documentId} {
+        allow read, create, update: if isOwner(uid);
+        allow delete: if false;
+      }
+
+      match /{subcollection}/{documentId} {
+        allow read, write: if false;
+      }
+    }
+
+    match /usernames/{username} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if false;
+    }
+
+    match /app_config/{documentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /feature_flags/{documentId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly([
+          'reporterId',
+          'targetType',
+          'targetId',
+          'reason',
+          'details',
+          'status',
+          'createdAt',
+          'schemaVersion'
+        ])
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.targetType in [
+          'user', 'post', 'comment', 'story', 'message', 'group',
+          'event', 'challenge', 'marketplace_listing'
+        ]
+        && request.resource.data.status == 'open';
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

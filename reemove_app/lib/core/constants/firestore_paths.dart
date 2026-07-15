@@ -1,0 +1,32 @@
+abstract final class FirestoreCollections {
+  static const String users = 'users';
+  static const String usernames = 'usernames';
+  static const String sports = 'sports';
+  static const String posts = 'posts';
+  static const String stories = 'stories';
+  static const String conversations = 'conversations';
+  static const String groups = 'groups';
+  static const String places = 'places';
+  static const String teams = 'teams';
+  static const String events = 'events';
+  static const String routes = 'routes';
+  static const String activities = 'activities';
+  static const String challenges = 'challenges';
+  static const String leaderboards = 'leaderboards';
+  static const String badges = 'badges';
+  static const String rewards = 'rewards';
+  static const String trainerProfiles = 'trainer_profiles';
+  static const String trainerServices = 'trainer_services';
+  static const String marketplaceListings = 'marketplace_listings';
+  static const String reports = 'reports';
+  static const String verificationRequests = 'verification_requests';
+  static const String moderationQueue = 'moderation_queue';
+  static const String aiRequests = 'ai_requests';
+  static const String aiArtifacts = 'ai_artifacts';
+  static const String feedEntries = 'feed_entries';
+  static const String searchDocuments = 'search_documents';
+  static const String appConfig = 'app_config';
+  static const String featureFlags = 'feature_flags';
+  static const String auditLogs = 'audit_logs';
+  static const String dataMigrations = 'data_migrations';
+}

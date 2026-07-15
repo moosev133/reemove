@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "development": "reemove-dev",
+    "staging": "reemove-staging",
+    "production": "reemove-prod"
+  }
+}

@@ -1,0 +1,155 @@
+# Firebase data architecture
+
+## Principles
+
+- No unbounded arrays for followers, likes, members, participants, messages, or tokens.
+- Use subcollections and collection-group queries for high-cardinality relationships.
+- Store denormalized display snapshots where feed/message performance requires it, while preserving authoritative IDs.
+- Maintain counters with trusted Cloud Functions or transactions.
+- Store location as `GeoPoint`, `geohash`, and normalized searchable fields.
+- Use server timestamps for ordering and audit fields.
+- Soft-delete user content before retention cleanup when moderation or recovery is needed.
+- Every user-generated object carries visibility, moderation state, owner ID, created/updated timestamps, and schema version.
+
+## Top-level collections
+
+1. `users` - public/semi-public profile and discovery fields
+2. `usernames` - normalized username reservations; writes only through trusted backend
+3. `sports` - sport definitions and module configuration
+4. `posts` - photo/video/activity posts, including reel-type posts
+5. `stories` - expiring stories
+6. `conversations` - direct and group conversation metadata
+7. `groups` - social/sports community groups
+8. `places` - courts, gyms, tracks, facilities, and other sport places
+9. `teams` - sport teams and squads
+10. `events` - matches, meetups, sessions, classes, and competitions
+11. `routes` - curated or user-created running routes
+12. `activities` - recorded sport/activity sessions
+13. `challenges` - community and AI-generated challenges
+14. `leaderboards` - materialized leaderboard windows and metadata
+15. `badges` - badge definitions
+16. `rewards` - reward definitions and claim rules
+17. `trainer_profiles` - trainer-specific professional data
+18. `trainer_services` - bookable/offered trainer services and pricing metadata
+19. `marketplace_listings` - equipment listings
+20. `reports` - user-generated abuse/safety reports
+21. `verification_requests` - verified athlete/trainer/business review workflow
+22. `moderation_queue` - trusted moderation work items
+23. `ai_requests` - audited AI task requests and statuses
+24. `ai_artifacts` - generated plans, challenges, and structured outputs
+25. `feed_entries` - optional fan-out/materialized feed rows
+26. `search_documents` - normalized documents for external/full-text search synchronization
+27. `app_config` - Remote Config-like server-owned product configuration
+28. `feature_flags` - server-controlled rollout and kill-switch state
+29. `audit_logs` - privileged security/business audit events
+30. `data_migrations` - migration locks, versions, and status
+
+## Scoped subcollections
+
+### Under `users/{uid}`
+
+- `private/profile` - email-adjacent/private onboarding and settings data
+- `followers/{followerUid}`
+- `following/{followedUid}`
+- `blocked/{blockedUid}`
+- `saved_posts/{postId}`
+- `saved_listings/{listingId}`
+- `notifications/{notificationId}`
+- `device_tokens/{tokenId}`
+- `badges/{badgeId}`
+- `challenge_progress/{challengeId}`
+- `preferences/{documentId}`
+
+### Under `posts/{postId}`
+
+- `comments/{commentId}`
+- `likes/{uid}`
+- `saves/{uid}`
+- `reposts/{uid}`
+- `views/{shardId}` or analytics aggregation documents
+
+### Under `stories/{storyId}`
+
+- `views/{uid}`
+- `reactions/{uid}`
+
+### Under `conversations/{conversationId}`
+
+- `members/{uid}`
+- `messages/{messageId}`
+- `typing/{uid}`
+
+### Under `groups/{groupId}`
+
+- `members/{uid}`
+- `join_requests/{uid}`
+- `posts/{postId}` references when a dedicated group feed is required
+
+### Under `teams/{teamId}`
+
+- `members/{uid}`
+- `join_requests/{uid}`
+- `roles/{roleId}`
+
+### Under `events/{eventId}`
+
+- `attendees/{uid}`
+- `waitlist/{uid}`
+- `check_ins/{uid}`
+
+### Under `challenges/{challengeId}`
+
+- `participants/{uid}`
+- `submissions/{submissionId}`
+- `leaderboard/{uid}`
+
+### Under `marketplace_listings/{listingId}`
+
+- `favorites/{uid}` only when listing-centric moderation/metrics require it; user-centric favorites remain authoritative for UI
+- `status_history/{entryId}`
+
+## Important document fields
+
+### `users/{uid}`
+
+`uid`, `username`, `usernameNormalized`, `displayName`, `bio`, `avatarUrl`, `role`, `isVerified`, `verificationType`, `favoriteSportIds`, `sportLevels`, `goals`, `location`, `geohash`, `discoveryRadiusKm`, `visibility`, `followersCount`, `followingCount`, `postsCount`, `onboardingCompleted`, `createdAt`, `updatedAt`, `schemaVersion`, `moderationState`.
+
+### `posts/{postId}`
+
+`authorId`, `authorSnapshot`, `type`, `caption`, `media`, `sportId`, `activityId`, `placeId`, `taggedUserIds`, `visibility`, `commentsEnabled`, `likeCount`, `commentCount`, `saveCount`, `repostCount`, `viewCount`, `createdAt`, `updatedAt`, `publishedAt`, `moderationState`, `schemaVersion`.
+
+### `events/{eventId}`
+
+`ownerId`, `sportId`, `type`, `title`, `description`, `startAt`, `endAt`, `timezone`, `location`, `geohash`, `placeId`, `capacity`, `attendeeCount`, `price`, `currency`, `skillRange`, `visibility`, `status`, `createdAt`, `updatedAt`.
+
+### `marketplace_listings/{listingId}`
+
+`sellerId`, `title`, `description`, `categoryId`, `sportId`, `condition`, `price`, `currency`, `media`, `location`, `geohash`, `deliveryOptions`, `status`, `favoriteCount`, `viewCount`, `createdAt`, `updatedAt`, `moderationState`.
+
+## Storage layout
+
+```text
+users/{uid}/avatar/{assetId}.jpg
+posts/{uid}/{postId}/original/{assetId}
+posts/{uid}/{postId}/processed/{assetId}
+stories/{uid}/{storyId}/{assetId}
+messages/{conversationId}/{messageId}/{assetId}
+groups/{groupId}/{assetId}
+events/{eventId}/{assetId}
+routes/{routeId}/{assetId}
+marketplace/{uid}/{listingId}/{assetId}
+verification/{uid}/{requestId}/{assetId}
+reports/{reporterUid}/{reportId}/{assetId}
+```
+
+## Query and indexing strategy
+
+- Feed: `visibility + publishedAt desc`, plus author/sport filters.
+- Discover: `moderationState + publishedAt desc`, later augmented by external ranking/search.
+- Nearby: geohash range query followed by exact client/server distance filtering.
+- Events: `sportId + status + startAt`, plus geohash ranges.
+- Marketplace: `status + sportId/categoryId + createdAt`, price filters through dedicated indexes.
+- Messages: subcollection ordered by `sentAt desc`.
+- Notifications: user subcollection ordered by `createdAt desc`, filtered by `readAt` when needed.
+
+The checked-in rules remain deny-by-default. Each later phase must extend rules and add emulator tests together.
