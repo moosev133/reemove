@@ -13,6 +13,8 @@ Pending configuration that must be completed outside Git before Firebase-backed 
 - [ ] Run Firebase rules tests before deployment
 - [ ] Optionally seed the Firebase emulator
 - [ ] Install/configure Xcode before testing iOS or macOS
+- [ ] Configure Google Sign-In (OAuth client IDs / `GOOGLE_SERVER_CLIENT_ID`)
+- [ ] Configure Apple Sign-In capability for iOS/macOS builds
 
 ## Do not commit
 

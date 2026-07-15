@@ -7,7 +7,7 @@ Every application-owned document carries an integer `schemaVersion`. Phase 2 beg
 Dataset and migration runs use a separate immutable identifier, for example:
 
 ```text
-2026-07-13.phase2.v1
+2026-07-13.phase3.v1
 ```
 
 Each successful migration writes a marker to:
@@ -47,9 +47,6 @@ Migration markers include `version`, `type`, `status`, `appliedAt`, and `schemaV
 
 ## Seed safety
 
-`functions/src/seed/seedFirestore.ts` refuses to run unless:
+`functions/src/seed/seedAuth.ts` and `functions/src/seed/seedFirestore.ts` refuse to run unless their corresponding emulator host variables are set and the Firebase project ID starts with `demo-`.
 
-- `FIRESTORE_EMULATOR_HOST` is set; and
-- the Firebase project ID starts with `demo-`.
-
-This prevents the sample dataset from being written to staging or production.
+This prevents sample Authentication identities or Firestore data from being written to staging or production.

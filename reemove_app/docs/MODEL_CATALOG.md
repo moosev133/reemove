@@ -109,3 +109,15 @@
 81. `DataMigration`
 
 DTOs remain in the data layer and map into these domain models. Firestore `Timestamp`, `DocumentReference`, and `GeoPoint` types must never leak into domain entities.
+
+## Phase 3 implemented authentication models
+
+82. `AuthUser` — provider-neutral Firebase identity snapshot
+83. `AuthProviderType` — password/Google/Apple provider category
+84. `UsernameAvailability` — normalized availability state and message
+85. `AccountProvisioningRequest` — username/display-name/legal confirmation command
+86. `AccountProvisioningResult` — idempotent account bootstrap response
+87. `AuthRoutingState` — typed destination and optional reason
+88. `AuthDestination` — configuration, signed-out, profile, verification, onboarding, ready, blocked
+
+Authentication-specific Firebase objects remain in data mappers and repositories. No `User`, `AuthCredential`, `FirebaseAuthException`, or `HttpsCallableResult` enters the domain layer.

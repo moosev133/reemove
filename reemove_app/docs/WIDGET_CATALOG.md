@@ -84,3 +84,16 @@
 65. `ListingFilterSheet`
 
 All reusable widgets must support light/dark mode, text scaling, RTL, semantic labels, loading/error states, and minimum touch targets.
+
+## Phase 3 implemented authentication components
+
+66. `AuthScaffold` — adaptive branded auth layout with safe-area and keyboard handling
+67. `AuthCard` — constrained premium form surface
+68. `AuthTextField` — shared accessible auth input
+69. `AuthPrimaryButton` — loading-aware primary action
+70. `AuthSocialButton` — Google/Apple action surface
+71. `AuthErrorBanner` — user-safe typed failure feedback
+72. `UsernameField` — validation, debounce, stale-request protection, availability status
+73. `LegalConsentFields` — explicit terms, privacy, and minimum-age confirmations
+
+These components use the shared design system and support light/dark mode, keyboard navigation, autofill, text scaling, and semantic labels.

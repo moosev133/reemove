@@ -17,7 +17,12 @@ class AppEnvironment {
   const AppEnvironment({
     required this.flavor,
     required this.enableAppCheck,
+    required this.enableAnalytics,
     required this.webRecaptchaV3SiteKey,
+    required this.firebaseFunctionsRegion,
+    required this.googleServerClientId,
+    required this.useFirebaseEmulators,
+    required this.firebaseEmulatorHost,
   });
 
   factory AppEnvironment.fromCompileTime() {
@@ -29,22 +34,53 @@ class AppEnvironment {
       'ENABLE_APP_CHECK',
       defaultValue: false,
     );
+    const bool enableAnalytics = bool.fromEnvironment(
+      'ENABLE_ANALYTICS',
+      defaultValue: false,
+    );
     const String recaptchaKey = String.fromEnvironment(
       'FIREBASE_WEB_RECAPTCHA_V3_SITE_KEY',
+    );
+    const String functionsRegion = String.fromEnvironment(
+      'FIREBASE_FUNCTIONS_REGION',
+      defaultValue: 'europe-west1',
+    );
+    const String serverClientId = String.fromEnvironment(
+      'GOOGLE_SERVER_CLIENT_ID',
+    );
+    const bool useEmulators = bool.fromEnvironment(
+      'USE_FIREBASE_EMULATORS',
+      defaultValue: false,
+    );
+    const String emulatorHost = String.fromEnvironment(
+      'FIREBASE_EMULATOR_HOST',
+      defaultValue: '127.0.0.1',
     );
 
     return AppEnvironment(
       flavor: AppFlavor.parse(rawFlavor),
       enableAppCheck: enableAppCheck,
+      enableAnalytics: enableAnalytics,
       webRecaptchaV3SiteKey: recaptchaKey.trim().isEmpty
           ? null
           : recaptchaKey.trim(),
+      firebaseFunctionsRegion: functionsRegion.trim(),
+      googleServerClientId: serverClientId.trim().isEmpty
+          ? null
+          : serverClientId.trim(),
+      useFirebaseEmulators: useEmulators,
+      firebaseEmulatorHost: emulatorHost.trim(),
     );
   }
 
   final AppFlavor flavor;
   final bool enableAppCheck;
+  final bool enableAnalytics;
   final String? webRecaptchaV3SiteKey;
+  final String firebaseFunctionsRegion;
+  final String? googleServerClientId;
+  final bool useFirebaseEmulators;
+  final String firebaseEmulatorHost;
 
   bool get isDevelopment => flavor == AppFlavor.development;
   bool get isProduction => flavor == AppFlavor.production;

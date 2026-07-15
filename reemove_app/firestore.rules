@@ -175,14 +175,13 @@ service cloud.firestore {
       allow list: if signedIn()
         && isPublicActive(resource.data)
         && request.query.limit <= 50;
-      allow create: if validPublicUserCreate(uid);
+      allow create: if false;
       allow update: if validPublicUserUpdate(uid);
       allow delete: if false;
 
       match /private/{documentId} {
         allow read: if isOwner(uid);
-        allow create, update: if validPrivateProfile(uid, documentId);
-        allow delete: if false;
+        allow write: if false;
       }
 
       match /{subcollection}/{documentId} {
@@ -315,6 +314,14 @@ service cloud.firestore {
     match /data_migrations/{documentId} {
       allow read: if isAdmin();
       allow write: if false;
+    }
+
+    match /account_deletions/{documentId} {
+      allow read, write: if false;
+    }
+
+    match /rate_limits/{documentId} {
+      allow read, write: if false;
     }
 
     match /{document=**} {

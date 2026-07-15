@@ -43,12 +43,15 @@
 28. `feature_flags` - server-controlled rollout and kill-switch state
 29. `audit_logs` - privileged security/business audit events
 30. `data_migrations` - migration locks, versions, and status
+31. `account_deletions` - server-only account cleanup workflow and audit status
+32. `rate_limits` - server-only transactional abuse-control windows
 
 ## Scoped subcollections
 
 ### Under `users/{uid}`
 
-- `private/profile` - email-adjacent/private onboarding and settings data
+- `private/profile` - email/provider/account-status metadata, owner-readable and server-writable
+- `private/consents` - versioned terms/privacy/minimum-age confirmations, owner-readable and server-writable
 - `followers/{followerUid}`
 - `following/{followedUid}`
 - `blocked/{blockedUid}`
@@ -126,6 +129,32 @@
 
 `sellerId`, `title`, `description`, `categoryId`, `sportId`, `condition`, `price`, `currency`, `media`, `location`, `geohash`, `deliveryOptions`, `status`, `favoriteCount`, `viewCount`, `createdAt`, `updatedAt`, `moderationState`.
 
+## Authentication-owned documents
+
+### `usernames/{usernameNormalized}`
+
+`uid`, `usernameNormalized`, `reservedAt`, `updatedAt`, `schemaVersion`. Exact reads are public for availability checks. Listing and all client writes are denied.
+
+### `users/{uid}/private/profile`
+
+`uid`, `email`, `emailNormalized`, `providerIds`, `accountStatus`, `lastSignInAt`, `sessionsRevokedAt`, `createdAt`, `updatedAt`, `schemaVersion`. Readable only by the owner; writable only by trusted backend code.
+
+### `users/{uid}/private/consents`
+
+`uid`, `termsVersion`, `privacyVersion`, `termsAcceptedAt`, `privacyAcceptedAt`, `minimumAgeConfirmedAt`, `createdAt`, `updatedAt`, `schemaVersion`. Readable only by the owner; writable only by trusted backend code.
+
+### `account_deletions/{uid}`
+
+`uid`, `username`, `status`, `requestedAt`, `lastRetryAt`, `completedAt`, `error`, `updatedAt`, `schemaVersion`. Entirely server-only and used to make deletion progress auditable and retryable.
+
+### `rate_limits/{uid}_{action}`
+
+`uid`, `action`, `count`, `windowStartedAt`, `expiresAt`, `updatedAt`, `schemaVersion`. Entirely server-only. `expiresAt` is intended for a Firestore TTL policy; transaction logic remains authoritative even before cleanup occurs.
+
+### `audit_logs/{auditId}`
+
+`actorId`, `action`, `targetType`, `targetId`, minimized `metadata`, `createdAt`, `serverCreatedAt`, `schemaVersion`. Entirely server-only and written by trusted Functions for privileged authentication mutations.
+
 ## Storage layout
 
 ```text
@@ -155,12 +184,12 @@ reports/{reporterUid}/{reportId}/{assetId}
 The checked-in rules remain deny-by-default. Each later phase must extend rules and add emulator tests together.
 
 
-## Phase 2 implementation status
+## Cumulative implementation status
 
-The schema is now implemented with typed converters and repositories for `users`, `sports`, `places`, `events`, `challenges`, `marketplace_listings`, `app_config`, and `feature_flags`. Other cataloged collections remain intentionally denied until their feature phase adds complete code, rules, indexes, and tests.
+Typed converters and repositories are implemented for `users`, `sports`, `places`, `events`, `challenges`, `marketplace_listings`, `app_config`, and `feature_flags`. Phase 3 additionally implements server-owned `usernames`, user-private `profile` and `consents` documents, `account_deletions`, authentication `audit_logs`, and transactional `rate_limits`. Other cataloged collections remain intentionally denied until their feature phase adds complete code, rules, indexes, and tests.
 
 Current schema version: `1`.
 
-Current deterministic seed dataset: `2026-07-13.phase2.v1`.
+Current deterministic seed dataset: `2026-07-13.phase3.v1`.
 
-See `DATABASE_IMPLEMENTATION.md`, `DATA_MIGRATIONS.md`, and `PHASE_2_COMPLETION.md` for executable details.
+See `DATABASE_IMPLEMENTATION.md`, `AUTHENTICATION_IMPLEMENTATION.md`, `DATA_MIGRATIONS.md`, and the phase completion reports for executable details.

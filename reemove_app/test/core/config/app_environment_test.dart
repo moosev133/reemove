@@ -13,4 +13,12 @@ void main() {
       expect(() => AppFlavor.parse('preview'), throwsArgumentError);
     });
   });
+
+  test('compile-time defaults keep telemetry and security opt-in', () {
+    final AppEnvironment environment = AppEnvironment.fromCompileTime();
+
+    expect(environment.enableAnalytics, isFalse);
+    expect(environment.enableAppCheck, isFalse);
+    expect(environment.useFirebaseEmulators, isFalse);
+  });
 }

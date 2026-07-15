@@ -35,6 +35,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run build
+      - run: npm run test:unit
 
   firebase-rules:
     runs-on: ubuntu-latest
@@ -47,5 +48,5 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - run: npm --prefix firebase_tests install
+      - run: npm --prefix firebase_tests ci
       - run: npm run test:rules

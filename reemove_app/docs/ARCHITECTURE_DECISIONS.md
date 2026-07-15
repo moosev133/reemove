@@ -55,3 +55,36 @@ A data feature is incomplete until its document shape, query index, Security Rul
 ## ADR-014: Node built-in runner for rules tests
 
 Security Rules tests use Node 22's built-in test runner plus the official Firebase rules-testing library. This minimizes tooling while preserving authenticated/unauthenticated emulator contexts and rules-disabled fixture setup.
+
+## ADR-015: Atomic server-owned account provisioning
+
+Firebase Authentication identity creation and ReeMove profile creation are separate systems. A callable Function performs username reservation, public profile creation, private account metadata, and legal-consent recording in one Firestore transaction. This eliminates username races and prevents clients from setting privileged profile fields.
+
+## ADR-016: One typed authentication routing state
+
+GoRouter redirects are derived from `AuthRoutingState`, which combines Firebase identity, public profile state, email verification, onboarding status, and moderation state. Screens do not independently decide whether a user is authenticated. This prevents route contradictions and makes future deep-link guards testable.
+
+## ADR-017: Recent authentication for destructive account actions
+
+Account deletion is allowed only when the ID token's `auth_time` is within ten minutes. The UI exposes password, Google, and Apple reauthentication based on linked providers. The server rechecks recency rather than trusting client state.
+
+## ADR-018: Federated provider SDKs are hidden behind the repository boundary
+
+Native Google identity acquisition uses `GoogleIdentityService`; Apple uses Firebase's provider credential flow. Web uses Firebase provider popups. Presentation knows only `AuthRepository`, preserving platform flexibility and allowing future account-linking expansion.
+
+## ADR-019: Emulator seed data must include matching Auth and Firestore identities
+
+Authentication tests and local development require the same UID in Auth Emulator, username reservation, public profile, and private records. Emulator-only scripts refuse to run without emulator host variables and a `demo-` project ID.
+
+
+## ADR-020: Account security is enforced on both client and server
+
+The client reauthenticates through a linked provider for good UX, while destructive callable Functions independently validate the ID token `auth_time`. Refresh-token revocation and account deletion are server-owned. Client state can never bypass recent-login enforcement.
+
+## ADR-021: Authentication abuse controls and audit trails are server-only
+
+Transaction-backed rate limits live in `rate_limits`; privileged identity mutations write best-effort immutable records to `audit_logs`. Both collections are denied to clients. An audit outage must be observable but must not roll back a completed security mutation.
+
+## ADR-022: Authentication analytics is privacy-minimized and opt-in
+
+Authentication analytics emits only event/action and provider categories. It is disabled by default and in emulator mode. Email, username, display name, UID, raw credentials, and tokens are prohibited parameters. Product/legal configuration must explicitly enable collection for a release environment.

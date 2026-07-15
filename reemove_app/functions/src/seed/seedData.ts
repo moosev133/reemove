@@ -127,6 +127,34 @@ export const seedDocuments = [
     },
   },
   {
+    path: "users/demo-athlete/private/profile",
+    data: {
+      uid: "demo-athlete",
+      email: "athlete@demo.reemove.app",
+      emailNormalized: "athlete@demo.reemove.app",
+      providerIds: ["password"],
+      accountStatus: "active",
+      lastSignInAt: createdAt,
+      schemaVersion: currentSchemaVersion,
+      createdAt,
+      updatedAt: createdAt,
+    },
+  },
+  {
+    path: "users/demo-athlete/private/consents",
+    data: {
+      uid: "demo-athlete",
+      termsVersion: "1.0",
+      privacyVersion: "1.0",
+      termsAcceptedAt: createdAt,
+      privacyAcceptedAt: createdAt,
+      minimumAgeConfirmedAt: createdAt,
+      schemaVersion: currentSchemaVersion,
+      createdAt,
+      updatedAt: createdAt,
+    },
+  },
+  {
     path: "places/haifa-performance-gym",
     data: {
       name: "Haifa Performance Gym",

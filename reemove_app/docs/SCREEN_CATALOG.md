@@ -143,3 +143,24 @@ The final product is expected to contain approximately **78 screens and major mo
 110. Trainer business dashboard
 
 The count is intentionally larger than a typical MVP because every required capability is represented as a real production flow rather than compressed into generic placeholder pages.
+
+## Phase 3 implemented routes
+
+The following routes are executable in the Phase 3 package:
+
+| Route | Screen | Purpose |
+|---|---|---|
+| `/` | `StartupScreen` | Firebase/session bootstrap |
+| `/auth/unavailable` | `AuthUnavailableScreen` | Actionable Firebase configuration failure |
+| `/auth` | `AuthWelcomeScreen` | Premium entry and federated sign-in options |
+| `/auth/sign-in` | `SignInScreen` | Email/password sign-in |
+| `/auth/sign-up` | `SignUpScreen` | Identity, username, and legal confirmations |
+| `/auth/forgot-password` | `ForgotPasswordScreen` | Enumeration-safe reset request |
+| `/auth/verify-email` | `EmailVerificationScreen` | Resend and refresh verification state |
+| `/auth/username` | `UsernameSetupScreen` | Social-user account provisioning |
+| `/auth/blocked` | `AccountBlockedScreen` | Restricted/removed account state |
+| `/account/security` | `AccountSecurityScreen` | Linked providers, reauthentication, local/global sign-out, deletion |
+| `/onboarding` | `OnboardingHandoffScreen` | Guarded handoff to Phase 4 |
+| `/home` | `AuthenticatedHomeHandoffScreen` | Guarded authenticated destination |
+
+Google and Apple authentication are actions inside the welcome flow rather than separate routes. Reset confirmation is rendered inside the forgot-password screen to avoid unnecessary route state.

@@ -29,16 +29,16 @@ if ! command -v flutterfire >/dev/null; then
 fi
 
 pushd functions >/dev/null
-npm install
+npm ci
 npm run lint
 npm run build
 popd >/dev/null
 
 pushd firebase_tests >/dev/null
-npm install
+npm ci
 popd >/dev/null
 
 flutter analyze
 flutter test
 
-echo "ReeMove Phase 2 database foundation is ready. Run flutterfire configure and npm run test:rules next."
+echo "ReeMove Phase 3 authentication foundation is ready. Configure Firebase providers, then run npm run verify:backend."

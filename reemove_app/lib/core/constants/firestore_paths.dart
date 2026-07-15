@@ -29,4 +29,6 @@ abstract final class FirestoreCollections {
   static const String featureFlags = 'feature_flags';
   static const String auditLogs = 'audit_logs';
   static const String dataMigrations = 'data_migrations';
+  static const String accountDeletions = 'account_deletions';
+  static const String rateLimits = 'rate_limits';
 }

@@ -34,7 +34,7 @@ before(async () => {
     projectId,
     firestore: {
       host: "127.0.0.1",
-      port: 8080,
+      port: 8180,
       rules: fs.readFileSync(path.join(projectRoot, "firestore.rules"), "utf8"),
     },
   });
@@ -102,13 +102,24 @@ describe("user profile rules", () => {
     await assertSucceeds(getDoc(doc(owner, "users/private-user")));
   });
 
-  it("allows profile creation only after the matching username reservation", async () => {
+  it("keeps profile creation server-owned even after username reservation", async () => {
     await seedFirestore();
     const alice = testEnv.authenticatedContext("alice").firestore();
-    const bob = testEnv.authenticatedContext("bob").firestore();
 
-    await assertSucceeds(setDoc(doc(alice, "users/alice"), newClientUser("alice")));
-    await assertFails(setDoc(doc(bob, "users/bob"), newClientUser("bob")));
+    await assertFails(setDoc(doc(alice, "users/alice"), newClientUser("alice")));
+  });
+
+  it("keeps username reservations and private account metadata server-owned", async () => {
+    await seedFirestore();
+    const alice = testEnv.authenticatedContext("alice").firestore();
+
+    await assertSucceeds(getDoc(doc(alice, "usernames/alice")));
+    await assertFails(setDoc(doc(alice, "usernames/new_name"), {uid: "alice"}));
+    await assertFails(setDoc(doc(alice, "users/alice/private/profile"), {
+      uid: "alice",
+      accountStatus: "active",
+      updatedAt: serverTimestamp(),
+    }));
   });
 
   it("prevents owners from changing server-owned counters", async () => {
@@ -206,6 +217,19 @@ describe("reports and deny-by-default", () => {
       updatedAt: serverTimestamp(),
       schemaVersion: 1,
     }));
+    await assertFails(
+      getDoc(doc(athlete, "rate_limits/athlete_revoke_sessions")),
+    );
+    await assertFails(
+      setDoc(doc(athlete, "rate_limits/athlete_revoke_sessions"), {
+        uid: "athlete",
+        count: 1,
+      }),
+    );
+    await assertFails(getDoc(doc(athlete, "audit_logs/audit-1")));
+    await assertFails(
+      getDoc(doc(athlete, "account_deletions/athlete")),
+    );
     await assertFails(setDoc(doc(athlete, "unknown/document"), {value: true}));
   });
 });

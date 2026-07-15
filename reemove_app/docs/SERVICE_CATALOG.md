@@ -119,3 +119,28 @@ The executable Phase 2 data layer currently provides:
 - `FirestoreFailureMapper`
 
 The broader catalog above remains the target service inventory for later phases.
+
+## Phase 3 implemented authentication services
+
+- `AuthRepository` / `FirebaseAuthRepository`
+- `UsernameRepository` / `FirestoreUsernameRepository`
+- `AccountLifecycleRepository` / `FirebaseAccountLifecycleRepository`
+- `GoogleIdentityService`
+- `FirebaseAuthFailureMapper`
+- `AuthAnalytics` / `FirebaseAuthAnalytics` / `NoopAuthAnalytics`
+- `FirebaseUserMapper`
+- `AuthActionController`
+- `currentAuthUserProvider`
+- `currentUserProfileProvider`
+- `authRoutingStateProvider`
+- `provisionAccount` callable Function
+- `syncAuthProviders` callable Function
+- `revokeSessions` callable Function
+- `deleteAccount` callable Function
+- `retryAccountDeletions` scheduled Function
+- Shared `consumeRateLimit` transaction service
+- Shared `writeAuditEvent` privileged telemetry service
+- Shared recent-authentication policy
+- Emulator-only `seedAuth` and `seedFirestore` tools
+
+`provisionAccount` owns username reservation, profile creation, private metadata, and consent versioning. `syncAuthProviders` derives provider IDs from Firebase Admin. `revokeSessions` owns refresh-token invalidation. `deleteAccount` owns recent-auth validation, identity disable/delete ordering, username release, recursive profile cleanup, and retry state. All privileged mutations use server-side rate limits and audit events.

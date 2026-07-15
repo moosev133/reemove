@@ -104,3 +104,12 @@ The specification defines **16 mandatory development phases**. Each phase has a 
 - Approximately 45 shared widgets
 - Approximately 30 top-level collections or collection groups, plus scoped subcollections
 - Expected production effort for a small experienced team: 8-14 months, depending on video infrastructure, AI scope, moderation, and marketplace policy
+
+
+## Cumulative implementation status
+
+- Phase 1: complete.
+- Phase 2: complete.
+- Phase 3: complete.
+
+Phase 3 ships the executable authentication feature, guarded session router, server-owned account bootstrap, username transaction, reauthentication, account deletion, Auth Emulator seed, rules coverage, and provider setup documentation. Phase 4 begins with resumable sports onboarding.
