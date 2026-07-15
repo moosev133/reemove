@@ -1,5 +1,5 @@
 export const currentSchemaVersion = 1;
-export const seedDatasetVersion = "2026-07-13.phase7.v1";
+export const seedDatasetVersion = "2026-07-14.phase8.v1";
 
 export const collections = {
   users: "users",
@@ -27,4 +27,7 @@ export const collections = {
   rateLimits: "rate_limits",
   followRequests: "follow_requests",
   verificationRequests: "verification_requests",
+  conversations: "conversations",
+  messageReports: "message_reports",
+  notificationDeliveries: "notification_deliveries",
 } as const;

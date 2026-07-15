@@ -34,6 +34,17 @@ service firebase.storage {
         && request.resource.metadata.schemaVersion == resource.metadata.schemaVersion;
     }
 
+    function isConversationMember(conversationId) {
+      return signedIn()
+        && firestore.exists(/databases/(default)/documents/conversations/$(conversationId)/members/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/conversations/$(conversationId)/members/$(request.auth.uid)).data.removedAt == null;
+    }
+
+    function isConversationAdmin(conversationId) {
+      return isConversationMember(conversationId)
+        && firestore.get(/databases/(default)/documents/conversations/$(conversationId)/members/$(request.auth.uid)).data.role in ['owner', 'admin'];
+    }
+
     match /users/{uid}/avatar/{assetId} {
       allow read: if signedIn();
       allow create: if isOwner(uid)
@@ -162,8 +173,47 @@ service firebase.storage {
       allow delete: if false;
     }
 
-    match /messages/{conversationId}/{messageId}/{assetId} {
-      allow read, write: if false;
+    match /messages/{conversationId}/{messageId}/{assetId}/{filename} {
+      allow read: if isConversationMember(conversationId);
+      allow create: if isConversationMember(conversationId)
+        && request.resource.size > 0
+        && request.resource.size < 100 * 1024 * 1024
+        && request.resource.metadata.ownerId == request.auth.uid
+        && request.resource.metadata.conversationId == conversationId
+        && request.resource.metadata.messageId == messageId
+        && request.resource.metadata.assetId == assetId
+        && request.resource.metadata.schemaVersion == '1'
+        && request.resource.metadata.kind in ['image', 'video', 'audio']
+        && ((request.resource.metadata.kind == 'image'
+              && request.resource.contentType.matches('image/.*')
+              && request.resource.size < 15 * 1024 * 1024)
+          || (request.resource.metadata.kind == 'video'
+              && request.resource.contentType.matches('video/.*')
+              && request.resource.size < 100 * 1024 * 1024)
+          || (request.resource.metadata.kind == 'audio'
+              && request.resource.contentType.matches('audio/.*')
+              && request.resource.size < 25 * 1024 * 1024));
+      allow update: if false;
+      allow delete: if isConversationMember(conversationId)
+        && resource.metadata.ownerId == request.auth.uid
+        && resource.metadata.conversationId == conversationId
+        && resource.metadata.messageId == messageId
+        && resource.metadata.assetId == assetId;
+    }
+
+    match /conversation_groups/{conversationId}/{uid}/{assetId}/{filename} {
+      allow read: if isConversationMember(conversationId);
+      allow create: if isOwner(uid)
+        && isConversationAdmin(conversationId)
+        && request.resource.size > 0
+        && request.resource.size < 10 * 1024 * 1024
+        && isImage()
+        && validOwnerMetadata(uid)
+        && request.resource.metadata.conversationId == conversationId;
+      allow update: if false;
+      allow delete: if isOwner(uid)
+        && isConversationAdmin(conversationId)
+        && resource.metadata.ownerId == uid;
     }
 
     match /groups/{groupId}/{assetId} {

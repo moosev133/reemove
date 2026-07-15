@@ -1,12 +1,20 @@
 import {GeoPoint, Timestamp} from "firebase-admin/firestore";
 
 import {currentSchemaVersion, seedDatasetVersion} from "../core/schema";
+import {directConversationId} from "../messaging/messagingPolicy";
 
 const createdAt = Timestamp.fromDate(new Date("2026-07-13T12:00:00.000Z"));
 const eventStart = Timestamp.fromDate(new Date("2026-08-08T16:00:00.000Z"));
 const eventEnd = Timestamp.fromDate(new Date("2026-08-08T18:00:00.000Z"));
 const challengeStart = Timestamp.fromDate(new Date("2026-07-13T00:00:00.000Z"));
 const challengeEnd = Timestamp.fromDate(new Date("2026-07-20T23:59:59.000Z"));
+
+const directSeedConversationId = directConversationId("demo-athlete", "demo-runner");
+const groupSeedConversationId = "group_demo_weekend_training";
+
+const athleteMessageSnapshot = {id: "demo-athlete", username: "demo_athlete", displayName: "ReeMove Athlete", isVerified: false};
+const runnerMessageSnapshot = {id: "demo-runner", username: "maya_runner", displayName: "Maya Runner", isVerified: true};
+const newcomerMessageSnapshot = {id: "demo-newcomer", username: "demo_newcomer", displayName: "ReeMove Newcomer", isVerified: false};
 
 const audit = {
   createdAt,
@@ -840,6 +848,67 @@ export const seedDocuments = [
       ...audit,
     },
   },
+  {
+    path: `conversations/${directSeedConversationId}`,
+    data: {
+      type: "direct", title: "Maya Runner", createdBy: "demo-athlete",
+      memberCount: 2, moderationState: "active",
+      lastMessage: {id: "seed-message-2", senderId: "demo-runner", kind: "text", preview: "Perfect, see you there!", sentAt: createdAt},
+      ...audit,
+    },
+  },
+  {
+    path: `conversations/${directSeedConversationId}/members/demo-athlete`,
+    data: {userId: "demo-athlete", userSnapshot: athleteMessageSnapshot, role: "owner", joinedAt: createdAt, lastReadAt: createdAt, unreadCount: 1, notificationsEnabled: true, mutedUntil: null, archivedAt: null, removedAt: null, ...audit},
+  },
+  {
+    path: `conversations/${directSeedConversationId}/members/demo-runner`,
+    data: {userId: "demo-runner", userSnapshot: runnerMessageSnapshot, role: "member", joinedAt: createdAt, lastReadAt: createdAt, unreadCount: 0, notificationsEnabled: true, mutedUntil: null, archivedAt: null, removedAt: null, ...audit},
+  },
+  {
+    path: `conversations/${directSeedConversationId}/messages/seed-message-1`,
+    data: {conversationId: directSeedConversationId, senderId: "demo-athlete", senderSnapshot: athleteMessageSnapshot, kind: "text", text: "Easy run tomorrow at 7?", attachments: [], replyTo: null, reactionCounts: {"🔥": 1}, isDeleted: false, sentAt: Timestamp.fromDate(new Date("2026-07-13T11:58:00.000Z")), editedAt: null, ...audit},
+  },
+  {
+    path: `conversations/${directSeedConversationId}/messages/seed-message-2`,
+    data: {conversationId: directSeedConversationId, senderId: "demo-runner", senderSnapshot: runnerMessageSnapshot, kind: "text", text: "Perfect, see you there!", attachments: [], replyTo: null, reactionCounts: {}, isDeleted: false, sentAt: createdAt, editedAt: null, ...audit},
+  },
+  {
+    path: `users/demo-athlete/conversation_inbox/${directSeedConversationId}`,
+    data: {conversationId: directSeedConversationId, type: "direct", title: "Maya Runner", avatarUrl: null, memberSnapshots: [athleteMessageSnapshot, runnerMessageSnapshot], lastMessage: {id: "seed-message-2", senderId: "demo-runner", kind: "text", preview: "Perfect, see you there!", sentAt: createdAt}, unreadCount: 1, notificationsEnabled: true, mutedUntil: null, archivedAt: null, removedAt: null, isArchived: false, ...audit},
+  },
+  {
+    path: `users/demo-runner/conversation_inbox/${directSeedConversationId}`,
+    data: {conversationId: directSeedConversationId, type: "direct", title: "ReeMove Athlete", avatarUrl: null, memberSnapshots: [athleteMessageSnapshot, runnerMessageSnapshot], lastMessage: {id: "seed-message-2", senderId: "demo-runner", kind: "text", preview: "Perfect, see you there!", sentAt: createdAt}, unreadCount: 0, notificationsEnabled: true, mutedUntil: null, archivedAt: null, removedAt: null, isArchived: false, ...audit},
+  },
+  {
+    path: `users/demo-athlete/message_reactions/${directSeedConversationId}--seed-message-1`,
+    data: {conversationId: directSeedConversationId, messageId: "seed-message-1", emojis: ["🔥"], updatedAt: createdAt, schemaVersion: currentSchemaVersion},
+  },
+  {
+    path: `conversations/${groupSeedConversationId}`,
+    data: {type: "group", title: "Weekend Training", createdBy: "demo-athlete", memberCount: 3, moderationState: "active", lastMessage: {id: "group-seed-message-1", senderId: "demo-athlete", kind: "text", preview: "Saturday at 10 — football then recovery run.", sentAt: createdAt}, ...audit},
+  },
+  ...[
+    {id: "demo-athlete", snapshot: athleteMessageSnapshot, role: "owner"},
+    {id: "demo-runner", snapshot: runnerMessageSnapshot, role: "admin"},
+    {id: "demo-newcomer", snapshot: newcomerMessageSnapshot, role: "member"},
+  ].map((member) => ({
+    path: `conversations/${groupSeedConversationId}/members/${member.id}`,
+    data: {userId: member.id, userSnapshot: member.snapshot, role: member.role, joinedAt: createdAt, lastReadAt: createdAt, unreadCount: 0, notificationsEnabled: true, mutedUntil: null, archivedAt: null, removedAt: null, ...audit},
+  })),
+  {
+    path: `conversations/${groupSeedConversationId}/messages/group-seed-message-1`,
+    data: {conversationId: groupSeedConversationId, senderId: "demo-athlete", senderSnapshot: athleteMessageSnapshot, kind: "text", text: "Saturday at 10 — football then recovery run.", attachments: [], replyTo: null, reactionCounts: {"💪": 2}, isDeleted: false, sentAt: createdAt, editedAt: null, ...audit},
+  },
+  ...[
+    {id: "demo-athlete", snapshot: athleteMessageSnapshot},
+    {id: "demo-runner", snapshot: runnerMessageSnapshot},
+    {id: "demo-newcomer", snapshot: newcomerMessageSnapshot},
+  ].map((member) => ({
+    path: `users/${member.id}/conversation_inbox/${groupSeedConversationId}`,
+    data: {conversationId: groupSeedConversationId, type: "group", title: "Weekend Training", memberSnapshots: [athleteMessageSnapshot, runnerMessageSnapshot, newcomerMessageSnapshot], lastMessage: {id: "group-seed-message-1", senderId: "demo-athlete", kind: "text", preview: "Saturday at 10 — football then recovery run.", sentAt: createdAt}, unreadCount: 0, notificationsEnabled: true, mutedUntil: null, archivedAt: null, removedAt: null, isArchived: false, ...audit},
+  })),
   {
     path: `data_migrations/${seedDatasetVersion}`,
     data: {

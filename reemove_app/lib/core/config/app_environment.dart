@@ -23,6 +23,7 @@ class AppEnvironment {
     required this.googleServerClientId,
     required this.useFirebaseEmulators,
     required this.firebaseEmulatorHost,
+    required this.firebaseDatabaseUrl,
   });
 
   factory AppEnvironment.fromCompileTime() {
@@ -56,6 +57,7 @@ class AppEnvironment {
       'FIREBASE_EMULATOR_HOST',
       defaultValue: '127.0.0.1',
     );
+    const String databaseUrl = String.fromEnvironment('FIREBASE_DATABASE_URL');
 
     return AppEnvironment(
       flavor: AppFlavor.parse(rawFlavor),
@@ -70,6 +72,9 @@ class AppEnvironment {
           : serverClientId.trim(),
       useFirebaseEmulators: useEmulators,
       firebaseEmulatorHost: emulatorHost.trim(),
+      firebaseDatabaseUrl: databaseUrl.trim().isEmpty
+          ? null
+          : databaseUrl.trim(),
     );
   }
 
@@ -81,6 +86,7 @@ class AppEnvironment {
   final String? googleServerClientId;
   final bool useFirebaseEmulators;
   final String firebaseEmulatorHost;
+  final String? firebaseDatabaseUrl;
 
   bool get isDevelopment => flavor == AppFlavor.development;
   bool get isProduction => flavor == AppFlavor.production;

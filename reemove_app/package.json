@@ -5,11 +5,11 @@
     "install:all": "npm --prefix functions install && npm --prefix firebase_tests install",
     "build:functions": "npm --prefix functions run build",
     "lint:functions": "npm --prefix functions run lint",
-    "test:rules": "npx --yes firebase-tools@15.23.0 emulators:exec --project demo-reemove --only firestore,storage \"npm --prefix firebase_tests test\"",
-    "seed:emulator": "npx --yes firebase-tools@15.23.0 emulators:exec --project demo-reemove --only auth,firestore \"npm --prefix functions run seed:emulator\"",
+    "test:rules": "npx --yes firebase-tools@15.23.0 emulators:exec --project demo-reemove --only firestore,storage,database \"npm --prefix firebase_tests test\"",
+    "seed:emulator": "npx --yes firebase-tools@15.23.0 emulators:exec --project demo-reemove --only auth,firestore,database \"npm --prefix functions run seed:emulator\"",
     "verify:backend": "npm run lint:functions && npm run build:functions && npm run test:functions && npm run test:rules",
     "test:functions": "npm --prefix functions run test:unit",
     "emulators:start": "npx --yes firebase-tools@15.23.0 emulators:start --project demo-reemove",
-    "seed:running-emulators": "FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIRESTORE_EMULATOR_HOST=127.0.0.1:8180 GCLOUD_PROJECT=demo-reemove npm --prefix functions run seed:emulator"
+    "seed:running-emulators": "FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:9099 FIRESTORE_EMULATOR_HOST=127.0.0.1:8180 FIREBASE_DATABASE_EMULATOR_HOST=127.0.0.1:9000 GCLOUD_PROJECT=demo-reemove npm --prefix functions run seed:emulator"
   }
 }

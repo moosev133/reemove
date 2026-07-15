@@ -24,8 +24,11 @@ import '../../features/feed/presentation/screens/story_viewer_screen.dart';
 import '../../features/home/presentation/screens/activity_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/home/presentation/screens/post_deep_link_screen.dart';
+import '../../features/messages/presentation/screens/conversation_details_screen.dart';
 import '../../features/messages/presentation/screens/conversation_screen.dart';
+import '../../features/messages/presentation/screens/create_group_screen.dart';
 import '../../features/messages/presentation/screens/messages_screen.dart';
+import '../../features/messages/presentation/screens/new_conversation_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 import '../../features/profile/domain/entities/profile_connection.dart';
 import '../../features/profile/presentation/screens/blocked_profiles_screen.dart';
@@ -284,6 +287,37 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                 name: AppRouteNames.messages,
                 pageBuilder: _page(const MessagesScreen()),
                 routes: <RouteBase>[
+                  GoRoute(
+                    path: 'new',
+                    name: AppRouteNames.newConversation,
+                    pageBuilder: (BuildContext context, GoRouterState state) {
+                      return MaterialPage<void>(
+                        key: state.pageKey,
+                        child: NewConversationScreen(
+                          initialUsername:
+                              state.uri.queryParameters['username'],
+                        ),
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'group/new',
+                    name: AppRouteNames.newGroupConversation,
+                    pageBuilder: _page(const CreateGroupScreen()),
+                  ),
+                  GoRoute(
+                    path: ':conversationId/details',
+                    name: AppRouteNames.conversationDetails,
+                    pageBuilder: (BuildContext context, GoRouterState state) {
+                      return MaterialPage<void>(
+                        key: state.pageKey,
+                        child: ConversationDetailsScreen(
+                          conversationId:
+                              state.pathParameters['conversationId'] ?? '',
+                        ),
+                      );
+                    },
+                  ),
                   GoRoute(
                     path: ':conversationId',
                     name: AppRouteNames.conversation,

@@ -94,7 +94,9 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                       ? null
                       : () => _primaryAction(profile, relationship),
                   onSecondaryAction: relationship?.canMessage == true
-                      ? () => context.go(AppRoutes.messages)
+                      ? () => context.go(
+                          AppRoutes.newConversationFor(profile.username),
+                        )
                       : null,
                   onFollowers: relationship?.canViewFollowers == true
                       ? () => context.push(

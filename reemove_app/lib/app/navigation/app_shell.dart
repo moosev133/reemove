@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/responsive/app_breakpoints.dart';
+import '../../features/messages/application/messaging_providers.dart';
+import '../router/app_routes.dart';
 import 'app_navigation_badges.dart';
 import 'widgets/app_bottom_navigation.dart';
 import 'widgets/app_navigation_rail.dart';
@@ -14,6 +16,26 @@ class AppShell extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(messagingDeviceRegistrationProvider);
+    ref.listen<AsyncValue<int>>(messagingUnreadCountProvider, (
+      AsyncValue<int>? previous,
+      AsyncValue<int> next,
+    ) {
+      next.whenData(
+        (int count) => ref
+            .read(appNavigationBadgesProvider.notifier)
+            .updateMessages(count),
+      );
+    });
+    ref.listen<AsyncValue<String>>(messagingOpenedConversationProvider, (
+      AsyncValue<String>? previous,
+      AsyncValue<String> next,
+    ) {
+      next.whenData(
+        (String conversationId) =>
+            context.go(AppRoutes.conversation(conversationId)),
+      );
+    });
     final AppNavigationBadges badges = ref.watch(appNavigationBadgesProvider);
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {

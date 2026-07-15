@@ -48,6 +48,12 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/users/$(authorId)/followers/$(viewerId));
     }
 
+    function activeConversationMember(conversationId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/conversations/$(conversationId)/members/$(request.auth.uid))
+        && get(/databases/$(database)/documents/conversations/$(conversationId)/members/$(request.auth.uid)).data.removedAt == null;
+    }
+
     function canReadUserProfile(uid, data) {
       return signedIn()
         && data.moderationState == 'active'
@@ -247,6 +253,21 @@ service cloud.firestore {
       }
 
       match /following/{followingId} {
+        allow get, list: if isOwner(uid) && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /conversation_inbox/{conversationId} {
+        allow get, list: if isOwner(uid) && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /message_reactions/{reactionId} {
+        allow get, list: if isOwner(uid) && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /device_tokens/{tokenId} {
         allow get, list: if isOwner(uid) && request.query.limit <= 100;
         allow write: if false;
       }
@@ -459,6 +480,46 @@ service cloud.firestore {
             && request.resource.data.details.size() <= 2000))
         && request.resource.data.status == 'open';
       allow read, update, delete: if isAdmin();
+    }
+
+    match /conversations/{conversationId} {
+      allow get: if activeConversationMember(conversationId) || isAdmin();
+      allow list, create, update, delete: if false;
+
+      match /members/{memberId} {
+        allow get: if activeConversationMember(conversationId) || isAdmin();
+        allow list: if (activeConversationMember(conversationId) || isAdmin())
+          && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /messages/{messageId} {
+        allow get: if activeConversationMember(conversationId) || isAdmin();
+        allow list: if (activeConversationMember(conversationId) || isAdmin())
+          && request.query.limit <= 100;
+        allow write: if false;
+
+        match /reactions/{reactionId} {
+          allow get: if activeConversationMember(conversationId) || isAdmin();
+          allow list: if (activeConversationMember(conversationId) || isAdmin())
+            && request.query.limit <= 100;
+          allow write: if false;
+        }
+      }
+    }
+
+    match /message_reports/{reportId} {
+      allow get: if isAdmin()
+        || (signedIn() && resource.data.reporterId == request.auth.uid);
+      allow list: if isAdmin() && request.query.limit <= 100;
+      allow write: if false;
+    }
+
+    match /notification_deliveries/{deliveryId} {
+      allow get: if isAdmin()
+        || (signedIn() && resource.data.recipientId == request.auth.uid);
+      allow list: if isAdmin() && request.query.limit <= 100;
+      allow write: if false;
     }
 
     match /moderation_queue/{documentId} {

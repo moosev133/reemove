@@ -1,4 +1,5 @@
 import {getApps, initializeApp} from "firebase-admin/app";
+import {getDatabase} from "firebase-admin/database";
 import {getFirestore} from "firebase-admin/firestore";
 
 import {seedDocuments} from "./seedData";
@@ -20,7 +21,11 @@ async function seedFirestore(): Promise<void> {
   }
 
   if (getApps().length === 0) {
-    initializeApp({projectId});
+    const databaseHost = process.env.FIREBASE_DATABASE_EMULATOR_HOST;
+    initializeApp({
+      projectId,
+      ...(databaseHost ? {databaseURL: `http://${databaseHost}?ns=${projectId}`} : {}),
+    });
   }
 
   const database = getFirestore();
@@ -39,6 +44,23 @@ async function seedFirestore(): Promise<void> {
 
   if (operationCount % 400 !== 0) {
     await batch.commit();
+  }
+
+  const databaseHost = process.env.FIREBASE_DATABASE_EMULATOR_HOST;
+  if (databaseHost) {
+    const directId = seedDocuments.find((item) =>
+      item.path.startsWith("conversations/direct_"))?.path.split("/")[1];
+    const acl: Record<string, Record<string, boolean>> = {
+      group_demo_weekend_training: {
+        "demo-athlete": true,
+        "demo-runner": true,
+        "demo-newcomer": true,
+      },
+    };
+    if (directId) {
+      acl[directId] = {"demo-athlete": true, "demo-runner": true};
+    }
+    await getDatabase().ref("messaging_acl").set(acl);
   }
 
   process.stdout.write(`Seeded ${operationCount} ReeMove documents into ${projectId}.\n`);

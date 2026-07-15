@@ -5,6 +5,8 @@ abstract final class FirestoreCollections {
   static const String posts = 'posts';
   static const String stories = 'stories';
   static const String conversations = 'conversations';
+  static const String messageReports = 'message_reports';
+  static const String notificationDeliveries = 'notification_deliveries';
   static const String groups = 'groups';
   static const String places = 'places';
   static const String teams = 'teams';

@@ -4,11 +4,22 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
 import '../config/app_environment.dart';
 import '../logging/app_logger.dart';
+
+@pragma('vm:entry-point')
+Future<void> reemoveFirebaseMessagingBackgroundHandler(
+  RemoteMessage message,
+) async {
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp();
+  }
+}
 
 enum FirebaseBootstrapStatus { ready, unavailable }
 
@@ -35,6 +46,9 @@ abstract final class FirebaseBootstrap {
   }) async {
     try {
       await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(
+        reemoveFirebaseMessagingBackgroundHandler,
+      );
 
       if (environment.useFirebaseEmulators) {
         await _connectEmulators(environment, logger);
@@ -99,6 +113,7 @@ abstract final class FirebaseBootstrap {
       region: environment.firebaseFunctionsRegion,
     ).useFunctionsEmulator(host, 5001);
     await FirebaseStorage.instance.useStorageEmulator(host, 9199);
+    FirebaseDatabase.instance.useDatabaseEmulator(host, 9000);
     logger.info('Connected Firebase SDKs to local emulators at $host.');
   }
 }

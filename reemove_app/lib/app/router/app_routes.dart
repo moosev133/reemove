@@ -18,6 +18,8 @@ abstract final class AppRoutes {
   static const String sports = '/sports';
   static const String create = '/create';
   static const String messages = '/messages';
+  static const String newConversation = '/messages/new';
+  static const String newGroupConversation = '/messages/group/new';
   static const String profile = '/profile';
   static const String editProfile = '/profile/edit';
   static const String profileSettings = '/profile/settings';
@@ -42,6 +44,14 @@ abstract final class AppRoutes {
 
   static String conversation(String conversationId) =>
       '/messages/${_segment(conversationId)}';
+
+  static String conversationDetails(String conversationId) =>
+      '/messages/${_segment(conversationId)}/details';
+
+  static String newConversationFor(String username) => Uri(
+    path: newConversation,
+    queryParameters: <String, String>{'username': username},
+  ).toString();
 
   static String publicProfile(String username) =>
       '/profile/user/${_segment(username.toLowerCase())}';
@@ -131,7 +141,10 @@ abstract final class AppRouteNames {
   static const String create = 'create';
   static const String createFlow = 'create-flow';
   static const String messages = 'messages';
+  static const String newConversation = 'new-conversation';
+  static const String newGroupConversation = 'new-group-conversation';
   static const String conversation = 'conversation';
+  static const String conversationDetails = 'conversation-details';
   static const String profile = 'profile';
   static const String publicProfile = 'public-profile';
   static const String editProfile = 'edit-profile';

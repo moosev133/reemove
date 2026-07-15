@@ -48,6 +48,26 @@ import {
   updateProfile,
   updateProfilePrivacy,
 } from "./profile/profileManagement";
+import {
+  createDirectConversation,
+  createGroupConversation,
+  leaveConversation,
+  updateConversationPreferences,
+  updateGroupConversation,
+} from "./messaging/conversations";
+import {
+  registerMessagingDevice,
+  unregisterMessagingDevice,
+} from "./messaging/deviceTokens";
+import {
+  deleteMessage,
+  editMessage,
+  markConversationRead,
+  reportMessage,
+  sendMessage,
+  toggleMessageReaction,
+} from "./messaging/messages";
+import {notifyConversationMessage} from "./messaging/notifications";
 import {callableOptions, primaryRegion} from "./core/functionOptions";
 
 initializeApp();
@@ -93,6 +113,20 @@ export {
   cancelVerificationRequest,
   reviewVerificationRequest,
   syncProfileSnapshots,
+  createDirectConversation,
+  createGroupConversation,
+  updateGroupConversation,
+  leaveConversation,
+  updateConversationPreferences,
+  sendMessage,
+  editMessage,
+  deleteMessage,
+  toggleMessageReaction,
+  markConversationRead,
+  reportMessage,
+  registerMessagingDevice,
+  unregisterMessagingDevice,
+  notifyConversationMessage,
   onContentUpload,
   processQueuedMedia,
   completeMediaProcessing,

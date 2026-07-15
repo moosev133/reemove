@@ -32,6 +32,10 @@ Pending configuration that must be completed outside Git before Firebase-backed 
 - [ ] Deploy Phase 7 profile Functions, Firestore rules/indexes, and Storage rules (follow graph, verification, cover uploads, locked public user reads)
 - [ ] Configure verification admin review workflow (see `docs/PROFILE_VERIFICATION_SETUP.md`)
 - [ ] Optionally seed emulator profile fixtures (followers, follow requests, privacy settings, verification)
+- [ ] Deploy Phase 8 messaging Functions, Firestore/Storage/Realtime Database rules, and indexes
+- [ ] Configure FCM/APNs for message push notifications (see `docs/MESSAGING_SETUP.md`)
+- [ ] Optionally set `FIREBASE_DATABASE_URL` for non-default Realtime Database instances
+- [ ] Optionally seed emulator messaging fixtures (direct conversation, group, presence ACL)
 
 ## Do not commit
 
