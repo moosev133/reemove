@@ -72,5 +72,22 @@
 	<string>ReeMove lets you choose photos from your library for your profile, posts, stories, messages, marketplace listings, or challenge proof.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>ReeMove uses your location to show nearby sports people, places, routes, and events while you use the app.</string>
+	<key>MAPS_API_KEY</key>
+	<string>$(MAPS_API_KEY)</string>
+	<key>FlutterDeepLinkingEnabled</key>
+	<true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>app.reemove.links</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>reemove</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

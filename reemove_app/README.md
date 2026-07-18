@@ -1,39 +1,27 @@
 # ReeMove
 
-ReeMove is a production-oriented Flutter and Firebase sports social network. The product combines social content, activity tracking, nearby discovery, sports communities, events, challenges, marketplace features, messaging, and an AI-ready service layer.
+ReeMove is a production-oriented Flutter and Firebase sports social network. The product combines social content, activity tracking, nearby discovery, sports communities, events, challenges, marketplace features, messaging, notifications, and a server-side AI coach layer.
 
 ## Current implementation status
 
-- **Phase 1 — Project architecture:** complete.
-- **Phase 2 — Database design:** complete.
-- **Phase 3 — Authentication:** complete.
-- **Phase 4 — Onboarding:** complete.
-- **Phase 5 — Main navigation:** complete.
-- **Phase 6 — Social feed:** complete in this package.
+**Phases 1–16 are complete** in this package (`reemove_app/`).
 
-The cumulative repository now contains:
+| Area | Status |
+|------|--------|
+| Architecture, DI, routing, auth, onboarding | Complete |
+| Feed, messaging, profile, sports hubs, nearby/maps UI | Complete |
+| Challenges, marketplace, notifications, AI (Functions) | Complete |
+| Quality gates, release workflows, production docs | Complete |
+| Local validation (analyze, unit, rules, web, Android debug) | Pass |
 
-- Feature-first Clean Architecture with Firebase-independent domain models.
-- Riverpod dependency injection, async state, and guarded application routing.
-- Premium responsive light/dark authentication, onboarding, six-tab application shell, social feed, reels, stories, and publishing UI.
-- Email/password, Google, and Apple authentication plus provider linking.
-- Transaction-backed server-owned usernames and account provisioning.
-- Verification, recovery, recent-login controls, session revocation, and retryable deletion.
-- A resumable ten-step onboarding flow for birthday, sports, levels, goals, avatar, location, discovery, accessibility, notifications, and review.
-- Separate Home, Discover, Sports, Create, Messages, and Profile navigation stacks with state restoration.
-- Guarded deep links that preserve the requested destination through authentication and onboarding.
-- Android App Links, iOS Universal Links, and custom-scheme configuration automation.
-- Ranked For You and Following feeds with cursor pagination, refresh, cache-aware reads, optimistic interactions, and reciprocal block filtering.
-- Posts, carousels, reels, stories, comments, saves, reposts, reports, and unique view tracking.
-- Crash-safe content drafts, owner-scoped uploads, trusted publishing, media jobs, and an authenticated video-processor callback.
-- Trusted callable Functions for per-step persistence and atomic completion.
-- Coarse public versus exact private location storage.
-- Typed Firestore repositories, converters, indexes, Rules, Storage policies, seed data, and migration conventions.
-- Firebase Auth, Firestore, Functions, and Storage emulator integration.
-- Strict TypeScript Functions with App Check, rate limits, and audit events.
-- CI, backend unit tests, Rules tests, Dart tests, and repository validation tooling.
+**Not store-ready yet.** Owner configuration remains: real application IDs, Firebase projects / FlutterFire files, Maps keys, signing, App Check enforcement, hosted deep-link files, and store listings. See `docs/OWNER_ACTION_CHECKLIST.md` and `docs/RELEASE_ENGINEERING_REPORT.md`.
 
-Later phases are tracked in `docs/PHASE_TRACKER.md`. Existing files are changed only when integration requires it.
+Native deep-link and Maps **scaffolding** is applied (App Links intent filters, iOS associated domains, Maps placeholders). Verified domain hosting, restricted API keys, and final bundle IDs still require the owner. Re-run after ID changes:
+
+```bash
+python3 scripts/configure_deep_links.py --host YOUR_LINKS_HOST
+python3 scripts/configure_google_maps.py
+```
 
 ## Architecture
 
@@ -42,7 +30,7 @@ presentation -> application -> domain <- data
                          repositories
 ```
 
-Firebase and platform SDKs remain implementation details in the data layer. Riverpod composes dependencies. Widgets never call Firebase directly.
+Firebase and platform SDKs remain implementation details in the data layer. Riverpod composes dependencies. Widgets never call Firebase directly. Single GoRouter, single Firebase provider graph.
 
 ## Requirements
 
@@ -64,28 +52,17 @@ cp .firebaserc.example .firebaserc
 
 Then complete:
 
+- `docs/ENVIRONMENT_AND_FIREBASE_SETUP.md`
 - `docs/AUTHENTICATION_SETUP.md`
-- `docs/ONBOARDING_SETUP.md`
+- `docs/GOOGLE_MAPS_SETUP.md`
 - `docs/DEEP_LINK_SETUP.md`
-- `docs/MEDIA_PROCESSING_SETUP.md`
+- `docs/OWNER_ACTION_CHECKLIST.md`
 
 ## Local emulators
 
-Start all configured emulators and keep them running:
-
 ```bash
 npm run emulators:start
-```
-
-In a second terminal, seed matching Auth and Firestore records:
-
-```bash
 npm run seed:running-emulators
-```
-
-Run Flutter against them in a third terminal:
-
-```bash
 flutter run \
   --dart-define=APP_FLAVOR=development \
   --dart-define=ENABLE_APP_CHECK=false \
@@ -97,10 +74,7 @@ flutter run \
 Emulator-only users:
 
 ```text
-Completed account
 athlete@demo.reemove.app / ReeMoveDemo123!
-
-Incomplete onboarding account
 newcomer@demo.reemove.app / ReeMoveDemo123!
 ```
 
@@ -110,38 +84,26 @@ Never use these credentials outside the local `demo-reemove` emulator project.
 
 ```bash
 python3 scripts/validate_repository.py
+python3 scripts/scan_secrets.py
 npm run verify:backend
 flutter analyze
-flutter test --coverage
+flutter test
 ```
 
-The backend command runs Functions linting, strict compilation, server policy tests, and Firestore/Storage Rules tests. Java and Firebase emulator binaries are required for the Rules suite.
-
-## Production run
+## Production run (after owner config)
 
 ```bash
 flutter run --release \
-  --dart-define=APP_FLAVOR=production \
-  --dart-define=ENABLE_APP_CHECK=true \
-  --dart-define=ENABLE_ANALYTICS=true \
-  --dart-define=FIREBASE_FUNCTIONS_REGION=europe-west1 \
-  --dart-define=GOOGLE_SERVER_CLIENT_ID=YOUR_WEB_CLIENT_ID \
-  --dart-define=FIREBASE_WEB_RECAPTCHA_V3_SITE_KEY=YOUR_KEY
+  --dart-define-from-file=dart_defines/prod.json
 ```
 
 ## Documentation
 
-- `docs/PHASE_6_COMPLETION.md`
-- `docs/FEED_IMPLEMENTATION.md`
-- `docs/MEDIA_PROCESSING_SETUP.md`
-- `docs/PHASE_5_COMPLETION.md`
-- `docs/NAVIGATION_IMPLEMENTATION.md`
-- `docs/DEEP_LINK_SETUP.md`
-- `docs/PHASE_4_COMPLETION.md`
-- `docs/ONBOARDING_IMPLEMENTATION.md`
-- `docs/ONBOARDING_SETUP.md`
-- `docs/AUTHENTICATION_IMPLEMENTATION.md`
-- `docs/FIREBASE_SCHEMA.md`
-- `docs/DEPLOYMENT_GUIDE.md`
-- `docs/VALIDATION_REPORT.md`
+Start here for release:
+
+- `docs/RELEASE_ENGINEERING_REPORT.md`
+- `docs/FINAL_PRODUCTION_AUDIT.md`
+- `docs/OWNER_ACTION_CHECKLIST.md`
+- `docs/MASTER_DEPLOYMENT_PLAN.md`
+- `docs/CI_CD_RELEASE_PIPELINE.md`
 - `docs/PHASE_TRACKER.md`

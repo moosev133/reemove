@@ -23,12 +23,16 @@ Use this list to finish launch. Tags:
 - [x] AGP transition flags (`android.newDsl=false`, `android.builtInKotlin=false`)
 - [x] `moderation_queue` client writes denied
 - [x] FCM deep-link route validation hardened
-- [x] CI `.firebaserc` materialization from Environment **vars**
+- [x] Deploy workflows materialize `.firebaserc` from GitHub Environment **vars**
 - [x] Web/Android/iOS branding + privacy string updates
-- [x] Final audit docs set created
-- [x] Approved disk cleanup executed
-- [x] Post-cleanup validation: Android debug APK, Flutter web, Chrome launch, Firebase rules (40/40)
-- [x] Rules config fixes: safe `isAdmin`, `canReadUserProfile`, RTDB `hasChildren`, firebase_tests npm registry
+- [x] Final audit docs + release engineering report
+- [x] Post-cleanup validation: Android debug APK, Flutter web, Chrome, rules 40/40
+- [x] Rules config: safe `isAdmin`, `canReadUserProfile`, RTDB `hasChildren`, firebase_tests npm registry
+- [x] Google Maps native scaffolding (manifest placeholder, Gradle lookup, iOS soft `GMSServices`, `Maps.xcconfig.example`)
+- [x] Deep-link native scaffolding (`links.reemove.app` App Links, `reemove://open`, iOS Associated Domains entitlements)
+- [x] Conditional Google Services Gradle plugin (applies only when `google-services.json` exists)
+- [x] Release configure scripts fixed for current iOS AppDelegate / any Runner bundle ID
+- [x] README + CI_CD_GUIDE corrected to match Phase 16 reality
 
 ---
 
@@ -45,7 +49,7 @@ Use this list to finish launch. Tags:
 - [ ] Create isolated Firebase **development / staging / production** projects — **Requires owner login**
 - [ ] Set GitHub Environment vars `FIREBASE_STAGING_PROJECT_ID`, `FIREBASE_PRODUCTION_PROJECT_ID` — **Requires credentials** + **Requires owner login**
 - [ ] Configure GitHub Environments `staging` / `production` / `android-release` / `ios-release` with distinct WIF SAs — **Requires credentials**
-- [ ] Generate FlutterFire options + `google-services.json` / `GoogleService-Info.plist` (never commit) — **Requires credentials**
+- [ ] Run `flutterfire configure` → `google-services.json`, `GoogleService-Info.plist`, `lib/firebase_options.dart` (gitignored; required for **web**) — **Requires credentials**
 - [ ] Publish Remote Config from `remoteconfig.template.json` — **Requires owner login**
 - [ ] `firebase functions:secrets:set OPENAI_API_KEY` per env — **Requires credentials**
 - [ ] Configure media-processor secrets if used — **Requires credentials**
@@ -61,7 +65,8 @@ Use this list to finish launch. Tags:
 - [ ] Replace `com.example.reemove_app` applicationId/namespace — **Requires owner login** + **Requires paid developer account** (Play)
 - [ ] Create upload keystore; local `android/key.properties` — **Requires credentials**
 - [ ] Store CI secrets: `ANDROID_UPLOAD_KEYSTORE_B64`, passwords, alias, `PROD_DART_DEFINES_JSON` — **Requires credentials**
-- [ ] Apply Maps key via `configure_google_maps.py` (restricted) — **Requires credentials**
+- [ ] Set restricted Maps key: `MAPS_API_KEY` in `android/local.properties` or CI env — **Requires credentials**
+- [ ] After ID change, re-run `python3 scripts/configure_deep_links.py --host YOUR_HOST` if host/IDs changed — **Requires owner login**
 - [ ] Enroll Play App Signing; fill Data safety from `config/privacy/play_data_safety.yaml` — **Requires paid developer account**
 - [ ] Internal / closed testing track smoke — **Requires physical device** + **Requires paid developer account**
 - [ ] Staged production rollout — **Requires explicit deployment approval**
@@ -71,7 +76,8 @@ Use this list to finish launch. Tags:
 ## iOS
 
 - [ ] Replace `com.example.reemoveApp` bundle ID — **Requires paid developer account**
-- [ ] Capabilities: Push, Sign in with Apple, Associated Domains, App Attest — **Requires owner login** (Xcode) + **Requires paid developer account**
+- [ ] Copy `ios/Flutter/Maps.xcconfig.example` → `Maps.xcconfig` with restricted iOS Maps key — **Requires credentials**
+- [ ] Xcode capabilities: **Push Notifications**, Sign in with Apple, Associated Domains (entitlements file present), App Attest — **Requires owner login** + **Requires paid developer account**
 - [ ] Distribution cert + App Store profile; fill `ExportOptions.plist` (do not commit) — **Requires credentials**
 - [ ] CI secrets: `IOS_EXPORT_OPTIONS_PLIST`, `PROD_DART_DEFINES_JSON`, signing mechanism — **Requires credentials**
 - [ ] APNs key uploaded to Firebase — **Requires credentials**
@@ -85,7 +91,8 @@ Use this list to finish launch. Tags:
 - [ ] Restrict Maps API keys by package / bundle — **Requires credentials**
 - [ ] FCM + APNs end-to-end on physical devices — **Requires physical device** + **Requires credentials**
 - [ ] Host support / status / legal / account-deletion URLs — **Requires owner login**
-- [ ] Deep links: finalize IDs then `configure_deep_links.py` + host AASA/assetlinks — **Requires owner login** + **Requires credentials** (signing hashes)
+- [ ] Host `docs/app_links/assetlinks.json` + `apple-app-site-association.json` on the verified domain (update `REPLACE_TEAM_ID` + final bundle ID) — **Requires owner login** + **Requires credentials** (signing hashes)
+- [ ] Dart-defines / `.env`: `GOOGLE_SERVER_CLIENT_ID`, reCAPTCHA (web), `FIREBASE_DATABASE_URL`, support/status/store URLs — **Requires credentials**
 
 ---
 

@@ -157,4 +157,4 @@ IDs, privacy answers, listings, signing, beta smoke — owner.
 
 **Overall:** Ready for owner configuration, staging Firebase wiring, and closed beta preparation. **Not ready** for public store release.
 
-See companion docs: `OWNER_ACTION_CHECKLIST.md`, `FIREBASE_DEPLOYMENT_PLAN.md`, `ANDROID_RELEASE_PLAN.md`, `IOS_RELEASE_PLAN.md`, `BETA_TEST_PLAN.md`, `ROLLBACK_PLAN.md`.
+See companion docs: `RELEASE_ENGINEERING_REPORT.md`, `OWNER_ACTION_CHECKLIST.md`, `FIREBASE_DEPLOYMENT_PLAN.md`, `ANDROID_RELEASE_PLAN.md`, `IOS_RELEASE_PLAN.md`, `BETA_TEST_PLAN.md`, `ROLLBACK_PLAN.md`.

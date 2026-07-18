@@ -44,7 +44,8 @@ def configure_android_manifest() -> None:
         node = ET.SubElement(application, "meta-data")
         node.set(name_attr, "com.google.android.geo.API_KEY")
     node.set(value_attr, "${MAPS_API_KEY}")
-    ET.indent(tree, space="    ")
+    if hasattr(ET, "indent"):
+        ET.indent(tree, space="    ")
     tree.write(manifest, encoding="utf-8", xml_declaration=True)
     print(f"Configured {manifest.relative_to(ROOT)}")
 
@@ -142,16 +143,28 @@ def configure_ios() -> None:
         text = text.replace("import Flutter\n", "import Flutter\nimport GoogleMaps\n", 1)
     marker = "GMSServices.provideAPIKey"
     if marker not in text:
-        anchor = "    GeneratedPluginRegistrant.register(with: self)"
-        addition = """    guard let mapsApiKey = Bundle.main.object(forInfoDictionaryKey: \"MAPS_API_KEY\") as? String,
-          !mapsApiKey.isEmpty, mapsApiKey != \"$(MAPS_API_KEY)\" else {
-      fatalError(\"MAPS_API_KEY is missing. Configure ios/Flutter/Maps.xcconfig.\")
+        # Soft-activate when a real key is present. Nearby list mode still works
+        # without Maps tiles; do not crash cold start for closed-beta builds.
+        maps_init = """    if let mapsApiKey = Bundle.main.object(forInfoDictionaryKey: \"MAPS_API_KEY\") as? String,
+       !mapsApiKey.isEmpty,
+       mapsApiKey != \"$(MAPS_API_KEY)\" {
+      GMSServices.provideAPIKey(mapsApiKey)
     }
-    GMSServices.provideAPIKey(mapsApiKey)
 """
-        if anchor not in text:
-            raise RuntimeError("Could not locate GeneratedPluginRegistrant in AppDelegate.swift.")
-        text = text.replace(anchor, addition + anchor, 1)
+        anchors = (
+            "    GeneratedPluginRegistrant.register(with: self)",
+            "    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)",
+        )
+        replaced = False
+        for anchor in anchors:
+            if anchor in text:
+                text = text.replace(anchor, maps_init + anchor, 1)
+                replaced = True
+                break
+        if not replaced:
+            raise RuntimeError(
+                "Could not locate GeneratedPluginRegistrant registration in AppDelegate.swift.",
+            )
     app_delegate.write_text(text, encoding="utf-8")
 
     flutter_dir = ROOT / "ios/Flutter"

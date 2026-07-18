@@ -8,11 +8,24 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Apply Google Services only when FlutterFire has produced google-services.json.
+// Avoids failing local builds before the owner runs `flutterfire configure`.
+val googleServicesJson = file("google-services.json")
+if (googleServicesJson.exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()
 val hasReleaseKeystore = keystorePropertiesFile.exists()
 if (hasReleaseKeystore) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
+val reemoveLocalProperties = Properties()
+val reemoveLocalPropertiesFile = rootProject.file("local.properties")
+if (reemoveLocalPropertiesFile.exists()) {
+    reemoveLocalProperties.load(FileInputStream(reemoveLocalPropertiesFile))
 }
 
 android {
@@ -36,6 +49,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        val mapsApiKey = reemoveLocalProperties.getProperty("MAPS_API_KEY")
+            ?: System.getenv("MAPS_API_KEY")
+            ?: ""
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     signingConfigs {

@@ -1,13 +1,22 @@
-> **Production merge note:** Primary GitHub Actions workflows live at the repository root under `.github/workflows/` with `working-directory: reemove_app`. Package-local mirrors also exist under `reemove_app/.github/` for reference. Coverage gate reporting is non-blocking until global coverage meets `quality/quality_gates.json`.
+> **Production merge note:** Canonical GitHub Actions workflows live at the **repository root** under `.github/workflows/` with `defaults.run.working-directory: reemove_app` (or equivalent). Package-local `reemove_app/.github/workflows/ci.yml` is the PR quality workflow mirror. Deploy/release workflows are root-only: `deploy-staging.yml`, `deploy-firebase-production.yml`, `release-android.yml`, `release-ios.yml`, `post-release-verify.yml`, `nightly-device-tests.yml`. Staging/production Firebase deploys materialize `.firebaserc` from GitHub Environment **vars** (never commit real project IDs). Coverage gate reporting is non-blocking until global coverage meets `quality/quality_gates.json`.
 
-> **Phase 16:** Additional workflows cover staging deploy, production deploy (signed tag + approval), Android/iOS release builds, and post-release smoke checks. See `docs/CI_CD_RELEASE_PIPELINE.md`.
+> **Phase 16:** Staging deploy, production deploy (signed tag + approval), Android/iOS release builds, and post-release smoke checks. See `docs/CI_CD_RELEASE_PIPELINE.md`.
 
 # CI/CD Testing Guide
 
-## Workflow files
+## Workflow files (repository root)
 
-- `.github/workflows/quality-gates.yml`: pull requests and main branch
-- `.github/workflows/nightly-device-tests.yml`: scheduled broader testing
+| Workflow | Purpose |
+|----------|---------|
+| `ci.yml` | PR / main quality (analyze, tests, secret scan, rules) |
+| `nightly-device-tests.yml` | Scheduled broader testing |
+| `deploy-staging.yml` | Staging Firebase deploy (approval) |
+| `deploy-firebase-production.yml` | Production Firebase from signed tag (approval) |
+| `release-android.yml` | Signed Android artifacts |
+| `release-ios.yml` | Signed iOS artifacts |
+| `post-release-verify.yml` | Post-release smoke |
+
+Package-local: `reemove_app/.github/workflows/ci.yml` (quality; does not materialize `.firebaserc` — that is deploy-only).
 
 ## Security principles
 

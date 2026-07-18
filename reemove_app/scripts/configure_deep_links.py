@@ -184,27 +184,35 @@ def _configure_xcode_entitlements() -> None:
         return
     text = project.read_text(encoding="utf-8")
     setting = "CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;"
-    if setting in text:
-        return
-
+    # Apply to Runner app configs only (skip *.RunnerTests bundle IDs).
     pattern = re.compile(
-        r"(?P<indent>\s*)PRODUCT_BUNDLE_IDENTIFIER = com\.reemove\.reemove;",
+        r"(?P<indent>\s*)PRODUCT_BUNDLE_IDENTIFIER = "
+        r"(?!.*RunnerTests)[^;]+;",
     )
-
-    def add_setting(match: re.Match[str]) -> str:
-        indent = match.group("indent")
-        return (
-            f"{indent}{setting}\n"
-            f"{indent}PRODUCT_BUNDLE_IDENTIFIER = com.reemove.reemove;"
-        )
-
-    updated, count = pattern.subn(add_setting, text)
-    if count == 0:
+    lines = text.splitlines(keepends=True)
+    output: list[str] = []
+    runner_configs = 0
+    for line in lines:
+        match = pattern.search(line)
+        if match is None or "RunnerTests" in line:
+            output.append(line)
+            continue
+        runner_configs += 1
+        previous_line = ""
+        for candidate in reversed(output):
+            if candidate.strip():
+                previous_line = candidate
+                break
+        if setting not in previous_line:
+            indent = match.group("indent")
+            output.append(f"{indent}{setting}\n")
+        output.append(line)
+    if runner_configs == 0:
         raise RuntimeError(
             "Could not set CODE_SIGN_ENTITLEMENTS automatically. "
             "Set Runner/Runner.entitlements in Xcode Build Settings.",
         )
-    project.write_text(updated, encoding="utf-8")
+    project.write_text("".join(output), encoding="utf-8")
 
 
 def parse_args() -> argparse.Namespace:

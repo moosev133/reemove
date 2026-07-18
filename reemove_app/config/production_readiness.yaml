@@ -1,13 +1,15 @@
 schema_version: 1
 release_version: ""
 build_number: ""
-commit: ""
+commit: "73728c5"
 release_tag: ""
 phase15_scorecard_signed: false
+release_engineering_report: docs/RELEASE_ENGINEERING_REPORT.md
+production_readiness_score: 72
 checks:
-  automated_quality_gates: pending
+  automated_quality_gates: passed_local
   staging_deployment: pending
-  rules_indexes_functions_verified: pending
+  rules_indexes_functions_verified: passed_local
   signed_android_aab: pending
   signed_ios_ipa: pending
   internal_beta_smoke: pending
@@ -18,10 +20,12 @@ checks:
   monitoring_and_alerts: pending
   app_check_metrics_reviewed: pending
   support_and_moderation_ready: pending
+  maps_native_scaffolding: complete
+  deep_link_native_scaffolding: complete
 approvals:
   product: ""
   engineering: ""
   qa: ""
   security_privacy: ""
   release_manager: ""
-decision: pending
+decision: closed_beta_prep_ready_pending_owner_config
