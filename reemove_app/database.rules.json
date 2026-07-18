@@ -16,7 +16,7 @@
         ".read": "auth != null && root.child('messaging_acl').child($conversationId).child(auth.uid).val() === true",
         "$uid": {
           ".write": "auth != null && auth.uid === $uid && root.child('messaging_acl').child($conversationId).child(auth.uid).val() === true",
-          ".validate": "!newData.exists() || (newData.hasOnly(['state', 'lastChanged']) && newData.child('state').isString() && (newData.child('state').val() === 'online' || newData.child('state').val() === 'away') && newData.child('lastChanged').isNumber())"
+          ".validate": "!newData.exists() || (newData.hasChildren(['state', 'lastChanged']) && newData.child('state').isString() && (newData.child('state').val() === 'online' || newData.child('state').val() === 'away') && newData.child('lastChanged').isNumber())"
         }
       }
     },
@@ -25,7 +25,7 @@
         ".read": "auth != null && root.child('messaging_acl').child($conversationId).child(auth.uid).val() === true",
         "$uid": {
           ".write": "auth != null && auth.uid === $uid && root.child('messaging_acl').child($conversationId).child(auth.uid).val() === true",
-          ".validate": "!newData.exists() || (newData.hasOnly(['isTyping', 'updatedAt']) && newData.child('isTyping').isBoolean() && newData.child('updatedAt').isNumber())"
+          ".validate": "!newData.exists() || (newData.hasChildren(['isTyping', 'updatedAt']) && newData.child('isTyping').isBoolean() && newData.child('updatedAt').isNumber())"
         }
       }
     }

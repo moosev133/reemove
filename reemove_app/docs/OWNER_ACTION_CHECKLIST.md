@@ -26,15 +26,17 @@ Use this list to finish launch. Tags:
 - [x] CI `.firebaserc` materialization from Environment **vars**
 - [x] Web/Android/iOS branding + privacy string updates
 - [x] Final audit docs set created
-- [x] Approved disk cleanup executed (space still insufficient for rebuilds)
+- [x] Approved disk cleanup executed
+- [x] Post-cleanup validation: Android debug APK, Flutter web, Chrome launch, Firebase rules (40/40)
+- [x] Rules config fixes: safe `isAdmin`, `canReadUserProfile`, RTDB `hasChildren`, firebase_tests npm registry
 
 ---
 
 ## Disk / local machine
 
-- [ ] Free **≥15 GB** on the Data volume before APK / web / emulator builds — **Requires owner login** (local machine)
+- [x] Free **≥15 GB** and completed heavy builds / rules tests (2026-07-19)
 - [ ] Optional: clear `~/.gradle/wrapper` dists (~0.5 GB) if unused — owner decision
-- [ ] Re-run validation suite after space is available — owner request to Cursor or local
+- [ ] Keep ≥15 GB free before future release/IPA builds — **Requires owner login** (local machine)
 
 ---
 

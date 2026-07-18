@@ -10,7 +10,9 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return signedIn() && request.auth.token.admin == true;
+      return signedIn()
+        && 'admin' in request.auth.token
+        && request.auth.token.admin == true;
     }
 
     function hasOnlyKeys(data, allowedKeys) {
@@ -89,6 +91,18 @@ service cloud.firestore {
       return signedIn()
         && exists(/databases/$(database)/documents/conversations/$(conversationId)/members/$(request.auth.uid))
         && get(/databases/$(database)/documents/conversations/$(conversationId)/members/$(request.auth.uid)).data.removedAt == null;
+    }
+
+    function canReadUserProfile(uid, data) {
+      return signedIn()
+        && data.moderationState == 'active'
+        && !isBlocked(request.auth.uid, uid)
+        && (
+          request.auth.uid == uid
+          || data.visibility == 'public'
+          || (data.visibility == 'followers'
+            && follows(request.auth.uid, uid))
+        );
     }
 
     function canReadPublishedContent(data) {
@@ -264,7 +278,7 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow get: if isOwner(uid) || isAdmin();
+      allow get: if canReadUserProfile(uid, resource.data) || isAdmin();
       allow list: if isAdmin() && request.query.limit <= 100;
       allow create, update, delete: if false;
 
