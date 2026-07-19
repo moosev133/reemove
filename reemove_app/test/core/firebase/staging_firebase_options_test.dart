@@ -11,5 +11,13 @@ void main() {
     expect(StagingFirebaseOptions.macos.iosBundleId, 'com.reemove.app');
     expect(StagingFirebaseOptions.android.appId, contains(':android:'));
     expect(StagingFirebaseOptions.web.appId, contains(':web:'));
+    expect(
+      StagingFirebaseOptions.android.databaseURL,
+      'https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app',
+    );
+    expect(
+      StagingFirebaseOptions.web.databaseURL,
+      'https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app',
+    );
   });
 }

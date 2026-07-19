@@ -45,6 +45,7 @@ class StagingFirebaseOptions {
     messagingSenderId: '377819651760',
     projectId: 'reemove-staging',
     authDomain: 'reemove-staging.firebaseapp.com',
+    databaseURL: 'https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'reemove-staging.firebasestorage.app',
     measurementId: 'G-X21Z3H07Y5',
   );
@@ -54,23 +55,24 @@ class StagingFirebaseOptions {
     appId: '1:377819651760:android:f4bab5f775271080ec2575',
     messagingSenderId: '377819651760',
     projectId: 'reemove-staging',
+    databaseURL: 'https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'reemove-staging.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyAFuxvQth4uOMQSbLqfGvc-LlcIT5CX6bw',
     appId: '1:377819651760:ios:15822a1e16aeef7dec2575',
     messagingSenderId: '377819651760',
     projectId: 'reemove-staging',
+    databaseURL: 'https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'reemove-staging.firebasestorage.app',
     iosBundleId: 'com.reemove.app',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
     apiKey: 'AIzaSyAFuxvQth4uOMQSbLqfGvc-LlcIT5CX6bw',
     appId: '1:377819651760:ios:15822a1e16aeef7dec2575',
     messagingSenderId: '377819651760',
     projectId: 'reemove-staging',
+    databaseURL: 'https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'reemove-staging.firebasestorage.app',
     iosBundleId: 'com.reemove.app',
   );

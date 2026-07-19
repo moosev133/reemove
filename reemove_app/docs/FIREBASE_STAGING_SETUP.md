@@ -6,297 +6,167 @@
 
 ---
 
-## STOP — owner actions required before CLI can continue
-
-Cloud product creation is blocked until you complete **one** of the following paths.
-
-### Path A (preferred for automation): authenticate `gcloud`
-
-Google Cloud SDK is installed locally (`gcloud` 576+), but **no credentialed account** is selected yet. Firebase CLI login does **not** share credentials with `gcloud`.
-
-In your own terminal:
-
-```bash
-export PATH="/opt/homebrew/bin:/opt/homebrew/share/google-cloud-sdk/bin:$PATH"
-gcloud auth login
-gcloud config set project reemove-staging
-```
-
-Use the same Google account that owns **reemove-staging**.  
-Reply in chat with **`gcloud logged in`** when finished. Cursor can then enable APIs and create Firestore / Storage / RTDB for staging **without deploying rules**.
-
-### Path B: Firebase / Google Cloud Console (manual)
-
-Complete the numbered console sections below (Firestore API → Auth → Storage → RTDB → Remote Config → Crashlytics).  
-Auth provider toggles **cannot** be set from Firebase CLI; they always need Path B (or Google Cloud Identity Platform APIs with special tooling).
-
-### Current automated status
+## Stage 5 status (after gcloud auth)
 
 | Item | Status |
 |------|--------|
-| FlutterFire Android / iOS / Web apps | Done (Stage 4) |
-| `lib/firebase_options_staging.dart` | Done — project `reemove-staging` |
-| `gcloud` CLI installed | Done |
-| `gcloud` authenticated | **Blocked — owner login** |
-| Firestore API | **Disabled** (403 until enabled) |
-| Firestore / Storage / RTDB instances | **Not created** |
-| Auth providers | **Console only** |
-| Crashlytics / Remote Config | **Console only** |
-| Production project | Untouched (0 apps) |
+| FlutterFire Android / iOS / Web apps | Done — `com.reemove.app` on staging |
+| `lib/firebase_options_staging.dart` | Done — includes RTDB `databaseURL` |
+| `gcloud` authenticated | Done (`meliodasin14@gmail.com`) |
+| Firestore API | **Enabled** |
+| Firestore `(default)` | **Created** — Native, location **`eur3`**, free tier |
+| Realtime Database | **Created** — `europe-west1`, URL below |
+| Remote Config | **Published** — 16 params from `remoteconfig.template.json` (REST, not `firebase deploy`) |
+| Crashlytics API | **Enabled** (`firebasecrashlytics.googleapis.com`); iOS/macOS symbol upload phases wired by FlutterFire |
+| Cloud Storage default bucket | **Blocked** — requires billing (Blaze); **not** enabled (owner rule: no billing) |
+| Authentication | **Blocked** — Auth config not initialized; Identity Platform `initializeAuth` requires billing; use Console **Get started** (Spark) |
+| Auth providers (Email / Google / Apple) | **Console only** (after Auth Get started) |
+| Production project | Untouched (**0 apps**) |
+
+### Staging resource IDs (created)
+
+| Resource | Value |
+|----------|-------|
+| Project | `reemove-staging` (`377819651760`) |
+| Firestore | `projects/reemove-staging/databases/(default)` @ `eur3` |
+| RTDB | `https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app` |
+| Storage bucket (expected once billing allowed) | `reemove-staging.firebasestorage.app` (referenced in FlutterFire options; **bucket not created yet**) |
+
+Copy the RTDB URL into local `dart_defines/staging.json` as `FIREBASE_DATABASE_URL` (see `dart_defines/staging.json.example`).
+
+---
+
+## STOP — remaining owner console actions
+
+Complete these in [Firebase Console](https://console.firebase.google.com/) → **ReeMove Staging** (`reemove-staging`).  
+Do **not** enable billing unless you explicitly decide to (Storage creation currently requires Blaze).
+
+### 1. Authentication — Get started + Email / Password
+
+**Why:** API Auth config is missing (`CONFIGURATION_NOT_FOUND`). Identity Platform programmatic init requires billing; Firebase Console **Get started** initializes classic Firebase Auth on Spark.
+
+**Path:** Build → **Authentication** → **Get started** → **Sign-in method** → **Email/Password** → Enable (password required). Leave Email link disabled unless product asks later.
+
+**Authorized domains:** keep `localhost`, `reemove-staging.firebaseapp.com`, and any staging web host.
+
+### 2. Authentication — Google
+
+**Path:** Sign-in method → **Google** → Enable (support email = owner).
+
+Then note the **Web client ID** from [Credentials](https://console.cloud.google.com/apis/credentials?project=reemove-staging) → put in local `dart_defines/staging.json` as `GOOGLE_SERVER_CLIENT_ID`.  
+Add Android debug SHA-1 / SHA-256 under Project settings → Android app.
+
+### 3. Authentication — Apple
+
+**Path:** Sign-in method → **Apple** → Enable.
+
+Requires Apple Developer Services ID, Team ID, Key ID, and private key (never commit). Bundle ID `com.reemove.app`. Complete Sign in with Apple capability in Apple Developer / Xcode.
+
+### 4. Cloud Storage — default bucket (**billing decision**)
+
+**Blocked without Blaze.** Creating `gs://reemove-staging.appspot.com` / Firebase default bucket failed with billing absent.
+
+When you **explicitly** allow billing for staging only:
+
+1. Link a billing account to `reemove-staging` (not production unless intended).
+2. Firebase Console → Storage → Get started (or default-bucket API).
+3. Prefer location aligned with EU (`eur3` / `europe-west1`).
+4. **Do not** deploy repo `storage.rules` in Stage 5.
+
+Until then, Storage SDK calls against staging will fail; FlutterFire already references `reemove-staging.firebasestorage.app`.
+
+### 5. Crashlytics — open product in Console
+
+API is enabled. Open Build → **Crashlytics** → enable for the Android/iOS apps if prompted. First crash/symbol upload finishes onboarding. APNs still deferred.
+
+### 6. Optional verify Remote Config
+
+Engage → **Remote Config** — confirm 16 parameters published (maintenance, force-update, feature flags, support/status URLs). Re-publish later if you change `remoteconfig.template.json` (prefer REST/console; avoid accidental full `firebase deploy`).
 
 ---
 
 ## Service dependency matrix
 
-| Service | Required | Implemented in app | Staging console status | Notes |
-|---------|----------|--------------------|------------------------|-------|
-| Authentication (Email, Google, Apple) | Required | Yes | **Manual** | Providers + OAuth / Apple + authorized domains |
-| Cloud Firestore | Required | Yes | **Manual** | API + create DB (rules deploy is a later stage) |
-| Cloud Storage | Required | Yes | **Manual** | Default bucket; rules deploy later |
-| Realtime Database | Required (presence/typing) | Yes | **Manual** | Create instance; set `FIREBASE_DATABASE_URL` |
-| Cloud Functions | Required | Yes (`europe-west1`) | **Manual later** | Do **not** deploy in Stage 5 |
-| Cloud Messaging (FCM) | Required | Yes | **Manual** | Android works with google-services; APNs later |
-| Remote Config | Required | Yes | **Manual** | Publish from `remoteconfig.template.json` in console or later deploy |
-| App Check | Optional now / required before enforcing callables | Yes (gated) | **Manual later** | Do **not** enforce in Stage 5 |
-| Analytics | Optional (`ENABLE_ANALYTICS`) | Yes (gated) | **Manual** | Link GA4 if desired |
-| Crashlytics | Required (mobile) | Yes | **Manual** | Enable in console |
-| Performance Monitoring | Recommended | Yes | **Manual** | Enable in console |
-| Hosting | Not used by app | No | Skip | Deep links hosted externally |
-| Maps | Non-Firebase | Nearby UI | Out of scope | Stage 5 forbids Maps setup |
-
-**Already done (CLI / prior stages):** FlutterFire Android / iOS / Web apps for `com.reemove.app` on `reemove-staging`; staging Dart options wired; `gcloud` SDK installed.
-
-**CLI this stage:** Waiting on owner `gcloud auth login` (or full console Path B). Firebase CLI alone cannot enable the Firestore API or Auth providers.
+| Service | Required | Implemented in app | Staging status | Notes |
+|---------|----------|--------------------|----------------|-------|
+| Authentication (Email, Google, Apple) | Required | Yes | **Owner console** | Get started + providers |
+| Cloud Firestore | Required | Yes | **Ready** | `eur3`; rules deploy later |
+| Cloud Storage | Required | Yes | **Blocked (billing)** | Bucket not created |
+| Realtime Database | Required | Yes | **Ready** | `europe-west1`; set dart-define |
+| Cloud Functions | Required | Yes (`europe-west1`) | Later | Do **not** deploy in Stage 5 |
+| Cloud Messaging (FCM) | Required | Yes | Apps registered | APNs deferred |
+| Remote Config | Required | Yes | **Published** | 16 params |
+| App Check | Later | Yes (gated) | Do **not** enforce | Stage 5 forbids enforcement |
+| Analytics | Optional | Yes (gated) | Optional | |
+| Crashlytics | Required (mobile) | Yes | API on + symbol scripts | Console open once |
+| Performance Monitoring | Recommended | Yes | Optional | |
+| Hosting | Not used by app | No | Skip | |
+| Maps | Non-Firebase | Nearby UI | Out of scope | |
 
 ---
 
-## Manual console actions (owner)
+## Manual console actions (detail)
 
-Use Google account that owns **`reemove-staging`**.  
-Console base: [Firebase Console](https://console.firebase.google.com/) → select project **ReeMove Staging** (`reemove-staging`).
+### Authentication — Email / Password
 
-### 1. Enable Cloud Firestore API + create database
+See STOP §1.
 
-**Why:** App data plane (profiles, feed, messaging metadata, marketplace, etc.). Currently the Firestore API returns 403 until enabled.
+### Authentication — Google
 
-**Path:**
+See STOP §2.
 
-1. Open [Google Cloud APIs — Firestore](https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=reemove-staging) → **Enable**.
-2. Firebase Console → **Build** → **Firestore Database** → **Create database**.
-3. Choose production mode **or** test mode temporarily; **location:** prefer a region compatible with Functions (`europe-west1` / multi-region `eur3` if offered — pick one and keep it forever).
-4. Finish create. **Do not** deploy repo rules yet (later stage).
+### Authentication — Apple
 
-**Settings:** Native mode (not Datastore). Remember the location ID for ops docs.
+See STOP §3.
 
----
+### Cloud Storage
 
-### 2. Authentication — Email / Password
+See STOP §4.
 
-**Why:** Primary sign-up / sign-in path in `firebase_auth_repository.dart`.
+### Realtime Database
 
-**Path:** Firebase Console → **Build** → **Authentication** → **Get started** (if first time) → **Sign-in method** → **Email/Password**.
+Already created:
 
-**Settings:**
+`https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app`
 
-- Enable **Email/Password**.
-- Leave Email link (passwordless) **disabled** unless product asks for it later.
-- **Settings** → **Authorized domains**: ensure `localhost`, your staging web domain (when known), and `reemove-staging.firebaseapp.com` are listed.
+Do **not** deploy `database.rules.json` in Stage 5. Start locked / default rules until a later stage.
 
----
+### Cloud Messaging
 
-### 3. Authentication — Google
+Android app `com.reemove.app` is registered. Do **not** upload APNs keys in Stage 5.
 
-**Why:** Google Sign-In on mobile/web; needs Web client ID in dart-defines (`GOOGLE_SERVER_CLIENT_ID`).
+### Remote Config
 
-**Path:** Authentication → **Sign-in method** → **Google** → Enable.
+Already published from `remoteconfig.template.json` (keys include `maintenance_mode`, `force_update`, feature flags, `support_url`, `status_url`).
 
-**Settings:**
+### Crashlytics
 
-- Support email: your owner email.
-- After enable, open [Google Cloud Credentials](https://console.cloud.google.com/apis/credentials?project=reemove-staging) and note the **Web client ID** (OAuth 2.0 Client IDs).
-- Put that value into local `dart_defines/staging.json` as `GOOGLE_SERVER_CLIENT_ID` (gitignored).
-- Android: add SHA-1 / SHA-256 of debug (and later upload) keystore under Project settings → Your apps → Android app.
+See STOP §5.
 
 ---
 
-### 4. Authentication — Apple
+## Local / FlutterFire
 
-**Why:** Sign in with Apple on iOS (and optionally other platforms).
-
-**Path:** Authentication → **Sign-in method** → **Apple** → Enable.
-
-**Settings:**
-
-- Requires Apple Developer Services ID, Team ID, Key ID, and private key (owner credentials — never commit).
-- Bundle ID must match `com.reemove.app`.
-- Complete Apple Developer “Sign in with Apple” capability for the App ID (Xcode / developer.apple.com).
-
----
-
-### 5. Cloud Storage — default bucket
-
-**Why:** Avatars, posts, stories, chat media, marketplace, challenges.
-
-**Path:** Firebase Console → **Build** → **Storage** → **Get started**.
-
-**Settings:**
-
-- Start in production mode rules (or temporary rules); **do not** deploy repo `storage.rules` in Stage 5.
-- Location: align with project / Firestore when possible.
-- Confirm bucket name (expected pattern: `reemove-staging.firebasestorage.app` or `*.appspot.com`).
-
----
-
-### 6. Realtime Database
-
-**Why:** Messaging presence and typing (`presence/`, `typing/` paths).
-
-**Path:** Firebase Console → **Build** → **Realtime Database** → **Create Database**.
-
-**Settings:**
-
-- Location: choose a supported region (document it).
-- Start in locked mode; **do not** deploy `database.rules.json` in Stage 5.
-- Copy the database URL (e.g. `https://reemove-staging-default-rtdb.<region>.firebasedatabase.app`) into local `dart_defines/staging.json` as `FIREBASE_DATABASE_URL`.
-
----
-
-### 7. Cloud Messaging
-
-**Why:** Push + device registration for notifications / messaging.
-
-**Path:** Firebase Console → **Engage** / **Messaging** (or Project settings → Cloud Messaging).
-
-**Settings (Stage 5 — Android-focused):**
-
-- Confirm Android app `com.reemove.app` is listed (already registered).
-- **Do not** upload APNs keys in Stage 5 (explicitly deferred).
-- Optional: create a test notification later after Auth works.
-
----
-
-### 8. Remote Config — publish template parameters
-
-**Why:** Maintenance mode, force-update, feature flags (`release_control_service.dart`).
-
-**Path:** Firebase Console → **Engage** → **Remote Config** → create/edit parameters.
-
-**Settings:** Manually mirror keys from repo file `remoteconfig.template.json`, including at least:
-
-- `maintenance_mode`, `maintenance_title`, `maintenance_message`
-- `force_update`, `minimum_supported_android_build`, `minimum_supported_ios_build`
-- `recommended_android_build`, `recommended_ios_build`
-- Feature flags: `ai_modules_enabled`, `nearby_enabled`, `marketplace_enabled`, `messaging_enabled`, `story_upload_enabled`, etc.
-
-**Publish** changes in the console. Do **not** run `firebase deploy --only remoteconfig` in Stage 5 unless a later stage explicitly approves deploy.
-
----
-
-### 9. Crashlytics
-
-**Why:** Mobile crash reporting when Firebase is ready.
-
-**Path:** Firebase Console → **Release & Monitor** → **Crashlytics** → Enable for Android / iOS apps.
-
-**Settings:** Follow onboarding prompts for the registered apps. dSYM / mapping uploads come with release builds later.
-
----
-
-### 10. Performance Monitoring (recommended)
-
-**Why:** Traces in observability wrappers.
-
-**Path:** **Release & Monitor** → **Performance** → Enable.
-
----
-
-### 11. Analytics (optional for staging)
-
-**Why:** Gated by `ENABLE_ANALYTICS` (staging example defaults to `false`).
-
-**Path:** **Analytics** → enable / link GA4 property if you want staging telemetry.
-
-**Settings:** Keep staging analytics off in dart-defines until privacy review is ready.
-
----
-
-### 12. App Check (prepare only — do not enforce)
-
-**Why:** Callables are coded with `enforceAppCheck: true` on the backend; enforcement before debug tokens will break staging clients.
-
-**Path:** **Build** → **App Check** → register providers (Play Integrity, DeviceCheck/App Attest, reCAPTCHA v3 for web).
-
-**Settings for Stage 5:**
-
-- Register apps in **monitoring** / debug mode only.
-- Add debug tokens for local Chrome / emulators as needed.
-- **Do not** turn on enforcement for Auth / Functions / Firestore / Storage yet.
-
----
-
-### 13. Cloud Functions — do not deploy yet
-
-**Why:** Backend is implemented under `functions/` but Stage 5 forbids deploy.
-
-**Later path (not now):** Blaze billing (owner), secrets (`OPENAI_API_KEY`, etc.), then `firebase deploy --only functions --project reemove-staging` with explicit approval.
-
----
-
-### 14. Google Cloud APIs (if Firestore / others 403)
-
-If CLI or Console shows “API has not been used / disabled”:
-
-1. Open [API Library for reemove-staging](https://console.cloud.google.com/apis/library?project=reemove-staging).
-2. Enable at minimum:
-   - Cloud Firestore API
-   - Identity Toolkit API
-   - Token Service API
-   - Cloud Storage for Firebase API
-   - FCM API
-   - Firebase Remote Config API
-   - Firebase Crashlytics API
-   - Cloud Functions API (before any future Functions deploy)
-
----
-
-## Local dart-defines (owner machine)
-
-Copy `dart_defines/staging.json.example` → `dart_defines/staging.json` (gitignored) and fill:
-
-| Key | Staging expectation |
-|-----|---------------------|
-| `APP_FLAVOR` | `staging` |
-| `GOOGLE_SERVER_CLIENT_ID` | Web OAuth client from staging Google Cloud |
-| `FIREBASE_DATABASE_URL` | RTDB URL after step 6 |
-| `FIREBASE_WEB_RECAPTCHA_V3_SITE_KEY` | Only when App Check web is prepared |
-| `ENABLE_APP_CHECK` | `false` until debug tokens + monitoring are ready |
-| `ENABLE_ANALYTICS` | `false` recommended for early staging |
-
----
-
-## Validation commands (after console steps)
+- Staging Dart options: `lib/firebase_options_staging.dart` → `StagingFirebaseOptions`
+- Native files (gitignored): `android/app/src/staging/`, `ios/config/staging/`, `macos/config/staging/` (and optional Runner copies)
+- `firebase.json` → `flutter.platforms` points at staging-only outputs and `lib/firebase_options_staging.dart`
+- Run example:
 
 ```bash
-cd reemove_app
-flutter analyze
-flutter test
 flutter run -d chrome \
   --dart-define=APP_FLAVOR=staging \
   --dart-define=ENABLE_APP_CHECK=false \
   --dart-define=ENABLE_ANALYTICS=false \
-  --dart-define=USE_FIREBASE_EMULATORS=false
+  --dart-define=USE_FIREBASE_EMULATORS=false \
+  --dart-define=FIREBASE_DATABASE_URL=https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app
 ```
-
-Confirm logs / runtime options use **`reemove-staging`** only (never `reemove-production`).
 
 ---
 
-## Explicitly out of scope for Stage 5
+## Explicitly out of scope (Stage 5)
 
-- Deploying Firestore / Storage / RTDB rules or indexes  
-- Deploying Cloud Functions or Hosting  
-- Enabling billing / Blaze  
-- Maps API keys  
-- App Check **enforcement**  
-- APNs upload  
-- Any change to `reemove-production`
+- Production (`reemove-production`) configuration
+- Any `firebase deploy` (rules, functions, hosting, indexes)
+- Enabling billing (unless owner separately approves for Storage)
+- Maps, App Check enforcement, APNs
+- Deploying Storage / RTDB / Firestore security rules from the repo

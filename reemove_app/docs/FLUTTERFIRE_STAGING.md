@@ -40,8 +40,8 @@ flutter run -d chrome \
 
 Or copy `dart_defines/staging.json.example` → `dart_defines/staging.json` and use `--dart-define-from-file=dart_defines/staging.json`.
 
-## What Stage 4 does / does not do
+## What Stage 4 / 5 FlutterFire covers
 
-**Done:** app registration, staging Dart options, bootstrap wiring, CLI aliases.
+**Done:** app registration, staging Dart options (incl. RTDB `databaseURL`), bootstrap wiring, CLI aliases, refreshed native staging configs (gitignored).
 
-**Not done:** Auth/Firestore/Storage/RTDB/App Check/Maps/Functions product setup, rules deploy, production FlutterFire.
+**Not done:** production FlutterFire; Auth providers / Storage bucket (see `FIREBASE_STAGING_SETUP.md`); rules deploy; Maps; App Check enforcement; APNs.

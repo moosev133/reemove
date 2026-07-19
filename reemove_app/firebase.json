@@ -2,7 +2,9 @@
   "functions": {
     "source": "functions",
     "runtime": "nodejs22",
-    "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"],
+    "predeploy": [
+      "npm --prefix \"$RESOURCE_DIR\" run build"
+    ],
     "ignore": [
       "node_modules",
       ".git",
@@ -45,5 +47,43 @@
       "port": 4000
     },
     "singleProjectMode": true
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "reemove-staging",
+          "appId": "1:377819651760:android:f4bab5f775271080ec2575",
+          "fileOutput": "android/app/src/staging/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "reemove-staging",
+          "appId": "1:377819651760:ios:15822a1e16aeef7dec2575",
+          "uploadDebugSymbols": true,
+          "fileOutput": "ios/config/staging/GoogleService-Info.plist"
+        }
+      },
+      "macos": {
+        "default": {
+          "projectId": "reemove-staging",
+          "appId": "1:377819651760:ios:15822a1e16aeef7dec2575",
+          "uploadDebugSymbols": true,
+          "fileOutput": "macos/config/staging/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options_staging.dart": {
+          "projectId": "reemove-staging",
+          "configurations": {
+            "android": "1:377819651760:android:f4bab5f775271080ec2575",
+            "ios": "1:377819651760:ios:15822a1e16aeef7dec2575",
+            "macos": "1:377819651760:ios:15822a1e16aeef7dec2575",
+            "web": "1:377819651760:web:ea3c16bdca6f0f85ec2575"
+          }
+        }
+      }
+    }
   }
 }
