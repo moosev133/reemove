@@ -101,6 +101,7 @@ class AppEnvironment {
   final String? storeUrl;
 
   bool get isDevelopment => flavor == AppFlavor.development;
+  bool get isStaging => flavor == AppFlavor.staging;
   bool get isProduction => flavor == AppFlavor.production;
 
   String get displayName => switch (flavor) {

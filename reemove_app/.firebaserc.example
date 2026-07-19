@@ -1,7 +1,7 @@
 {
   "projects": {
     "development": "REPLACE_DEV_PROJECT_ID",
-    "staging": "REPLACE_STAGING_PROJECT_ID",
-    "production": "REPLACE_PROD_PROJECT_ID"
+    "staging": "reemove-staging",
+    "production": "reemove-production"
   }
 }

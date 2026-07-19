@@ -50,7 +50,10 @@ Use this list to finish launch. Tags:
 - [ ] Create isolated Firebase **development / staging / production** projects — **Requires owner login**
 - [ ] Set GitHub Environment vars `FIREBASE_STAGING_PROJECT_ID`, `FIREBASE_PRODUCTION_PROJECT_ID` — **Requires credentials** + **Requires owner login**
 - [ ] Configure GitHub Environments `staging` / `production` / `android-release` / `ios-release` with distinct WIF SAs — **Requires credentials**
-- [ ] Run `flutterfire configure` → `google-services.json`, `GoogleService-Info.plist`, `lib/firebase_options.dart` (gitignored; required for **web**) — **Requires credentials**
+- [x] Run `flutterfire` / Firebase app registration for **staging** (`reemove-staging`) — see `docs/FLUTTERFIRE_STAGING.md`
+- [ ] Run FlutterFire for **production** (`reemove-production`) when approved — **Requires credentials**
+- [ ] Generate production `firebase_options` + native files (never commit natives) — **Requires credentials**
+
 - [ ] Publish Remote Config from `remoteconfig.template.json` — **Requires owner login**
 - [ ] `firebase functions:secrets:set OPENAI_API_KEY` per env — **Requires credentials**
 - [ ] Configure media-processor secrets if used — **Requires credentials**

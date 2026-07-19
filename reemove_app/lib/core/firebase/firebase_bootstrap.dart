@@ -9,6 +9,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../firebase_options_staging.dart';
 import '../config/app_environment.dart';
 import '../logging/app_logger.dart';
 
@@ -17,7 +18,9 @@ Future<void> reemoveFirebaseMessagingBackgroundHandler(
   RemoteMessage message,
 ) async {
   if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp();
+    await FirebaseBootstrap.initializeFirebaseApp(
+      AppEnvironment.fromCompileTime(),
+    );
   }
 }
 
@@ -29,23 +32,46 @@ class FirebaseBootstrapReport {
     required this.appCheckEnabled,
     required this.emulatorsEnabled,
     this.details,
+    this.projectId,
   });
 
   final FirebaseBootstrapStatus status;
   final bool appCheckEnabled;
   final bool emulatorsEnabled;
   final String? details;
+  final String? projectId;
 
   bool get isReady => status == FirebaseBootstrapStatus.ready;
 }
 
 abstract final class FirebaseBootstrap {
+  /// Resolves flavor-specific [FirebaseOptions].
+  ///
+  /// Staging uses [StagingFirebaseOptions]. Production / development keep the
+  /// prior bare [Firebase.initializeApp] path (native files or unavailable).
+  static FirebaseOptions? optionsFor(AppEnvironment environment) {
+    if (environment.isStaging) {
+      return StagingFirebaseOptions.currentPlatform;
+    }
+    return null;
+  }
+
+  static Future<FirebaseApp> initializeFirebaseApp(
+    AppEnvironment environment,
+  ) async {
+    final FirebaseOptions? options = optionsFor(environment);
+    if (options != null) {
+      return Firebase.initializeApp(options: options);
+    }
+    return Firebase.initializeApp();
+  }
+
   static Future<FirebaseBootstrapReport> initialize({
     required AppEnvironment environment,
     required AppLogger logger,
   }) async {
     try {
-      await Firebase.initializeApp();
+      final FirebaseApp app = await initializeFirebaseApp(environment);
       FirebaseMessaging.onBackgroundMessage(
         reemoveFirebaseMessagingBackgroundHandler,
       );
@@ -63,11 +89,15 @@ abstract final class FirebaseBootstrap {
         logger: logger,
       );
 
-      logger.info('Firebase initialized successfully.');
+      logger.info(
+        'Firebase initialized successfully '
+        '(flavor=${environment.flavor.name}, projectId=${app.options.projectId}).',
+      );
       return FirebaseBootstrapReport(
         status: FirebaseBootstrapStatus.ready,
         appCheckEnabled: appCheckEnabled,
         emulatorsEnabled: environment.useFirebaseEmulators,
+        projectId: app.options.projectId,
       );
     } on Object catch (error, stackTrace) {
       logger.warning(

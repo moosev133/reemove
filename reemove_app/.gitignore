@@ -51,8 +51,14 @@ app.*.map.json
 # Firebase generated configuration
 lib/firebase_options.dart
 android/app/google-services.json
+android/app/src/staging/google-services.json
+android/app/src/production/google-services.json
 ios/Runner/GoogleService-Info.plist
+ios/config/staging/GoogleService-Info.plist
+ios/config/production/GoogleService-Info.plist
 macos/Runner/GoogleService-Info.plist
+macos/config/staging/GoogleService-Info.plist
+macos/config/production/GoogleService-Info.plist
 .firebase/
 .firebaserc
 
