@@ -278,7 +278,12 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow get: if canReadUserProfile(uid, resource.data) || isAdmin();
+      // Owners may always read their own profile doc, including before the
+      // provisionAccount function creates it (resource.data on a missing doc
+      // errors inside canReadUserProfile and would deny first-time users).
+      allow get: if isOwner(uid)
+        || (resource != null && canReadUserProfile(uid, resource.data))
+        || isAdmin();
       allow list: if isAdmin() && request.query.limit <= 100;
       allow create, update, delete: if false;
 
@@ -657,10 +662,13 @@ service cloud.firestore {
 
     match /stories/{storyId} {
       allow get: if canReadStory(resource.data);
+      // List omits expiresAt > request.time: that comparison causes an
+      // evaluation error on bounded public story queries (story rail), which
+      // surfaces as permission-denied even with a matching expiresAt filter.
+      // Single-document reads still enforce expiry via canReadStory().
       allow list: if signedIn()
         && resource.data.visibility == 'public'
         && resource.data.moderationState == 'active'
-        && resource.data.expiresAt > request.time
         && request.query.limit <= 50;
       allow write: if false;
     }

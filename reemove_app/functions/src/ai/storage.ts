@@ -2,8 +2,6 @@ import { FieldValue, Timestamp, getFirestore } from 'firebase-admin/firestore';
 
 import type { AiModule } from './types';
 
-const db = getFirestore();
-
 export async function saveAiOutput(params: {
   uid: string;
   module: AiModule;
@@ -13,6 +11,7 @@ export async function saveAiOutput(params: {
   requestId: string;
   usage: Record<string, unknown>;
 }): Promise<{ outputId: string; createdAt: string }> {
+  const db = getFirestore();
   const ref = db.collection(`users/${params.uid}/ai_outputs`).doc();
   const now = new Date();
   await ref.set({
@@ -36,6 +35,7 @@ export async function saveCoachExchange(params: {
   assistantText: string;
   outputId: string;
 }): Promise<string> {
+  const db = getFirestore();
   const conversationRef = params.conversationId
     ? db.doc(`users/${params.uid}/ai_conversations/${params.conversationId}`)
     : db.collection(`users/${params.uid}/ai_conversations`).doc();
@@ -72,7 +72,7 @@ export async function writeAuditLog(params: {
   reasonCode?: string;
   model?: string;
 }): Promise<void> {
-  await db.collection('ai_audit_logs').add({
+  await getFirestore().collection('ai_audit_logs').add({
     ...params,
     createdAt: FieldValue.serverTimestamp(),
   });

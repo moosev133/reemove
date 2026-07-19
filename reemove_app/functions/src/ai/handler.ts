@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { HttpsError, type CallableRequest } from 'firebase-functions/v2/https';
-import { z, type ZodType } from 'zod';
+import type { z} from 'zod';
+import { type ZodType } from 'zod';
 
 import { AI_DAILY_LIMIT, OPENAI_API_KEY, OPENAI_MODEL } from './config';
 import { loadUserContext } from './context';

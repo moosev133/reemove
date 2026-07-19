@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import type OpenAI from 'openai';
 import { HttpsError } from 'firebase-functions/v2/https';
 
 import { buildPrompt } from './prompts';

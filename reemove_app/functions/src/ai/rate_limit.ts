@@ -1,8 +1,6 @@
 import { getFirestore, FieldValue, type Transaction } from 'firebase-admin/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
 
-const db = getFirestore();
-
 function utcDayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -12,6 +10,7 @@ export async function consumeDailyQuota(
   module: string,
   limit: number,
 ): Promise<void> {
+  const db = getFirestore();
   const ref = db.doc(`ai_usage/${uid}/days/${utcDayKey()}`);
   await db.runTransaction(async (transaction: Transaction) => {
     const snapshot = await transaction.get(ref);

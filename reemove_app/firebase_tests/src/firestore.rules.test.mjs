@@ -15,6 +15,7 @@ import {
   getDoc,
   getDocs,
   limit,
+  orderBy,
   query,
   serverTimestamp,
   setDoc,
@@ -197,6 +198,15 @@ describe("user profile rules", () => {
     await assertSucceeds(getDoc(doc(owner, "users/private-user")));
   });
 
+  it("lets a first-time user observe their own missing profile document", async () => {
+    await seedFirestore();
+    const newcomer = testEnv.authenticatedContext("brand-new-user").firestore();
+    const other = testEnv.authenticatedContext("other-user").firestore();
+
+    await assertSucceeds(getDoc(doc(newcomer, "users/brand-new-user")));
+    await assertFails(getDoc(doc(other, "users/brand-new-user")));
+  });
+
   it("keeps profile creation server-owned even after username reservation", async () => {
     await seedFirestore();
     const alice = testEnv.authenticatedContext("alice").firestore();
@@ -364,6 +374,34 @@ describe("social content rules", () => {
     await assertFails(updateDoc(doc(reader, "posts/public-post"), {likeCount: 999}));
     await assertFails(setDoc(doc(reader, "posts/public-post/comments/new"), {text: "direct"}));
     await assertFails(setDoc(doc(reader, "stories/new-story"), {authorId: "reader"}));
+  });
+
+  it("allows the authenticated story-rail list query and denies unauthenticated list", async () => {
+    await seedFirestore();
+    const reader = testEnv.authenticatedContext("reader").firestore();
+    const unauthenticated = testEnv.unauthenticatedContext().firestore();
+    const railQuery = query(
+      collection(reader, "stories"),
+      where("visibility", "==", "public"),
+      where("moderationState", "==", "active"),
+      where("expiresAt", ">", new Date("2026-07-19T00:00:00Z")),
+      orderBy("expiresAt"),
+      orderBy("createdAt", "desc"),
+      limit(50),
+    );
+    const deniedQuery = query(
+      collection(unauthenticated, "stories"),
+      where("visibility", "==", "public"),
+      where("moderationState", "==", "active"),
+      where("expiresAt", ">", new Date("2026-07-19T00:00:00Z")),
+      orderBy("expiresAt"),
+      orderBy("createdAt", "desc"),
+      limit(50),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(railQuery));
+    assert.equal(snapshot.size, 1);
+    await assertFails(getDocs(deniedQuery));
   });
 
   it("exposes only the signed-in viewer's reaction and view records", async () => {

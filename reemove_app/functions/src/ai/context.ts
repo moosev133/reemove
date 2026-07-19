@@ -3,8 +3,6 @@ import {HttpsError} from "firebase-functions/v2/https";
 
 import type {CandidateProfile, UserAiContext} from "./types";
 
-const db = getFirestore();
-
 function stringList(value: unknown, limit = 10): string[] {
   if (!Array.isArray(value)) {
     return [];
@@ -41,7 +39,9 @@ async function resolveAgeGroup(
   if (publicData.ageGroup === "under18" || publicData.ageGroup === "adult") {
     return publicData.ageGroup;
   }
-  const privateProfile = await db.doc(`users/${uid}/private/profile`).get();
+  const privateProfile = await getFirestore()
+    .doc(`users/${uid}/private/profile`)
+    .get();
   if (privateProfile.exists) {
     if (privateProfile.get("isMinor") === true) {
       return "under18";
@@ -61,6 +61,7 @@ async function resolveAgeGroup(
 }
 
 export async function loadUserContext(uid: string): Promise<UserAiContext> {
+  const db = getFirestore();
   const snapshot = await db.doc(`users/${uid}`).get();
   const data = (snapshot.data() ?? {}) as Record<string, unknown>;
   const favoriteSports = stringList(
@@ -93,6 +94,7 @@ export async function loadCoachHistory(
   if (!conversationId) {
     return [];
   }
+  const db = getFirestore();
   const conversation = await db
     .doc(`users/${uid}/ai_conversations/${conversationId}`)
     .get();
@@ -119,6 +121,7 @@ export async function loadCandidateProfiles(
   candidateIds: string[],
   sport: string,
 ): Promise<CandidateProfile[]> {
+  const db = getFirestore();
   const requester = await loadUserContext(requesterUid);
   const uniqueIds = [...new Set(candidateIds)]
     .filter((id) => id !== requesterUid)
@@ -183,7 +186,7 @@ export async function loadCandidateProfiles(
       approximateDistanceKm,
       goals: stringList(data.goals, 8),
     }];
-  }).filter((candidate) => {
+  }).filter(() => {
     // Age-band filtering uses requester only when known; candidate private age
     // is not loaded into the model to avoid DOB leakage.
     if (requester.ageGroup === "unknown") {
@@ -196,6 +199,7 @@ export async function loadCandidateProfiles(
 export async function loadTrainerMetrics(
   uid: string,
 ): Promise<Record<string, unknown>> {
+  const db = getFirestore();
   const user = await loadUserContext(uid);
   if (user.role !== "trainer" && user.role !== "admin") {
     throw new HttpsError("permission-denied", "Trainer access is required.");
