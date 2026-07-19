@@ -19,5 +19,13 @@ void main() {
       StagingFirebaseOptions.web.databaseURL,
       'https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app',
     );
+    expect(
+      StagingFirebaseOptions.android.storageBucket,
+      'reemove-staging.firebasestorage.app',
+    );
+    expect(
+      StagingFirebaseOptions.web.storageBucket,
+      'reemove-staging.firebasestorage.app',
+    );
   });
 }

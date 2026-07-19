@@ -1,20 +1,22 @@
 # Firebase staging services matrix
 
-Project: `reemove-staging` only. See `docs/FIREBASE_STAGING_SETUP.md` for console steps.
+Project: `reemove-staging` only. See `docs/FIREBASE_STAGING_SETUP.md`.
 
-| Service | Required | Code | Stage 5 auto | Manual / blocked |
-|---------|----------|------|--------------|------------------|
-| Auth Email/Google/Apple | Yes | Yes | No — Auth config missing without Console Get started | Yes — Get started + providers |
-| Firestore | Yes | Yes | **Done** — API on, DB `(default)` @ `eur3` | Rules deploy later |
-| Storage | Yes | Yes | **Blocked** — billing required | Yes after Blaze decision |
-| RTDB | Yes | Yes | **Done** — `europe-west1` default instance | dart-define URL; rules later |
-| Functions | Yes | Yes | No — deploy forbidden | Later |
+| Service | Required | Code | Stage 5 | Notes |
+|---------|----------|------|---------|-------|
+| Auth Email | Yes | Yes | **Done** | Enabled |
+| Auth Google | Yes | Yes | **Done** | OAuth + debug SHA + dart-define |
+| Auth Apple | Yes | Yes | **Provider on** | Apple Developer / code-flow later |
+| Firestore | Yes | Yes | **Done** | `(default)` @ `eur3` |
+| Storage | Yes | Yes | **Done** | `reemove-staging.firebasestorage.app` @ `EUROPE-WEST1` |
+| RTDB | Yes | Yes | **Done** | `europe-west1` |
+| Functions | Yes | Yes | Later | Deploy forbidden in Stage 5 |
 | FCM | Yes | Yes | Apps exist | APNs deferred |
-| Remote Config | Yes | Yes | **Done** — 16 params published via REST | Console verify optional |
-| App Check | Later | Yes | No — enforce forbidden | Register only / monitor |
-| Analytics | Optional | Yes | No | Optional |
-| Crashlytics | Yes (mobile) | Yes | API enabled + FlutterFire symbol scripts | Open Console once |
-| Performance | Recommended | Yes | No | Optional |
-| Hosting | No | No | Skip | Skip |
+| Remote Config | Yes | Yes | **Done** | 16 params via REST |
+| App Check | Later | Yes | Skip enforce | |
+| Analytics | Optional | Yes | Optional | |
+| Crashlytics | Yes (mobile) | Yes | API + symbol scripts | |
+| Performance | Recommended | Yes | Optional | |
+| Hosting | No | No | Skip | |
 
-FlutterFire: Android/iOS/Web apps + `lib/firebase_options_staging.dart` (includes RTDB `databaseURL`). Production: **0 apps**.
+FlutterFire: Android/iOS/Web + `lib/firebase_options_staging.dart`. Production: **0 apps**.
