@@ -65,6 +65,8 @@ class StagingFirebaseOptions {
     projectId: 'reemove-staging',
     databaseURL: 'https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'reemove-staging.firebasestorage.app',
+    androidClientId: '377819651760-dt0alsn446ch8ifa2oqa8jtsmhhlms1s.apps.googleusercontent.com',
+    iosClientId: '377819651760-sv5p1vgk4313ier40n5m1773uliflf3s.apps.googleusercontent.com',
     iosBundleId: 'com.reemove.app',
   );
   static const FirebaseOptions macos = FirebaseOptions(
@@ -74,6 +76,8 @@ class StagingFirebaseOptions {
     projectId: 'reemove-staging',
     databaseURL: 'https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'reemove-staging.firebasestorage.app',
+    androidClientId: '377819651760-dt0alsn446ch8ifa2oqa8jtsmhhlms1s.apps.googleusercontent.com',
+    iosClientId: '377819651760-sv5p1vgk4313ier40n5m1773uliflf3s.apps.googleusercontent.com',
     iosBundleId: 'com.reemove.app',
   );
 }

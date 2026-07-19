@@ -4,7 +4,7 @@
   "ENABLE_APP_CHECK": true,
   "ENABLE_ANALYTICS": false,
   "USE_FIREBASE_EMULATORS": false,
-  "GOOGLE_SERVER_CLIENT_ID": "REPLACE_WEB_OR_SERVER_OAUTH_CLIENT_ID",
+  "GOOGLE_SERVER_CLIENT_ID": "377819651760-hk7v3j1stqame8jqnmkdak6er2dti6r9.apps.googleusercontent.com",
   "FIREBASE_WEB_RECAPTCHA_V3_SITE_KEY": "REPLACE_RECAPTCHA_V3_SITE_KEY",
   "FIREBASE_DATABASE_URL": "https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app",
   "SUPPORT_URL": "https://REPLACE.example/support",

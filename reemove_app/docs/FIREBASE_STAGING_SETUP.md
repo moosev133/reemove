@@ -19,8 +19,9 @@
 | Remote Config | **Published** — 16 params from `remoteconfig.template.json` (REST, not `firebase deploy`) |
 | Crashlytics API | **Enabled** (`firebasecrashlytics.googleapis.com`); iOS/macOS symbol upload phases wired by FlutterFire |
 | Cloud Storage default bucket | **Blocked** — requires billing (Blaze); **not** enabled (owner rule: no billing) |
-| Authentication | **Blocked** — Auth config not initialized; Identity Platform `initializeAuth` requires billing; use Console **Get started** (Spark) |
-| Auth providers (Email / Google / Apple) | **Console only** (after Auth Get started) |
+| Authentication | **Initialized** by owner in Console (Get started) |
+| Auth — Google | **Enabled** — OAuth clients in configs; debug SHA-1/256 registered via CLI; `GOOGLE_SERVER_CLIENT_ID` in dart-defines |
+| Auth — Email / Apple | Email: owner Console toggle; Apple: **Console only** (Apple Developer credentials) |
 | Production project | Untouched (**0 apps**) |
 
 ### Staging resource IDs (created)
@@ -41,20 +42,26 @@ Copy the RTDB URL into local `dart_defines/staging.json` as `FIREBASE_DATABASE_U
 Complete these in [Firebase Console](https://console.firebase.google.com/) → **ReeMove Staging** (`reemove-staging`).  
 Do **not** enable billing unless you explicitly decide to (Storage creation currently requires Blaze).
 
-### 1. Authentication — Get started + Email / Password
+### 1. Authentication — Email / Password — **DONE**
 
-**Why:** API Auth config is missing (`CONFIGURATION_NOT_FOUND`). Identity Platform programmatic init requires billing; Firebase Console **Get started** initializes classic Firebase Auth on Spark.
+Verified via Admin API: email sign-in enabled (password required), authorized domains
+`localhost`, `reemove-staging.firebaseapp.com`, `reemove-staging.web.app`.
 
-**Path:** Build → **Authentication** → **Get started** → **Sign-in method** → **Email/Password** → Enable (password required). Leave Email link disabled unless product asks later.
+### 2. Authentication — Google — **DONE**
 
-**Authorized domains:** keep `localhost`, `reemove-staging.firebaseapp.com`, and any staging web host.
+Enabled by owner in Console. Completed automatically afterwards:
 
-### 2. Authentication — Google
+- Debug keystore **SHA-1 + SHA-256** registered on the staging Android app via Firebase CLI.
+- FlutterFire config regenerated; native files now carry the OAuth clients
+  (Android client, iOS client incl. `REVERSED_CLIENT_ID`, Web client).
+- Web client ID `377819651760-hk7v3j1stqame8jqnmkdak6er2dti6r9.apps.googleusercontent.com`
+  wired as `GOOGLE_SERVER_CLIENT_ID` in `dart_defines/staging.json` (+ example).
 
-**Path:** Sign-in method → **Google** → Enable (support email = owner).
-
-Then note the **Web client ID** from [Credentials](https://console.cloud.google.com/apis/credentials?project=reemove-staging) → put in local `dart_defines/staging.json` as `GOOGLE_SERVER_CLIENT_ID`.  
-Add Android debug SHA-1 / SHA-256 under Project settings → Android app.
+**Pending (release keys, later stage):** register upload/release keystore SHA certs before shipping.  
+**Pending (iOS, later stage):** add the `REVERSED_CLIENT_ID` URL scheme
+(`com.googleusercontent.apps.377819651760-sv5p1vgk4313ier40n5m1773uliflf3s`) to the iOS
+Runner `Info.plist` `CFBundleURLTypes` when iOS Google Sign-In is exercised — deferred to
+keep committed `Info.plist` flavor-neutral until production OAuth exists.
 
 ### 3. Authentication — Apple
 
