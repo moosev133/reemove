@@ -51,8 +51,10 @@ Use this list to finish launch. Tags:
 - [ ] Set GitHub Environment vars `FIREBASE_STAGING_PROJECT_ID`, `FIREBASE_PRODUCTION_PROJECT_ID` — **Requires credentials** + **Requires owner login**
 - [ ] Configure GitHub Environments `staging` / `production` / `android-release` / `ios-release` with distinct WIF SAs — **Requires credentials**
 - [x] Run `flutterfire` / Firebase app registration for **staging** (`reemove-staging`) — see `docs/FLUTTERFIRE_STAGING.md`
+- [x] Staging services dependency matrix + console runbook — see `docs/FIREBASE_STAGING_SETUP.md`
+- [ ] Complete **manual** Firebase Console setup for staging Auth / Firestore / Storage / RTDB / RC / Crashlytics (no rules/Functions deploy yet) — **Requires owner login**
+- [ ] Fill local `dart_defines/staging.json` (OAuth client, RTDB URL) — **Requires credentials**
 - [ ] Run FlutterFire for **production** (`reemove-production`) when approved — **Requires credentials**
-- [ ] Generate production `firebase_options` + native files (never commit natives) — **Requires credentials**
 
 - [ ] Publish Remote Config from `remoteconfig.template.json` — **Requires owner login**
 - [ ] `firebase functions:secrets:set OPENAI_API_KEY` per env — **Requires credentials**
