@@ -55,6 +55,11 @@
           "projectId": "reemove-staging",
           "appId": "1:377819651760:android:f4bab5f775271080ec2575",
           "fileOutput": "android/app/src/staging/google-services.json"
+        },
+        "production": {
+          "projectId": "reemove-production",
+          "appId": "1:1063937415105:android:4070ea54830f2943024140",
+          "fileOutput": "android/app/src/production/google-services.json"
         }
       },
       "ios": {
@@ -63,6 +68,12 @@
           "appId": "1:377819651760:ios:15822a1e16aeef7dec2575",
           "uploadDebugSymbols": true,
           "fileOutput": "ios/config/staging/GoogleService-Info.plist"
+        },
+        "production": {
+          "projectId": "reemove-production",
+          "appId": "1:1063937415105:ios:89d7a13be01a74dd024140",
+          "uploadDebugSymbols": true,
+          "fileOutput": "ios/config/production/GoogleService-Info.plist"
         }
       },
       "macos": {
@@ -71,6 +82,12 @@
           "appId": "1:377819651760:ios:15822a1e16aeef7dec2575",
           "uploadDebugSymbols": true,
           "fileOutput": "macos/config/staging/GoogleService-Info.plist"
+        },
+        "production": {
+          "projectId": "reemove-production",
+          "appId": "1:1063937415105:ios:89d7a13be01a74dd024140",
+          "uploadDebugSymbols": true,
+          "fileOutput": "macos/config/production/GoogleService-Info.plist"
         }
       },
       "dart": {
@@ -81,6 +98,15 @@
             "ios": "1:377819651760:ios:15822a1e16aeef7dec2575",
             "macos": "1:377819651760:ios:15822a1e16aeef7dec2575",
             "web": "1:377819651760:web:ea3c16bdca6f0f85ec2575"
+          }
+        },
+        "lib/firebase_options_production.dart": {
+          "projectId": "reemove-production",
+          "configurations": {
+            "android": "1:1063937415105:android:4070ea54830f2943024140",
+            "ios": "1:1063937415105:ios:89d7a13be01a74dd024140",
+            "macos": "1:1063937415105:ios:89d7a13be01a74dd024140",
+            "web": "1:1063937415105:web:b524c00175433b7a024140"
           }
         }
       }

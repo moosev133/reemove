@@ -9,6 +9,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../firebase_options_production.dart';
 import '../../firebase_options_staging.dart';
 import '../config/app_environment.dart';
 import '../logging/app_logger.dart';
@@ -47,11 +48,15 @@ class FirebaseBootstrapReport {
 abstract final class FirebaseBootstrap {
   /// Resolves flavor-specific [FirebaseOptions].
   ///
-  /// Staging uses [StagingFirebaseOptions]. Production / development keep the
-  /// prior bare [Firebase.initializeApp] path (native files or unavailable).
+  /// Staging uses [StagingFirebaseOptions]. Production uses
+  /// [ProductionFirebaseOptions]. Development keeps the prior bare
+  /// [Firebase.initializeApp] path (native files, emulators, or unavailable).
   static FirebaseOptions? optionsFor(AppEnvironment environment) {
     if (environment.isStaging) {
       return StagingFirebaseOptions.currentPlatform;
+    }
+    if (environment.isProduction) {
+      return ProductionFirebaseOptions.currentPlatform;
     }
     return null;
   }

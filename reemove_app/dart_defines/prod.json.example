@@ -6,7 +6,7 @@
   "USE_FIREBASE_EMULATORS": false,
   "GOOGLE_SERVER_CLIENT_ID": "REPLACE_WEB_OR_SERVER_OAUTH_CLIENT_ID",
   "FIREBASE_WEB_RECAPTCHA_V3_SITE_KEY": "REPLACE_RECAPTCHA_V3_SITE_KEY",
-  "FIREBASE_DATABASE_URL": "https://REPLACE-PROJECT-ID.firebaseio.com",
+  "FIREBASE_DATABASE_URL": "https://reemove-production-default-rtdb.europe-west1.firebasedatabase.app",
   "SUPPORT_URL": "https://REPLACE.example/support",
   "STATUS_URL": "https://REPLACE.example/status",
   "STORE_URL": "https://REPLACE.example/download"

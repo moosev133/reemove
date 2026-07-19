@@ -44,4 +44,6 @@ Or copy `dart_defines/staging.json.example` → `dart_defines/staging.json` and 
 
 **Done:** app registration, staging Dart options (incl. RTDB `databaseURL`), bootstrap wiring, CLI aliases, refreshed native staging configs (gitignored).
 
-**Not done:** production FlutterFire; Auth providers / Storage bucket (see `FIREBASE_STAGING_SETUP.md`); rules deploy; Maps; App Check enforcement; APNs.
+**Production:** see `docs/FLUTTERFIRE_PRODUCTION.md` (Stage 6). Staging files must not be overwritten by production configure.
+
+**Not done in staging stages:** Auth providers / Storage were completed in Stage 5; rules deploy, Maps, App Check enforcement, APNs remain later.

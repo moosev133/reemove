@@ -52,11 +52,13 @@ Use this list to finish launch. Tags:
 - [ ] Configure GitHub Environments `staging` / `production` / `android-release` / `ios-release` with distinct WIF SAs — **Requires credentials**
 - [x] Run `flutterfire` / Firebase app registration for **staging** (`reemove-staging`) — see `docs/FLUTTERFIRE_STAGING.md`
 - [x] Staging services dependency matrix + console runbook — see `docs/FIREBASE_STAGING_SETUP.md`
-- [ ] Complete **manual** Firebase Console setup for staging Auth / Firestore / Storage / RTDB / RC / Crashlytics (no rules/Functions deploy yet) — **Requires owner login**
-- [ ] Fill local `dart_defines/staging.json` (OAuth client, RTDB URL) — **Requires credentials**
-- [ ] Run FlutterFire for **production** (`reemove-production`) when approved — **Requires credentials**
+- [x] Staging Auth / Firestore / Storage / RTDB / RC / Crashlytics product setup (Stage 5) — see `docs/FIREBASE_STAGING_SETUP.md`
+- [ ] Fill local `dart_defines/staging.json` if missing on a new machine — **Requires credentials**
+- [x] Run FlutterFire / app registration for **production** (`reemove-production`) — see `docs/FLUTTERFIRE_PRODUCTION.md`
+- [x] Production Firestore + RTDB + Remote Config (Stage 6) — see `docs/FIREBASE_PRODUCTION_SETUP.md`
+- [ ] Production Auth Get started + Email/Google/Apple + Storage bucket (billing) — **Requires owner login** / billing
 
-- [ ] Publish Remote Config from `remoteconfig.template.json` — **Requires owner login**
+- [x] Publish Remote Config template to staging + production (REST; not full deploy)
 - [ ] `firebase functions:secrets:set OPENAI_API_KEY` per env — **Requires credentials**
 - [ ] Configure media-processor secrets if used — **Requires credentials**
 - [ ] App Check providers: monitor → enforce (see `APP_CHECK_ROLLOUT.md`) — **Requires owner login**
