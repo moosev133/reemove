@@ -6,6 +6,46 @@
 
 ---
 
+## STOP — owner actions required before CLI can continue
+
+Cloud product creation is blocked until you complete **one** of the following paths.
+
+### Path A (preferred for automation): authenticate `gcloud`
+
+Google Cloud SDK is installed locally (`gcloud` 576+), but **no credentialed account** is selected yet. Firebase CLI login does **not** share credentials with `gcloud`.
+
+In your own terminal:
+
+```bash
+export PATH="/opt/homebrew/bin:/opt/homebrew/share/google-cloud-sdk/bin:$PATH"
+gcloud auth login
+gcloud config set project reemove-staging
+```
+
+Use the same Google account that owns **reemove-staging**.  
+Reply in chat with **`gcloud logged in`** when finished. Cursor can then enable APIs and create Firestore / Storage / RTDB for staging **without deploying rules**.
+
+### Path B: Firebase / Google Cloud Console (manual)
+
+Complete the numbered console sections below (Firestore API → Auth → Storage → RTDB → Remote Config → Crashlytics).  
+Auth provider toggles **cannot** be set from Firebase CLI; they always need Path B (or Google Cloud Identity Platform APIs with special tooling).
+
+### Current automated status
+
+| Item | Status |
+|------|--------|
+| FlutterFire Android / iOS / Web apps | Done (Stage 4) |
+| `lib/firebase_options_staging.dart` | Done — project `reemove-staging` |
+| `gcloud` CLI installed | Done |
+| `gcloud` authenticated | **Blocked — owner login** |
+| Firestore API | **Disabled** (403 until enabled) |
+| Firestore / Storage / RTDB instances | **Not created** |
+| Auth providers | **Console only** |
+| Crashlytics / Remote Config | **Console only** |
+| Production project | Untouched (0 apps) |
+
+---
+
 ## Service dependency matrix
 
 | Service | Required | Implemented in app | Staging console status | Notes |
@@ -24,9 +64,9 @@
 | Hosting | Not used by app | No | Skip | Deep links hosted externally |
 | Maps | Non-Firebase | Nearby UI | Out of scope | Stage 5 forbids Maps setup |
 
-**Already done (CLI / prior stages):** FlutterFire Android / iOS / Web apps for `com.reemove.app` on `reemove-staging`; staging Dart options wired.
+**Already done (CLI / prior stages):** FlutterFire Android / iOS / Web apps for `com.reemove.app` on `reemove-staging`; staging Dart options wired; `gcloud` SDK installed.
 
-**CLI this stage:** No additional cloud mutations (gcloud not installed; Firebase CLI cannot enable Auth providers or create Firestore without the API). Setup is **console-driven** per the checklist below.
+**CLI this stage:** Waiting on owner `gcloud auth login` (or full console Path B). Firebase CLI alone cannot enable the Firestore API or Auth providers.
 
 ---
 
