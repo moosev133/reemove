@@ -28,7 +28,7 @@ https://links.reemove.app/.well-known/assetlinks.json
 ```
 
 3. Include every signing certificate used by production and approved testing channels.
-4. Keep the Android application ID aligned with the hosted `package_name`.
+4. Keep the hosted `package_name` as **`com.reemove.app`** (matches the production application ID).
 
 Test after installation:
 

@@ -2,23 +2,24 @@
 
 ## Current state
 
-- Bundle ID still `com.example.reemoveApp`
+- Permanent bundle ID: **`com.reemove.app`**
 - Privacy usage strings updated for camera / photos / location
 - Display name set to **ReeMove**
+- Associated Domains scaffolding for `applinks:links.reemove.app`
 - `ios/ExportOptions.plist.template` present; filled plist stays local / CI secret
 - Capabilities checklist: `docs/IOS_PRODUCTION_CAPABILITIES_CHECKLIST.md`
 - No certificates invented in this audit
 
 ## Owner prerequisites (Apple Developer — paid)
 
-1. Final bundle identifier in Xcode / `PRODUCT_BUNDLE_IDENTIFIER`.
+1. Register App ID `com.reemove.app` in the Apple Developer portal (already set in Xcode project).
 2. Capabilities: Push Notifications, Background Modes → Remote notifications, Sign in with Apple, Associated Domains, App Attest (as required).
 3. Distribution certificate + App Store provisioning profile.
 4. `ExportOptions.plist` from template (team ID, method `app-store-connect`).
-5. `GoogleService-Info.plist` via FlutterFire (never commit).
+5. `GoogleService-Info.plist` via FlutterFire (never commit) for `com.reemove.app`.
 6. APNs auth key uploaded to Firebase Cloud Messaging.
 7. Local `dart_defines/prod.json` with production defines.
-8. Maps iOS key applied (script / xcconfig).
+8. Maps iOS key applied (script / xcconfig), restricted to `com.reemove.app`.
 
 ## Local IPA (owner Mac)
 

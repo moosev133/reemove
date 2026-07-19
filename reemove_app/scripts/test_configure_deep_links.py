@@ -46,10 +46,10 @@ def main() -> None:
         project.write_text(
             "\n".join(
                 [
-                    "PRODUCT_BUNDLE_IDENTIFIER = com.reemove.reemove;",
-                    "PRODUCT_BUNDLE_IDENTIFIER = com.reemove.reemove;",
-                    "PRODUCT_BUNDLE_IDENTIFIER = com.reemove.reemove;",
-                    "PRODUCT_BUNDLE_IDENTIFIER = com.reemove.reemove.RunnerTests;",
+                    "PRODUCT_BUNDLE_IDENTIFIER = com.reemove.app;",
+                    "PRODUCT_BUNDLE_IDENTIFIER = com.reemove.app;",
+                    "PRODUCT_BUNDLE_IDENTIFIER = com.reemove.app;",
+                    "PRODUCT_BUNDLE_IDENTIFIER = com.reemove.app.RunnerTests;",
                 ],
             ),
             encoding="utf-8",

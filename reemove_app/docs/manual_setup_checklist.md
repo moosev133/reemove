@@ -55,7 +55,8 @@ Pending configuration that must be completed outside Git before Firebase-backed 
 - [ ] Set `PUBLIC_STATUS_BASE_URL` repository variable when a public `/health` + `/version` status surface exists
 
 ### Android
-- [ ] Replace `com.example.reemove_app` applicationId/namespace with the final Play Store ID
+- [x] Permanent Android/iOS/macOS application identity is `com.reemove.app`
+- [ ] Register `com.reemove.app` in Play Console / Apple Developer / Firebase apps
 - [ ] Create upload keystore; keep `android/key.properties` local only (see `android/key.properties.example`)
 - [ ] Store CI secrets: `ANDROID_UPLOAD_KEYSTORE_B64`, `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, `PROD_DART_DEFINES_JSON`
 - [ ] Enroll Play App Signing and complete store listing using `config/store_metadata/` + `config/privacy/play_data_safety.yaml`

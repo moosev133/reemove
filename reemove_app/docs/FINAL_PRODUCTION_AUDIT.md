@@ -83,10 +83,10 @@ Crash/perf wrappers with web fallback; console enablement + alerts owner.
 Staging vs production workflows separate. **Fixed:** CI materializes `.firebaserc` from Environment **vars** (no IDs in Git).
 
 ### 16. Android release readiness — Not ready (debug build OK)
-`com.example.reemove_app`; optional signing correct. **Fixed:** AGP transition flags + lower Gradle heap; INTERNET + label. **Debug APK build passed.**
+Permanent ID **`com.reemove.app`**. Optional signing correct. **Fixed:** AGP transition flags + lower Gradle heap; INTERNET + label. **Debug APK build passed.**
 
 ### 17. iOS release readiness — Not ready
-`com.example.reemoveApp`; capabilities checklist only. **Fixed:** display name + broader privacy usage strings. No iOS device IPA in this environment.
+Permanent bundle ID **`com.reemove.app`**. Capabilities checklist only. **Fixed:** display name + broader privacy usage strings. No iOS device IPA in this environment.
 
 ### 18. Web release readiness — Pass (local)
 **Fixed:** ReeMove branding in `index.html` / `manifest.json`. **Web release build + Chrome launch passed.** Firebase web options + App Check still owner.
@@ -115,7 +115,7 @@ IDs, privacy answers, listings, signing, beta smoke — owner.
 
 | Blocker | Owner needed |
 |---------|--------------|
-| Real Android/iOS application IDs | Yes |
+| Register `com.reemove.app` in Play / Apple / Firebase consoles | Yes |
 | Firebase projects + FlutterFire files | Yes |
 | Maps keys, FCM/APNs, App Check, OpenAI secret | Yes |
 | Upload keystore / ExportOptions / Apple certs | Yes + paid accounts |

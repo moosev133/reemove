@@ -5,15 +5,15 @@
 - AGP **8.11.1**, Kotlin **2.2.20**, Gradle **8.14**
 - Flutter 3.44 transition flags: `android.newDsl=false`, `android.builtInKotlin=false`
 - Optional upload signing when `android/key.properties` exists
-- `applicationId` still `com.example.reemove_app` (must change)
-- Debug APK rebuild **blocked** until ≥15 GB free disk
+- Permanent `applicationId` / namespace: **`com.reemove.app`**
+- Debug APK validation previously completed after disk recovery
 
 ## Owner prerequisites
 
-1. Final Play application ID and namespace (update package path / MainActivity).
+1. Confirm Play Console package `com.reemove.app` is created/owned.
 2. Upload keystore + `key.properties` (never commit) — see `android/key.properties.example`.
-3. Firebase Android app + `google-services.json` (local only).
-4. Maps API key (restricted) applied via `scripts/configure_google_maps.py`.
+3. Firebase Android app + `google-services.json` (local only) registered for `com.reemove.app`.
+4. Maps API key (restricted to `com.reemove.app`) via `scripts/configure_google_maps.py`.
 5. Local `dart_defines/prod.json` from `prod.json.example`.
 6. Play Console app + App Signing enrollment (**paid developer account**).
 
@@ -40,6 +40,6 @@ Secrets: `ANDROID_UPLOAD_KEYSTORE_B64`, `ANDROID_STORE_PASSWORD`, `ANDROID_KEY_A
 
 ## Cursor scope
 
-- **Done:** AGP opt-out flags, heap cap, optional signing DSL, INTERNET + brand label, release scripts/workflows.
-- **Not done / blocked:** debug APK retry (disk), inventing IDs or keystores.
+- **Done:** AGP opt-out flags, heap cap, optional signing DSL, INTERNET + brand label, permanent `com.reemove.app` identity, release scripts/workflows.
+- **Not done:** inventing keystores or Play upload without approval.
 - **Prepared:** AAB pipeline and docs; no upload without approval.

@@ -148,7 +148,7 @@ def configure_ios(host: str) -> None:
         url_types.append(
             {
                 "CFBundleTypeRole": "Editor",
-                "CFBundleURLName": "app.reemove.links",
+                "CFBundleURLName": "com.reemove.app",
                 "CFBundleURLSchemes": ["reemove"],
             },
         )

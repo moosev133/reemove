@@ -33,6 +33,7 @@ Use this list to finish launch. Tags:
 - [x] Conditional Google Services Gradle plugin (applies only when `google-services.json` exists)
 - [x] Release configure scripts fixed for current iOS AppDelegate / any Runner bundle ID
 - [x] README + CI_CD_GUIDE corrected to match Phase 16 reality
+- [x] Permanent application identity `com.reemove.app` (Android / iOS / macOS / deep-link templates)
 
 ---
 
@@ -62,11 +63,11 @@ Use this list to finish launch. Tags:
 
 ## Android
 
-- [ ] Replace `com.example.reemove_app` applicationId/namespace — **Requires owner login** + **Requires paid developer account** (Play)
+- [x] Permanent applicationId/namespace set to `com.reemove.app` (Cursor)
+- [ ] Create Play Console app for package `com.reemove.app` — **Requires paid developer account**
 - [ ] Create upload keystore; local `android/key.properties` — **Requires credentials**
 - [ ] Store CI secrets: `ANDROID_UPLOAD_KEYSTORE_B64`, passwords, alias, `PROD_DART_DEFINES_JSON` — **Requires credentials**
-- [ ] Set restricted Maps key: `MAPS_API_KEY` in `android/local.properties` or CI env — **Requires credentials**
-- [ ] After ID change, re-run `python3 scripts/configure_deep_links.py --host YOUR_HOST` if host/IDs changed — **Requires owner login**
+- [ ] Set restricted Maps key: `MAPS_API_KEY` in `android/local.properties` or CI env (package `com.reemove.app`) — **Requires credentials**
 - [ ] Enroll Play App Signing; fill Data safety from `config/privacy/play_data_safety.yaml` — **Requires paid developer account**
 - [ ] Internal / closed testing track smoke — **Requires physical device** + **Requires paid developer account**
 - [ ] Staged production rollout — **Requires explicit deployment approval**
@@ -75,7 +76,8 @@ Use this list to finish launch. Tags:
 
 ## iOS
 
-- [ ] Replace `com.example.reemoveApp` bundle ID — **Requires paid developer account**
+- [x] Permanent bundle ID set to `com.reemove.app` (Cursor)
+- [ ] Register App ID `com.reemove.app` in Apple Developer portal — **Requires paid developer account**
 - [ ] Copy `ios/Flutter/Maps.xcconfig.example` → `Maps.xcconfig` with restricted iOS Maps key — **Requires credentials**
 - [ ] Xcode capabilities: **Push Notifications**, Sign in with Apple, Associated Domains (entitlements file present), App Attest — **Requires owner login** + **Requires paid developer account**
 - [ ] Distribution cert + App Store profile; fill `ExportOptions.plist` (do not commit) — **Requires credentials**
@@ -88,10 +90,10 @@ Use this list to finish launch. Tags:
 
 ## Maps / FCM / AI / links
 
-- [ ] Restrict Maps API keys by package / bundle — **Requires credentials**
+- [ ] Restrict Maps API keys by package / bundle `com.reemove.app` — **Requires credentials**
 - [ ] FCM + APNs end-to-end on physical devices — **Requires physical device** + **Requires credentials**
 - [ ] Host support / status / legal / account-deletion URLs — **Requires owner login**
-- [ ] Host `docs/app_links/assetlinks.json` + `apple-app-site-association.json` on the verified domain (update `REPLACE_TEAM_ID` + final bundle ID) — **Requires owner login** + **Requires credentials** (signing hashes)
+- [ ] Host `docs/app_links/assetlinks.json` + `apple-app-site-association.json` on `links.reemove.app` (replace `REPLACE_TEAM_ID` + SHA-256 fingerprints) — **Requires owner login** + **Requires credentials**
 - [ ] Dart-defines / `.env`: `GOOGLE_SERVER_CLIENT_ID`, reCAPTCHA (web), `FIREBASE_DATABASE_URL`, support/status/store URLs — **Requires credentials**
 
 ---

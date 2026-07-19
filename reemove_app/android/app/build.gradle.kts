@@ -29,7 +29,7 @@ if (reemoveLocalPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.reemove_app"
+    namespace = "com.reemove.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -43,8 +43,7 @@ android {
     }
 
     defaultConfig {
-        // Owner must replace before store submission.
-        applicationId = "com.example.reemove_app"
+        applicationId = "com.reemove.app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

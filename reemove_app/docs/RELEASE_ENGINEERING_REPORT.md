@@ -38,8 +38,8 @@ Implementation is complete. Remaining work is **owner credentials, console confi
 | Firestore / RTDB / Storage rules | Present; profile visibility + safe `isAdmin`; RTDB `hasChildren`; Storage owner uploads OK |
 | Cloud Functions secrets | `OPENAI_API_KEY`, `MEDIA_PROCESSOR_SECRET` via `defineSecret` — not hardcoded |
 | Env / dart-defines | Documented in examples; no invented values |
-| Android | Placeholder `com.example.reemove_app`; optional signing; Maps placeholder; App Links filters; conditional Google Services plugin |
-| iOS | Placeholder `com.example.reemoveApp`; Maps soft-init; Associated Domains entitlements; deep-link scheme |
+| Android | Permanent ID `com.reemove.app`; optional signing; Maps placeholder; App Links filters; conditional Google Services plugin |
+| iOS | Permanent ID `com.reemove.app`; Maps soft-init; Associated Domains entitlements; deep-link scheme |
 | App Check | Debug providers only in debug; Play Integrity / App Attest in release; no release bypass |
 | Google Maps | Scaffolding applied (no keys invented) |
 | Deep links | Scaffolding for `links.reemove.app` + `reemove://open` |
@@ -56,7 +56,7 @@ Implementation is complete. Remaining work is **owner credentials, console confi
 |--------|----------------|
 | Fixed `configure_google_maps.py` for FlutterImplicitEngine + Python 3.7 `ET.indent` | Release scripts must run on current iOS template |
 | Soft Maps key activation (no `fatalError`) | Closed beta must launch without Maps key; Nearby list mode remains |
-| Fixed `configure_deep_links.py` entitlements for any Runner bundle ID | Previous matcher only accepted `com.reemove.reemove` |
+| Fixed `configure_deep_links.py` entitlements for any Runner bundle ID | Previous matcher was too narrow |
 | Applied Maps + deep-link native scaffolding | Unblocks owner key/host steps without inventing secrets |
 | Conditional `com.google.gms.google-services` when `google-services.json` exists | Prevents build break before FlutterFire; auto-enables after |
 | Updated README + this report + owner checklist | Remove stale Phase 1–6 claims; accurate release status |
@@ -66,11 +66,11 @@ Implementation is complete. Remaining work is **owner credentials, console confi
 
 ## Remaining blockers (must clear before public production)
 
-1. Replace Android/iOS application IDs (`com.example.*`)
+1. Register `com.reemove.app` in Play Console, Apple Developer, and Firebase (apps already coded)
 2. Create Firebase projects; run FlutterFire; keep generated files **out of git** (or private secure store)
 3. Restricted Maps API keys in `android/local.properties` / `ios/Flutter/Maps.xcconfig`
 4. Upload keystore + Apple distribution certs / profiles
-5. Host `assetlinks.json` + `apple-app-site-association` for the verified host
+5. Host `assetlinks.json` + `apple-app-site-association` for `links.reemove.app` (fill Team ID + SHA-256)
 6. Enable iOS Push + App Attest capabilities; upload APNs key to Firebase
 7. App Check monitor → enforce on staging then production
 8. Explicit written approval before any staging/production deploy or store upload
@@ -81,10 +81,10 @@ Implementation is complete. Remaining work is **owner credentials, console confi
 
 See `docs/OWNER_ACTION_CHECKLIST.md` (updated). Highest priority for Closed Beta:
 
-1. Firebase staging project + FlutterFire files  
-2. Real (or beta) application IDs  
-3. Maps keys (or accept list-only Nearby)  
-4. Android upload keystore / iOS TestFlight signing  
+1. Firebase staging project + FlutterFire files registered for `com.reemove.app`  
+2. Maps keys restricted to `com.reemove.app` (or accept list-only Nearby)  
+3. Android upload keystore / iOS TestFlight signing  
+4. Host deep-link association files on `links.reemove.app`  
 5. FCM + APNs smoke on one physical device each  
 
 ---
@@ -93,7 +93,7 @@ See `docs/OWNER_ACTION_CHECKLIST.md` (updated). Highest priority for Closed Beta
 
 | Risk | Level | Mitigation |
 |------|-------|------------|
-| Shipping with `com.example` IDs | Critical | Blocked by checklist; CI should refuse store upload |
+| Console apps not yet registered for `com.reemove.app` | High | Owner must create Play/Apple/Firebase apps before beta |
 | Firebase unavailable → auth wall | High until FlutterFire | Expected; bootstrap already degrades safely |
 | Maps blank without keys | Medium | Soft init + list fallback |
 | Storage authenticated reads too broad | Medium | Documented; harden in follow-up security sprint |
@@ -104,6 +104,6 @@ See `docs/OWNER_ACTION_CHECKLIST.md` (updated). Highest priority for Closed Beta
 
 ## Final recommendation
 
-**Proceed to Closed Beta preparation** as soon as owner completes Firebase + IDs + signing for a staging/internal channel.
+**Proceed to Closed Beta preparation** as soon as owner completes Firebase + console registration for `com.reemove.app` + signing for a staging/internal channel.
 
 **Do not** open public beta or production store release until Open Beta gates above are green and Phase 15 scorecard is signed.

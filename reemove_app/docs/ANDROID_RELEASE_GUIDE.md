@@ -2,7 +2,7 @@
 
 ## Identity and signing
 
-- Finalize a unique `applicationId`, for example `com.reemove.app` only if it is available and owned.
+- Finalize production `applicationId` **`com.reemove.app`** in Play Console (already set in Gradle).
 - Create an upload keystore offline and keep encrypted backups under two-person ownership.
 - Enroll in Play App Signing and protect the upload key separately from the app-signing key managed by Google Play.
 - Never commit `key.properties`, keystores, or passwords.

@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appIDs": ["REPLACE_TEAM_ID.com.reemove.reemove"],
+        "appIDs": ["REPLACE_TEAM_ID.com.reemove.app"],
         "components": [
           {"/": "/p/*", "comment": "Post links"},
           {"/": "/u/*", "comment": "Public profile links"},
@@ -19,6 +19,6 @@
     ]
   },
   "webcredentials": {
-    "apps": ["REPLACE_TEAM_ID.com.reemove.reemove"]
+    "apps": ["REPLACE_TEAM_ID.com.reemove.app"]
   }
 }

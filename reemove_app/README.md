@@ -14,12 +14,12 @@ ReeMove is a production-oriented Flutter and Firebase sports social network. The
 | Quality gates, release workflows, production docs | Complete |
 | Local validation (analyze, unit, rules, web, Android debug) | Pass |
 
-**Not store-ready yet.** Owner configuration remains: real application IDs, Firebase projects / FlutterFire files, Maps keys, signing, App Check enforcement, hosted deep-link files, and store listings. See `docs/OWNER_ACTION_CHECKLIST.md` and `docs/RELEASE_ENGINEERING_REPORT.md`.
+**Not store-ready yet.** Permanent application identity is **`com.reemove.app`** (Android / iOS / macOS). Owner configuration remains: Firebase projects / FlutterFire files, Maps keys, signing, App Check enforcement, hosted deep-link files, and store listings. See `docs/OWNER_ACTION_CHECKLIST.md` and `docs/RELEASE_ENGINEERING_REPORT.md`.
 
-Native deep-link and Maps **scaffolding** is applied (App Links intent filters, iOS associated domains, Maps placeholders). Verified domain hosting, restricted API keys, and final bundle IDs still require the owner. Re-run after ID changes:
+Native deep-link and Maps **scaffolding** is applied for `links.reemove.app` and scheme `reemove`. Verified domain hosting and restricted API keys still require the owner:
 
 ```bash
-python3 scripts/configure_deep_links.py --host YOUR_LINKS_HOST
+python3 scripts/configure_deep_links.py --host links.reemove.app
 python3 scripts/configure_google_maps.py
 ```
 
