@@ -5,6 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/app_avatar.dart';
+import '../../../authentication/application/authentication_providers.dart';
+import '../../../authentication/domain/entities/auth_user.dart';
+import '../../../profile/domain/entities/user_profile.dart';
+import '../../../profile/domain/user_avatar_source.dart';
 import '../../application/feed_providers.dart';
 import '../../domain/entities/story.dart';
 
@@ -47,25 +51,32 @@ class StoryRail extends ConsumerWidget {
   }
 }
 
-class _CreateStoryTile extends StatelessWidget {
+class _CreateStoryTile extends ConsumerWidget {
   const _CreateStoryTile({required this.onTap});
 
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final UserProfile? profile = ref.watch(currentUserProfileProvider).value;
+    final AuthUser? authUser = ref.watch(currentAuthUserProvider).value;
+    final String displayName =
+        profile?.displayName ?? authUser?.displayName ?? 'Athlete';
+    final String? imageUrl = resolveUserAvatarImageUrl(
+      profileAvatarUrl: profile?.avatarUrl,
+      authPhotoUrl: authUser?.photoUrl,
+    );
+
     return _StoryTileShell(
       label: 'Your story',
       onTap: onTap,
       child: Stack(
         clipBehavior: Clip.none,
         children: <Widget>[
-          CircleAvatar(
+          AppAvatar(
+            displayName: displayName,
+            imageUrl: imageUrl,
             radius: 31,
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.surfaceContainerHighest,
-            child: const Icon(Icons.person_outline_rounded),
           ),
           Positioned(
             right: -2,

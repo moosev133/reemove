@@ -10,6 +10,9 @@ import '../../../core/firebase/firebase_bootstrap.dart';
 import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/providers/core_providers.dart';
 import '../../../core/result/result.dart';
+import '../../feed/application/feed_providers.dart';
+import '../../feed/domain/entities/content_draft.dart';
+import '../../feed/domain/repositories/content_draft_repository.dart';
 import '../../profile/domain/entities/user_profile.dart';
 import '../data/repositories/firebase_account_lifecycle_repository.dart';
 import '../data/repositories/firebase_auth_repository.dart';
@@ -339,8 +342,10 @@ class AuthActionController extends Notifier<AsyncValue<void>> {
   Future<bool> reauthenticateWithApple() =>
       _run(() => ref.read(authRepositoryProvider).reauthenticateWithApple());
 
-  Future<bool> signOut() =>
-      _run(() => ref.read(authRepositoryProvider).signOut());
+  Future<bool> signOut() => _run(
+    () => ref.read(authRepositoryProvider).signOut(),
+    onSuccess: (_) => _clearLocalSessionState(),
+  );
 
   Future<bool> revokeSessions() async {
     state = const AsyncValue<void>.loading();
@@ -411,20 +416,31 @@ class AuthActionController extends Notifier<AsyncValue<void>> {
     return AuthProviderType.unknown;
   }
 
+  Future<void> _clearLocalSessionState() async {
+    final ContentDraftRepository drafts = ref.read(
+      contentDraftRepositoryProvider,
+    );
+    for (final DraftKind kind in DraftKind.values) {
+      await drafts.clear(kind);
+    }
+    ref.invalidate(currentUserProfileProvider);
+    ref.invalidate(feedControllerProvider);
+    ref.invalidate(storyRailProvider);
+  }
+
   Future<bool> _signOutAfterServerAction() async {
     final Result<void> signOutResult = await ref
         .read(authRepositoryProvider)
         .signOut();
-    return signOutResult.when<bool>(
-      success: (_) {
+    switch (signOutResult) {
+      case Success<void>():
+        await _clearLocalSessionState();
         state = const AsyncValue<void>.data(null);
         return true;
-      },
-      failure: (failure) {
+      case FailureResult<void>(failure: final failure):
         state = AsyncValue<void>.error(failure, StackTrace.current);
         return false;
-      },
-    );
+    }
   }
 
   Future<bool> _run<T>(
