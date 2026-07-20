@@ -5,6 +5,13 @@ import type {
 } from "firebase-admin/firestore";
 import {HttpsError} from "firebase-functions/v2/https";
 
+import {
+  normalizeContentVisibility,
+  resolveAccountPrivacy,
+  viewerCanViewAuthorContent,
+} from "../profile/profilePrivacyModel";
+import {collections} from "../core/schema";
+
 async function hasBlock(
   database: Firestore,
   left: string,
@@ -35,13 +42,19 @@ export async function assertCanAccessPost(
       snapshot.get("moderationState") !== "active") {
     throw new HttpsError("not-found", "This post is unavailable.");
   }
-  const visibility = snapshot.get("visibility");
-  if (visibility === "public") return;
-  if (visibility === "followers") {
-    const follows = await database.doc(
-      `users/${authorId}/followers/${viewerId}`,
-    ).get();
-    if (follows.exists) return;
+  const visibility = normalizeContentVisibility(snapshot.get("visibility"));
+  const follows = await database.doc(
+    `users/${authorId}/followers/${viewerId}`,
+  ).get();
+  const author = await database.collection(collections.users).doc(authorId).get();
+  const accountPrivacy = resolveAccountPrivacy(author);
+  if (viewerCanViewAuthorContent(
+    accountPrivacy,
+    visibility,
+    false,
+    follows.exists,
+  )) {
+    return;
   }
   throw new HttpsError("permission-denied", "This post is private.");
 }
@@ -62,13 +75,19 @@ export async function assertCanAccessStory(
   if (snapshot.get("moderationState") !== "active") {
     throw new HttpsError("not-found", "This story is unavailable.");
   }
-  const visibility = snapshot.get("visibility");
-  if (visibility === "public") return;
-  if (visibility === "followers") {
-    const follows = await database.doc(
-      `users/${authorId}/followers/${viewerId}`,
-    ).get();
-    if (follows.exists) return;
+  const visibility = normalizeContentVisibility(snapshot.get("visibility"));
+  const follows = await database.doc(
+    `users/${authorId}/followers/${viewerId}`,
+  ).get();
+  const author = await database.collection(collections.users).doc(authorId).get();
+  const accountPrivacy = resolveAccountPrivacy(author);
+  if (viewerCanViewAuthorContent(
+    accountPrivacy,
+    visibility,
+    false,
+    follows.exists,
+  )) {
+    return;
   }
   throw new HttpsError("permission-denied", "This story is private.");
 }

@@ -9,6 +9,7 @@ import '../../../../core/widgets/app_empty_state.dart';
 import '../../application/profile_providers.dart';
 import '../../domain/entities/profile_content_page.dart';
 import '../../domain/entities/profile_relationship.dart';
+import '../../domain/entities/profile_surface.dart';
 import '../../domain/entities/user_profile.dart';
 import '../widgets/profile_content_panel.dart';
 import '../widgets/profile_header.dart';
@@ -28,26 +29,26 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final AsyncValue<UserProfile?> profileValue = ref.watch(
-      publicProfileByUsernameProvider(widget.username),
+    final AsyncValue<ProfileSurface> surfaceValue = ref.watch(
+      profileSurfaceByUsernameProvider(widget.username),
     );
     return Scaffold(
       appBar: AppBar(
         title: Text('@${widget.username}'),
         actions: <Widget>[
-          profileValue.maybeWhen(
-            data: (UserProfile? profile) => profile == null
+          surfaceValue.maybeWhen(
+            data: (ProfileSurface surface) => surface.profile == null
                 ? const SizedBox.shrink()
                 : IconButton(
                     tooltip: 'Profile actions',
-                    onPressed: () => _showMore(profile),
+                    onPressed: () => _showMore(surface.profile!),
                     icon: const Icon(Icons.more_horiz_rounded),
                   ),
             orElse: () => const SizedBox.shrink(),
           ),
         ],
       ),
-      body: profileValue.when(
+      body: surfaceValue.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object error, StackTrace stackTrace) => const AdaptivePageBody(
           slivers: <Widget>[
@@ -58,7 +59,8 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
             ),
           ],
         ),
-        data: (UserProfile? profile) {
+        data: (ProfileSurface surface) {
+          final UserProfile? profile = surface.profile;
           if (profile == null) {
             return const AdaptivePageBody(
               slivers: <Widget>[
@@ -70,16 +72,13 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
               ],
             );
           }
-          final AsyncValue<ProfileRelationship> relationshipValue = ref.watch(
-            profileRelationshipProvider(profile.uid),
-          );
-          final ProfileRelationship? relationship = relationshipValue.value;
+          final ProfileRelationship relationship = surface.relationship;
+          final bool isPreview = surface.isPreview;
           return RefreshIndicator(
             onRefresh: () async {
-              ref.invalidate(publicProfileByUsernameProvider(widget.username));
-              ref.invalidate(profileRelationshipProvider(profile.uid));
+              ref.invalidate(profileSurfaceByUsernameProvider(widget.username));
               await ref.read(
-                publicProfileByUsernameProvider(widget.username).future,
+                profileSurfaceByUsernameProvider(widget.username).future,
               );
             },
             child: AdaptivePageBody(
@@ -90,15 +89,13 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                   profile: profile,
                   isOwnProfile: false,
                   relationship: relationship,
-                  onPrimaryAction: relationshipValue.isLoading
-                      ? null
-                      : () => _primaryAction(profile, relationship),
-                  onSecondaryAction: relationship?.canMessage == true
+                  onPrimaryAction: () => _primaryAction(profile, relationship),
+                  onSecondaryAction: relationship.canMessage
                       ? () => context.go(
                           AppRoutes.newConversationFor(profile.username),
                         )
                       : null,
-                  onFollowers: relationship?.canViewFollowers == true
+                  onFollowers: relationship.canViewFollowers
                       ? () => context.push(
                           AppRoutes.profileConnections(
                             profile.uid,
@@ -106,7 +103,7 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                           ),
                         )
                       : null,
-                  onFollowing: relationship?.canViewFollowers == true
+                  onFollowing: relationship.canViewFollowers
                       ? () => context.push(
                           AppRoutes.profileConnections(
                             profile.uid,
@@ -115,33 +112,43 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                         )
                       : null,
                 ),
-                const SizedBox(height: AppSpacing.lg),
-                SegmentedButton<ProfileContentFilter>(
-                  showSelectedIcon: false,
-                  segments: const <ButtonSegment<ProfileContentFilter>>[
-                    ButtonSegment<ProfileContentFilter>(
-                      value: ProfileContentFilter.posts,
-                      icon: Icon(Icons.grid_view_rounded),
-                      label: Text('Posts'),
-                    ),
-                    ButtonSegment<ProfileContentFilter>(
-                      value: ProfileContentFilter.reels,
-                      icon: Icon(Icons.smart_display_outlined),
-                      label: Text('Reels'),
-                    ),
-                  ],
-                  selected: <ProfileContentFilter>{_filter},
-                  onSelectionChanged: (Set<ProfileContentFilter> value) {
-                    setState(() => _filter = value.first);
-                  },
-                ),
-                const SizedBox(height: AppSpacing.md),
-                ProfileContentPanel(
-                  profileId: profile.uid,
-                  filter: _filter,
-                  onOpen: (String postId) =>
-                      context.push(AppRoutes.homePost(postId)),
-                ),
+                if (isPreview) ...<Widget>[
+                  const SizedBox(height: AppSpacing.lg),
+                  const AppEmptyState(
+                    icon: Icons.lock_outline_rounded,
+                    title: 'This account is private',
+                    message:
+                        'Follow this profile to see their posts, reels, and follower lists.',
+                  ),
+                ] else ...<Widget>[
+                  const SizedBox(height: AppSpacing.lg),
+                  SegmentedButton<ProfileContentFilter>(
+                    showSelectedIcon: false,
+                    segments: const <ButtonSegment<ProfileContentFilter>>[
+                      ButtonSegment<ProfileContentFilter>(
+                        value: ProfileContentFilter.posts,
+                        icon: Icon(Icons.grid_view_rounded),
+                        label: Text('Posts'),
+                      ),
+                      ButtonSegment<ProfileContentFilter>(
+                        value: ProfileContentFilter.reels,
+                        icon: Icon(Icons.smart_display_outlined),
+                        label: Text('Reels'),
+                      ),
+                    ],
+                    selected: <ProfileContentFilter>{_filter},
+                    onSelectionChanged: (Set<ProfileContentFilter> value) {
+                      setState(() => _filter = value.first);
+                    },
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  ProfileContentPanel(
+                    profileId: profile.uid,
+                    filter: _filter,
+                    onOpen: (String postId) =>
+                        context.push(AppRoutes.homePost(postId)),
+                  ),
+                ],
               ],
             ),
           );
@@ -152,11 +159,10 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
 
   Future<void> _primaryAction(
     UserProfile profile,
-    ProfileRelationship? relationship,
+    ProfileRelationship relationship,
   ) async {
     final controller = ref.read(profileActionControllerProvider.notifier);
-    final FollowRelationshipState state =
-        relationship?.state ?? FollowRelationshipState.none;
+    final FollowRelationshipState state = relationship.state;
     bool success;
     switch (state) {
       case FollowRelationshipState.none:

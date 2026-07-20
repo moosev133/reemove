@@ -14,6 +14,7 @@
     "deploy": "firebase deploy --only functions",
     "seed:emulator": "npm run build && node lib/seed/seedAuth.js && node lib/seed/seedFirestore.js",
     "test:unit": "npm run build && node --test test/*.test.cjs",
+    "test:integration:run": "node --test test/*.integration.cjs",
     "test:load-smoke": "node load/callable_load_smoke.mjs"
   },
   "dependencies": {

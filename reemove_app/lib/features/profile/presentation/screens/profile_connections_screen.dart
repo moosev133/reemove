@@ -161,7 +161,28 @@ class _ProfileConnectionsScreenState
         icon: const Icon(Icons.person_remove_outlined),
       ),
       ProfileConnectionType.following => null,
+      ProfileConnectionType.sentRequests => TextButton(
+        onPressed: () => _cancelSentRequest(profile),
+        child: const Text('Cancel'),
+      ),
     };
+  }
+
+  Future<void> _cancelSentRequest(UserProfile profile) async {
+    final bool success = await ref
+        .read(profileActionControllerProvider.notifier)
+        .cancelRequest(profile.uid);
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _removeLocally(profile.uid);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Follow request canceled.')));
+    } else {
+      _showActionFailure();
+    }
   }
 
   Future<void> _respond(UserProfile profile, {required bool accept}) async {
@@ -300,18 +321,21 @@ class _ProfileConnectionsScreenState
     ProfileConnectionType.followers => 'Followers',
     ProfileConnectionType.following => 'Following',
     ProfileConnectionType.requests => 'Follow requests',
+    ProfileConnectionType.sentRequests => 'Sent requests',
   };
 
   static IconData _emptyIcon(ProfileConnectionType type) => switch (type) {
     ProfileConnectionType.followers => Icons.people_outline_rounded,
     ProfileConnectionType.following => Icons.person_search_outlined,
     ProfileConnectionType.requests => Icons.mark_email_read_outlined,
+    ProfileConnectionType.sentRequests => Icons.send_outlined,
   };
 
   static String _emptyTitle(ProfileConnectionType type) => switch (type) {
     ProfileConnectionType.followers => 'No followers yet',
     ProfileConnectionType.following => 'Not following anyone yet',
     ProfileConnectionType.requests => 'No pending requests',
+    ProfileConnectionType.sentRequests => 'No sent requests',
   };
 
   static String _emptyMessage(ProfileConnectionType type) => switch (type) {
@@ -321,6 +345,8 @@ class _ProfileConnectionsScreenState
       'Profiles followed by this account will appear here.',
     ProfileConnectionType.requests =>
       'New follow requests will be available here for review.',
+    ProfileConnectionType.sentRequests =>
+      'Profiles you have requested to follow will appear here.',
   };
 }
 

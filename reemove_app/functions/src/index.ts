@@ -36,6 +36,7 @@ import {
   togglePostReaction,
 } from "./feed/interactions";
 import {publishPost, publishStory} from "./feed/publishContent";
+import {loadStoryRail} from "./feed/storyRail";
 import {fanoutPublishedPost} from "./feed/fanout";
 import {
   completeMediaProcessing,
@@ -60,6 +61,7 @@ import {loadProfileContent} from "./profile/profileContent";
 import {
   cancelVerificationRequest,
   reviewVerificationRequest,
+  backfillProfilePrivacyDefaults,
   submitVerificationRequest,
   syncProfileSnapshots,
   updateProfile,
@@ -191,6 +193,7 @@ export {
   completeOnboarding,
   publishPost,
   publishStory,
+  loadStoryRail,
   fanoutPublishedPost,
   togglePostReaction,
   createPostComment,
@@ -214,6 +217,7 @@ export {
   loadProfileContent,
   updateProfile,
   updateProfilePrivacy,
+  backfillProfilePrivacyDefaults,
   submitVerificationRequest,
   cancelVerificationRequest,
   reviewVerificationRequest,

@@ -1,6 +1,6 @@
 import 'user_profile.dart';
 
-enum ProfileConnectionType { followers, following, requests }
+enum ProfileConnectionType { followers, following, requests, sentRequests }
 
 class ProfileConnectionCursor {
   const ProfileConnectionCursor({

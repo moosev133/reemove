@@ -94,6 +94,8 @@ service cloud.firestore {
     }
 
     function canReadUserProfile(uid, data) {
+      // Account privacy is stored in users.visibility:
+      // public | followers (private account) | private (owner-only account).
       return signedIn()
         && data.moderationState == 'active'
         && !isBlocked(request.auth.uid, uid)

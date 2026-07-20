@@ -198,6 +198,28 @@ describe("user profile rules", () => {
     await assertSucceeds(getDoc(doc(owner, "users/private-user")));
   });
 
+  it("denies approved followers when the account is owner-only", async () => {
+    await seedFirestore();
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "users/owner-only-user"), {
+        ...publicUser("owner-only-user", "private"),
+        accountPrivacy: "ownerOnly",
+      });
+      await setDoc(doc(db, "users/owner-only-user/followers/approved-reader"), {
+        userId: "approved-reader",
+        createdAt: new Date("2026-07-13T12:00:00Z"),
+        updatedAt: new Date("2026-07-13T12:00:00Z"),
+        schemaVersion: 1,
+      });
+    });
+    const follower = testEnv.authenticatedContext("approved-reader").firestore();
+    const owner = testEnv.authenticatedContext("owner-only-user").firestore();
+
+    await assertFails(getDoc(doc(follower, "users/owner-only-user")));
+    await assertSucceeds(getDoc(doc(owner, "users/owner-only-user")));
+  });
+
   it("lets a first-time user observe their own missing profile document", async () => {
     await seedFirestore();
     const newcomer = testEnv.authenticatedContext("brand-new-user").firestore();

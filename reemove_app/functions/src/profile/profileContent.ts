@@ -12,6 +12,10 @@ import {HttpsError, onCall} from "firebase-functions/v2/https";
 
 import {callableOptions} from "../core/functionOptions";
 import {collections} from "../core/schema";
+import {
+  resolveAccountPrivacy,
+  viewerCanViewFullAccount,
+} from "../profile/profilePrivacyModel";
 import {assertCanAccessPost} from "../feed/contentAccess";
 import {safeDocumentId} from "../feed/contentPolicy";
 import {callableDocument, recordValue} from "./profilePolicy";
@@ -63,11 +67,15 @@ async function assertCanViewProfile(
       viewerBlock.exists || profileBlock.exists) {
     throw new HttpsError("not-found", "This profile is unavailable.");
   }
-  if (viewerId === profileId || profile.get("visibility") === "public" ||
-      (profile.get("visibility") === "followers" && follower.exists)) {
-    return profile;
+  const canView = viewerCanViewFullAccount(
+    resolveAccountPrivacy(profile),
+    viewerId === profileId,
+    follower.exists,
+  );
+  if (!canView) {
+    throw new HttpsError("permission-denied", "This profile is private.");
   }
-  throw new HttpsError("permission-denied", "This profile is private.");
+  return profile;
 }
 
 async function reactionFor(
