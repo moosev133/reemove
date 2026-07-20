@@ -7,6 +7,7 @@ import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/adaptive_page_body.dart';
 import '../../../../core/widgets/premium_surface.dart';
 import '../../../authentication/application/authentication_providers.dart';
+import '../../../authentication/presentation/widgets/logout_action.dart';
 import '../../application/profile_providers.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/entities/verification_request.dart';
@@ -20,6 +21,7 @@ class ProfileSettingsScreen extends ConsumerWidget {
     final VerificationRequest? verification = ref
         .watch(currentVerificationRequestProvider)
         .value;
+    final bool loggingOut = ref.watch(authActionControllerProvider).isLoading;
     return Scaffold(
       appBar: AppBar(title: const Text('Profile settings')),
       body: AdaptivePageBody(
@@ -70,6 +72,18 @@ class ProfileSettingsScreen extends ConsumerWidget {
                   onTap: () => context.push(AppRoutes.aiHub),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          PremiumSurface(
+            padding: EdgeInsets.zero,
+            child: _SettingsTile(
+              icon: Icons.logout_rounded,
+              title: 'Log out',
+              subtitle: 'Sign out of ReeMove on this device',
+              onTap: loggingOut
+                  ? null
+                  : () => performLogout(context, ref),
             ),
           ),
           const SizedBox(height: AppSpacing.lg),

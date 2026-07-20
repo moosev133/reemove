@@ -13,6 +13,7 @@ import '../../domain/value_objects/auth_validators.dart';
 import '../widgets/auth_buttons.dart';
 import '../widgets/auth_feedback.dart';
 import '../widgets/auth_text_field.dart';
+import '../widgets/logout_action.dart';
 
 class AccountSecurityScreen extends ConsumerWidget {
   const AccountSecurityScreen({super.key});
@@ -124,10 +125,9 @@ class _IdentityCard extends ConsumerWidget {
           OutlinedButton.icon(
             onPressed: loading
                 ? null
-                : () =>
-                      ref.read(authActionControllerProvider.notifier).signOut(),
+                : () => performLogout(context, ref),
             icon: const Icon(Icons.logout_rounded),
-            label: const Text('Sign out on this device'),
+            label: const Text('Log out'),
           ),
         ],
       ),
