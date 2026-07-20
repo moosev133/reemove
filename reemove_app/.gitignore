@@ -12,16 +12,16 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# IDE / editor
 *.iml
 *.ipr
 *.iws
 .idea/
+.vscode/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# Xcode user data
+**/xcuserdata/
+*.xcuserstate
 
 # Flutter / Dart
 **/doc/api/
@@ -48,8 +48,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase generated configuration
+# Firebase generated configuration (native; keep examples/templates tracked)
 lib/firebase_options.dart
+**/google-services.json
+**/GoogleService-Info.plist
 android/app/google-services.json
 android/app/src/staging/google-services.json
 android/app/src/production/google-services.json
@@ -62,23 +64,30 @@ macos/config/production/GoogleService-Info.plist
 .firebase/
 .firebaserc
 
-# Environment / secrets
+# Environment / secrets (root app)
 .env
 .env.*
 !.env.example
 !.env.test.example
+
+# Functions environment files (keep explicit examples trackable)
 functions/.env
 functions/.env.*
+!functions/.env.example
+!functions/.env.test.example
 
 # Signing / local release secrets
 android/key.properties
 **/*.jks
 **/*.keystore
+**/*.p12
+**/*.pem
+*.mobileprovision
 ios/ExportOptions.plist
 !ios/ExportOptions.plist.template
 ios/Flutter/Maps.xcconfig
 
-# Dart defines with real owner values
+# Dart defines with real owner values (keep *.json.example tracked)
 dart_defines/*.json
 !dart_defines/*.json.example
 
@@ -89,8 +98,9 @@ build/symbols/
 **/*.ipa
 **/*.dSYM.zip
 
-# Logs
+# Firebase / emulator logs
 firebase-debug.log
+firebase-debug.*.log
 firestore-debug.log
 ui-debug.log
 
@@ -100,3 +110,8 @@ functions/node_modules/
 firebase_tests/node_modules/
 functions/lib/
 *.tsbuildinfo
+
+# Temporary deployment / diagnostic artifacts
+**/stagingOnboarding*
+**/_tmp_*
+scripts/_tmp_*

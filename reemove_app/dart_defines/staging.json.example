@@ -4,9 +4,9 @@
   "ENABLE_APP_CHECK": true,
   "ENABLE_ANALYTICS": false,
   "USE_FIREBASE_EMULATORS": false,
-  "GOOGLE_SERVER_CLIENT_ID": "377819651760-hk7v3j1stqame8jqnmkdak6er2dti6r9.apps.googleusercontent.com",
+  "GOOGLE_SERVER_CLIENT_ID": "REPLACE_WITH_GOOGLE_SERVER_CLIENT_ID",
   "FIREBASE_WEB_RECAPTCHA_V3_SITE_KEY": "REPLACE_RECAPTCHA_V3_SITE_KEY",
-  "FIREBASE_DATABASE_URL": "https://reemove-staging-default-rtdb.europe-west1.firebasedatabase.app",
+  "FIREBASE_DATABASE_URL": "REPLACE_WITH_STAGING_RTDB_URL",
   "SUPPORT_URL": "https://REPLACE.example/support",
   "STATUS_URL": "https://REPLACE.example/status",
   "STORE_URL": "https://REPLACE.example/download"
