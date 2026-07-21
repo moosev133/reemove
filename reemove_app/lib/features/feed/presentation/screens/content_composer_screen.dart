@@ -1,9 +1,10 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -564,7 +565,34 @@ class _MediaPreview extends StatelessWidget {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20),
                       child: media.kind == DraftMediaKind.image
-                          ? Image.file(File(media.localPath), fit: BoxFit.cover)
+                          ? FutureBuilder<Uint8List>(
+                              future: XFile(media.localPath).readAsBytes(),
+                              builder:
+                                  (
+                                    BuildContext context,
+                                    AsyncSnapshot<Uint8List> snapshot,
+                                  ) {
+                                    if (snapshot.hasData) {
+                                      return Image.memory(
+                                        snapshot.data!,
+                                        fit: BoxFit.cover,
+                                      );
+                                    }
+                                    if (snapshot.hasError) {
+                                      return const ColoredBox(
+                                        color: Colors.black12,
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.broken_image_outlined,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
+                            )
                           : ColoredBox(
                               color: Colors.black,
                               child: Column(

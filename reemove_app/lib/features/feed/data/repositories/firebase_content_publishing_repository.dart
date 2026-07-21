@@ -1,8 +1,9 @@
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart' hide Result;
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../core/database/dto/media_asset_dto.dart';
 import '../../../../core/database/firestore_failure_mapper.dart';
@@ -16,6 +17,7 @@ import '../../domain/entities/feed_post.dart';
 import '../../domain/entities/story.dart';
 import '../../domain/entities/upload_status.dart';
 import '../../domain/repositories/content_publishing_repository.dart';
+import '../content_upload_storage.dart';
 import '../dto/feed_post_dto.dart';
 import '../dto/story_dto.dart';
 import '../mappers/feed_post_mapper.dart';
@@ -48,24 +50,22 @@ class FirebaseContentPublishingRepository
     required DraftMediaSelection selection,
   }) async* {
     final String assetId = _firestore.collection('media_assets').doc().id;
-    final String storagePath =
-        'content/$ownerId/$draftId/$assetId/${_safeFilename(selection.name)}';
+    final String storagePath = ContentUploadStorage.draftAssetPath(
+      ownerId: ownerId,
+      draftId: draftId,
+      assetId: assetId,
+      filename: selection.name,
+    );
     final Reference reference = _storage.ref(storagePath);
-    final SettableMetadata metadata = SettableMetadata(
-      contentType: selection.contentType,
-      customMetadata: <String, String>{
-        'ownerId': ownerId,
-        'draftId': draftId,
-        'assetId': assetId,
-        'kind': selection.kind.name,
-        'schemaVersion': '1',
-      },
+    final SettableMetadata metadata = ContentUploadStorage.draftAssetMetadata(
+      ownerId: ownerId,
+      draftId: draftId,
+      assetId: assetId,
+      selection: selection,
     );
     try {
-      final UploadTask task = reference.putFile(
-        File(selection.localPath),
-        metadata,
-      );
+      final Uint8List bytes = await XFile(selection.localPath).readAsBytes();
+      final UploadTask task = reference.putData(bytes, metadata);
       await for (final TaskSnapshot snapshot in task.snapshotEvents) {
         final double progress = snapshot.totalBytes <= 0
             ? 0
@@ -206,11 +206,6 @@ class FirebaseContentPublishingRepository
       'visibility': draft.visibility.storageValue,
       'allowComments': draft.allowComments,
     };
-  }
-
-  static String _safeFilename(String value) {
-    final String normalized = value.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
-    return normalized.isEmpty ? 'upload' : normalized;
   }
 
   static Map<String, dynamic> _map(Object? value) {
