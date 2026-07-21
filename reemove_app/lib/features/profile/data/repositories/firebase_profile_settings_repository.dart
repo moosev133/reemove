@@ -146,6 +146,7 @@ class FirebaseProfileSettingsRepository implements ProfileSettingsRepository {
         'showSportLevels': value.showSportLevels,
         'showGoals': value.showGoals,
         'showLocation': value.showLocation,
+        'followerListAudience': value.followerListAudience.name,
         'showFollowerLists': value.showFollowerLists,
         'hideLikeCounts': value.hideLikeCounts,
         'discoverableByUsername': value.discoverableByUsername,

@@ -19,7 +19,26 @@ describe('profile privacy policy', () => {
       showSportLevels: true,
       showGoals: true,
       showLocation: true,
+      followerListAudience: 'everyone',
       showFollowerLists: true,
+      hideLikeCounts: false,
+      discoverableByUsername: true,
+      personalizedSuggestions: true,
+    });
+  });
+
+  it('maps legacy showFollowerLists to followerListAudience', () => {
+    assert.deepEqual(parsePrivacy({showFollowerLists: false}), {
+      followApprovalPolicy: 'automatic',
+      messageAudience: 'everyone',
+      mentionAudience: 'everyone',
+      tagAudience: 'followers',
+      showActivityStatus: true,
+      showSportLevels: true,
+      showGoals: true,
+      showLocation: true,
+      followerListAudience: 'owner',
+      showFollowerLists: false,
       hideLikeCounts: false,
       discoverableByUsername: true,
       personalizedSuggestions: true,

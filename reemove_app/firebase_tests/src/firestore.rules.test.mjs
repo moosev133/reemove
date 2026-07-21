@@ -103,6 +103,7 @@ async function seedFirestore() {
         hashtags: ["running"],
         mentions: [],
         visibility: "public",
+        authorAccountVisibility: "public",
         moderationState: "active",
         status: "published",
         allowComments: true,
@@ -143,7 +144,7 @@ async function seedFirestore() {
         authorId: "public-user",
         authorSnapshot: {id: "public-user", username: "public_user", displayName: "Public User", isVerified: false, verificationType: "none"},
         media: {id: "asset-1", storagePath: "content/public-user/draft/asset-1/photo.jpg", kind: "image", processingState: "ready", downloadUrl: "https://example.com/photo.jpg"},
-        caption: "Training", visibility: "public", moderationState: "active", viewCount: 0,
+        caption: "Training", visibility: "public", authorAccountVisibility: "public", moderationState: "active", viewCount: 0,
         createdAt: new Date("2026-07-13T12:00:00Z"), updatedAt: new Date("2026-07-13T12:00:00Z"),
         expiresAt: new Date("2099-07-14T12:00:00Z"), schemaVersion: 1,
       }),
@@ -405,6 +406,7 @@ describe("social content rules", () => {
     const railQuery = query(
       collection(reader, "stories"),
       where("visibility", "==", "public"),
+      where("authorAccountVisibility", "==", "public"),
       where("moderationState", "==", "active"),
       where("expiresAt", ">", new Date("2026-07-19T00:00:00Z")),
       orderBy("expiresAt"),
@@ -414,6 +416,7 @@ describe("social content rules", () => {
     const deniedQuery = query(
       collection(unauthenticated, "stories"),
       where("visibility", "==", "public"),
+      where("authorAccountVisibility", "==", "public"),
       where("moderationState", "==", "active"),
       where("expiresAt", ">", new Date("2026-07-19T00:00:00Z")),
       orderBy("expiresAt"),
@@ -469,6 +472,7 @@ describe("social content rules", () => {
       collection(reader, "posts"),
       where("status", "==", "published"),
       where("visibility", "==", "public"),
+      where("authorAccountVisibility", "==", "public"),
       where("moderationState", "==", "active"),
       limit(25),
     );

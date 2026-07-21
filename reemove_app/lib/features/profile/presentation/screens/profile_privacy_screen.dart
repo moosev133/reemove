@@ -140,13 +140,33 @@ class _ProfilePrivacyScreenState extends ConsumerState<ProfilePrivacyScreen> {
                           _set(draft.copyWith(showLocation: value)),
                     ),
                     const Divider(height: 1),
-                    _Toggle(
-                      title: 'Show follower lists',
-                      subtitle:
-                          'Allow permitted profile visitors to open these lists.',
-                      value: draft.showFollowerLists,
-                      onChanged: (bool value) =>
-                          _set(draft.copyWith(showFollowerLists: value)),
+                    DropdownButtonFormField<FollowerListAudience>(
+                      initialValue: draft.followerListAudience,
+                      decoration: const InputDecoration(
+                        labelText: 'Follower and following lists',
+                        prefixIcon: Icon(Icons.people_outline_rounded),
+                        helperText:
+                            'Choose who can open your followers and following lists.',
+                      ),
+                      items: const <DropdownMenuItem<FollowerListAudience>>[
+                        DropdownMenuItem<FollowerListAudience>(
+                          value: FollowerListAudience.everyone,
+                          child: Text('Everyone'),
+                        ),
+                        DropdownMenuItem<FollowerListAudience>(
+                          value: FollowerListAudience.followers,
+                          child: Text('Followers only'),
+                        ),
+                        DropdownMenuItem<FollowerListAudience>(
+                          value: FollowerListAudience.owner,
+                          child: Text('Only me'),
+                        ),
+                      ],
+                      onChanged: (FollowerListAudience? item) {
+                        if (item != null) {
+                          _set(draft.copyWith(followerListAudience: item));
+                        }
+                      },
                     ),
                     const Divider(height: 1),
                     _Toggle(

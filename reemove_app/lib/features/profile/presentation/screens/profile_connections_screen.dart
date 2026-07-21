@@ -50,17 +50,33 @@ class _ProfileConnectionsScreenState
       appBar: AppBar(title: Text(_title(widget.type))),
       body: value.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stackTrace) => AdaptivePageBody(
-          slivers: <Widget>[
-            AppEmptyState(
-              icon: Icons.people_outline_rounded,
-              title: 'Connections unavailable',
-              message: '$error',
-              actionLabel: 'Try again',
-              onAction: () => ref.invalidate(profileConnectionsProvider(query)),
-            ),
-          ],
-        ),
+        error: (Object error, StackTrace stackTrace) {
+          if (error is ProfileConnectionsRestricted) {
+            return AdaptivePageBody(
+              slivers: <Widget>[
+                AppEmptyState(
+                  icon: Icons.lock_outline_rounded,
+                  title: 'This list is hidden',
+                  message:
+                      error.message ??
+                      'The profile owner limited who can view this list.',
+                ),
+              ],
+            );
+          }
+          return AdaptivePageBody(
+            slivers: <Widget>[
+              AppEmptyState(
+                icon: Icons.people_outline_rounded,
+                title: 'Connections unavailable',
+                message: '$error',
+                actionLabel: 'Try again',
+                onAction: () =>
+                    ref.invalidate(profileConnectionsProvider(query)),
+              ),
+            ],
+          );
+        },
         data: (ProfileConnectionPage initial) {
           _page ??= initial;
           final ProfileConnectionPage page = _page!;

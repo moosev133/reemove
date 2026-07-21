@@ -228,7 +228,15 @@ final profileConnectionsProvider =
             type: query.type,
             cursor: query.cursor,
           );
-      return _value(result);
+      return result.when<ProfileConnectionPage>(
+        success: (ProfileConnectionPage value) => value,
+        failure: (Failure failure) {
+          if (failure.code == 'permission-denied') {
+            throw const ProfileConnectionsRestricted();
+          }
+          throw StateError(failure.message);
+        },
+      );
     });
 
 final FutureProvider<List<BlockedProfile>> blockedProfilesProvider =
@@ -279,6 +287,8 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
     onSuccess: () {
       ref.invalidate(currentUserProfileProvider);
       ref.invalidate(profileConnectionsProvider);
+      ref.invalidate(feedControllerProvider);
+      ref.invalidate(storyRailProvider);
     },
   );
 
@@ -317,6 +327,12 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
     onSuccess: () {
       ref.invalidate(currentUserProfileProvider);
       ref.invalidate(profilePrivacySettingsProvider);
+      ref.invalidate(publicProfileByIdProvider);
+      ref.invalidate(profileSurfaceByIdProvider);
+      ref.invalidate(profileSurfaceByUsernameProvider);
+      ref.invalidate(profileConnectionsProvider);
+      ref.invalidate(feedControllerProvider);
+      ref.invalidate(storyRailProvider);
     },
   );
 
@@ -350,6 +366,7 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
         ref.invalidate(profileSurfaceByUsernameProvider);
         ref.invalidate(currentUserProfileProvider);
         ref.invalidate(profileConnectionsProvider);
+        ref.invalidate(feedControllerProvider);
         ref.invalidate(storyRailProvider);
         return true;
       },

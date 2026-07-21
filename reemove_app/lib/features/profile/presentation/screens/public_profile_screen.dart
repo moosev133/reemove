@@ -62,12 +62,18 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
         data: (ProfileSurface surface) {
           final UserProfile? profile = surface.profile;
           if (profile == null) {
-            return const AdaptivePageBody(
+            return AdaptivePageBody(
               slivers: <Widget>[
                 AppEmptyState(
-                  icon: Icons.person_search_outlined,
-                  title: 'Profile not found',
-                  message: 'The username may have changed.',
+                  icon: surface.access == ProfileAccessLevel.unavailable
+                      ? Icons.block_outlined
+                      : Icons.person_search_outlined,
+                  title: surface.access == ProfileAccessLevel.unavailable
+                      ? 'Profile unavailable'
+                      : 'Profile not found',
+                  message: surface.access == ProfileAccessLevel.unavailable
+                      ? 'This profile is inactive or unavailable to you.'
+                      : 'The username may have changed.',
                 ),
               ],
             );

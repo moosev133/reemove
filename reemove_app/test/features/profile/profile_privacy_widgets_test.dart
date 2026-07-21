@@ -208,7 +208,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Profile not found'), findsOneWidget);
+      expect(find.text('Profile unavailable'), findsOneWidget);
     });
 
     testWidgets('shows private preview without content panel', (

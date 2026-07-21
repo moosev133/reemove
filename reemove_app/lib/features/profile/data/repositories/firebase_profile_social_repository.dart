@@ -240,7 +240,7 @@ class FirebaseProfileSocialRepository implements ProfileSocialRepository {
         ),
       );
     } on FirebaseFunctionsException catch (error) {
-      if (error.code == 'not-found' || error.code == 'permission-denied') {
+      if (error.code == 'not-found') {
         return Success<ProfileSurface>(
           ProfileSurface(
             access: ProfileAccessLevel.unavailable,

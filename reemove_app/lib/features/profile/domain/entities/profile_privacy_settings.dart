@@ -2,6 +2,12 @@ enum ProfileAudience { everyone, followers, noOne }
 
 enum FollowApprovalPolicy { automatic, approvalRequired }
 
+/// Who may open this profile's followers and following lists.
+///
+/// Default for existing accounts without an explicit value is [everyone],
+/// derived from legacy `showFollowerLists: true`.
+enum FollowerListAudience { everyone, followers, owner }
+
 class ProfilePrivacySettings {
   const ProfilePrivacySettings({
     required this.followApprovalPolicy,
@@ -12,7 +18,7 @@ class ProfilePrivacySettings {
     required this.showSportLevels,
     required this.showGoals,
     required this.showLocation,
-    required this.showFollowerLists,
+    required this.followerListAudience,
     required this.hideLikeCounts,
     required this.discoverableByUsername,
     required this.personalizedSuggestions,
@@ -27,7 +33,7 @@ class ProfilePrivacySettings {
     showSportLevels: true,
     showGoals: true,
     showLocation: true,
-    showFollowerLists: true,
+    followerListAudience: FollowerListAudience.everyone,
     hideLikeCounts: false,
     discoverableByUsername: true,
     personalizedSuggestions: true,
@@ -41,10 +47,13 @@ class ProfilePrivacySettings {
   final bool showSportLevels;
   final bool showGoals;
   final bool showLocation;
-  final bool showFollowerLists;
+  final FollowerListAudience followerListAudience;
   final bool hideLikeCounts;
   final bool discoverableByUsername;
   final bool personalizedSuggestions;
+
+  bool get showFollowerLists =>
+      followerListAudience != FollowerListAudience.owner;
 
   ProfilePrivacySettings copyWith({
     FollowApprovalPolicy? followApprovalPolicy,
@@ -55,7 +64,7 @@ class ProfilePrivacySettings {
     bool? showSportLevels,
     bool? showGoals,
     bool? showLocation,
-    bool? showFollowerLists,
+    FollowerListAudience? followerListAudience,
     bool? hideLikeCounts,
     bool? discoverableByUsername,
     bool? personalizedSuggestions,
@@ -69,7 +78,7 @@ class ProfilePrivacySettings {
       showSportLevels: showSportLevels ?? this.showSportLevels,
       showGoals: showGoals ?? this.showGoals,
       showLocation: showLocation ?? this.showLocation,
-      showFollowerLists: showFollowerLists ?? this.showFollowerLists,
+      followerListAudience: followerListAudience ?? this.followerListAudience,
       hideLikeCounts: hideLikeCounts ?? this.hideLikeCounts,
       discoverableByUsername:
           discoverableByUsername ?? this.discoverableByUsername,

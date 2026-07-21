@@ -1,7 +1,8 @@
 const assert = require("node:assert/strict");
 const {describe, it} = require("node:test");
 
-const {safeProfilePreview} = require("../lib/profile/privacyEnforcement.js");
+const {safeProfilePreview, canViewConnectionLists} =
+  require("../lib/profile/privacyEnforcement.js");
 const {
   viewerCanViewFullAccount,
 } = require("../lib/profile/profilePrivacyModel.js");
@@ -37,5 +38,28 @@ describe("privacy enforcement helpers", () => {
     assert.equal(viewerCanViewFullAccount("private", false, false), false);
     assert.equal(viewerCanViewFullAccount("private", false, true), true);
     assert.equal(viewerCanViewFullAccount("ownerOnly", true, false), true);
+  });
+
+  it("enforces follower-list audience rules", () => {
+    assert.equal(
+      canViewConnectionLists("viewer", "owner", "everyone", true, false),
+      true,
+    );
+    assert.equal(
+      canViewConnectionLists("viewer", "owner", "owner", true, false),
+      false,
+    );
+    assert.equal(
+      canViewConnectionLists("owner", "owner", "owner", true, false),
+      true,
+    );
+    assert.equal(
+      canViewConnectionLists("viewer", "owner", "followers", true, true),
+      true,
+    );
+    assert.equal(
+      canViewConnectionLists("viewer", "owner", "followers", true, false),
+      false,
+    );
   });
 });

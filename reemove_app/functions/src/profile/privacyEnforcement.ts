@@ -12,6 +12,32 @@ import {
 
 export type {ProfileAccessLevel} from "./profilePrivacyModel";
 
+export type FollowerListAudience = "everyone" | "followers" | "owner";
+
+export function resolveFollowerListAudience(
+  privacy: Record<string, unknown>,
+): FollowerListAudience {
+  const raw = privacy.followerListAudience;
+  if (raw === "everyone" || raw === "followers" || raw === "owner") {
+    return raw;
+  }
+  return privacy.showFollowerLists === false ? "owner" : "everyone";
+}
+
+export function canViewConnectionLists(
+  viewerId: string,
+  profileId: string,
+  audience: FollowerListAudience,
+  canViewProfile: boolean,
+  isFollowing: boolean,
+): boolean {
+  if (viewerId === profileId) return true;
+  if (!canViewProfile) return false;
+  if (audience === "everyone") return true;
+  if (audience === "followers") return isFollowing;
+  return false;
+}
+
 export function safeProfilePreview(
   profile: DocumentSnapshot,
 ): Record<string, unknown> {
@@ -71,18 +97,57 @@ export async function purgeFeedEntriesBetween(
   recipientId: string,
   authorId: string,
 ): Promise<number> {
-  const snapshot = await database.collection(collections.feedEntries)
-    .where("recipientId", "==", recipientId)
-    .where("authorId", "==", authorId)
-    .limit(500)
-    .get();
-  if (snapshot.empty) return 0;
-  const batch = database.batch();
-  for (const document of snapshot.docs) {
-    batch.delete(document.ref);
+  let removed = 0;
+  while (true) {
+    const snapshot = await database.collection(collections.feedEntries)
+      .where("recipientId", "==", recipientId)
+      .where("authorId", "==", authorId)
+      .limit(500)
+      .get();
+    if (snapshot.empty) break;
+    const batch = database.batch();
+    for (const document of snapshot.docs) {
+      batch.delete(document.ref);
+    }
+    await batch.commit();
+    removed += snapshot.size;
+    if (snapshot.size < 500) break;
   }
-  await batch.commit();
-  return snapshot.size;
+  return removed;
+}
+
+export async function purgeFeedEntriesForNonFollowers(
+  database: Firestore,
+  authorId: string,
+): Promise<number> {
+  let removed = 0;
+  while (true) {
+    const snapshot = await database.collection(collections.feedEntries)
+      .where("authorId", "==", authorId)
+      .limit(500)
+      .get();
+    if (snapshot.empty) break;
+
+    const batch = database.batch();
+    let pending = 0;
+    for (const document of snapshot.docs) {
+      const recipientId = String(document.get("recipientId") ?? "");
+      if (!recipientId) continue;
+      const follower = await database.doc(
+        `users/${authorId}/followers/${recipientId}`,
+      ).get();
+      if (!follower.exists) {
+        batch.delete(document.ref);
+        pending += 1;
+      }
+    }
+    if (pending > 0) {
+      await batch.commit();
+      removed += pending;
+    }
+    if (snapshot.size < 500) break;
+  }
+  return removed;
 }
 
 export async function purgeFeedEntriesBothDirections(

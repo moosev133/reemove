@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const {describe, it} = require("node:test");
+const {Timestamp} = require("firebase-admin/firestore");
 
 const {
   assertCleanRelationshipState,
@@ -774,5 +775,73 @@ describe("profile privacy callable emulator integration", () => {
       followProfile({profileId: suspended.uid}),
       "not-found",
     );
+  });
+
+  it("followerListAudience followers allows only approved followers", async () => {
+    const target = await provisionUser("pp-list-target", {
+      username: "pp.listtarget",
+      usernameNormalized: "pp.listtarget",
+    });
+    const follower = await provisionUser("pp-list-follower", {
+      username: "pp.listfollower",
+      usernameNormalized: "pp.listfollower",
+    });
+    const stranger = await provisionUser("pp-list-stranger", {
+      username: "pp.liststranger",
+      usernameNormalized: "pp.liststranger",
+    });
+    await db.doc(`users/${target.uid}/private/profile_settings`).set({
+      followerListAudience: "followers",
+      showFollowerLists: true,
+    }, {merge: true});
+    await establishFollowing(follower, target);
+    const listProfileConnections = callableFor(
+      stranger.client.functions,
+      "listProfileConnections",
+    );
+    await expectCallableError(
+      listProfileConnections({
+        profileId: target.uid,
+        type: "followers",
+        limit: 10,
+      }),
+      "permission-denied",
+    );
+    const allowed = await callableFor(
+      follower.client.functions,
+      "listProfileConnections",
+    )({
+      profileId: target.uid,
+      type: "followers",
+      limit: 10,
+    });
+    assert.ok(Array.isArray(allowed.data.items));
+  });
+
+  it("unfollowProfile purges feed entries for the viewer", async () => {
+    const target = await provisionUser("pp-feed-target", {
+      username: "pp.feedtarget",
+      usernameNormalized: "pp.feedtarget",
+    });
+    const follower = await provisionUser("pp-feed-follower", {
+      username: "pp.feedfollower",
+      usernameNormalized: "pp.feedfollower",
+    });
+    await establishFollowing(follower, target);
+    const feedRef = db.collection("feed_entries").doc("pp-feed-entry");
+    await feedRef.set({
+      recipientId: follower.uid,
+      authorId: target.uid,
+      postId: "pp-feed-post",
+      createdAt: Timestamp.now(),
+      schemaVersion: 1,
+    });
+    const unfollowProfile = callableFor(
+      follower.client.functions,
+      "unfollowProfile",
+    );
+    await unfollowProfile({profileId: target.uid});
+    const feedDoc = await feedRef.get();
+    assert.equal(feedDoc.exists, false);
   });
 });

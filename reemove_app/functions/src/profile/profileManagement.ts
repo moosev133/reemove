@@ -17,12 +17,18 @@ import {consumeRateLimit} from "../core/rateLimit";
 import {collections, currentSchemaVersion} from "../core/schema";
 import {safeDocumentId} from "../feed/contentPolicy";
 import {
+  CONTENT_BACKFILL_DEFAULT_BATCH,
+  runBackfillContentAuthorVisibility,
+  type ContentCollection,
+} from "../feed/contentAuthorVisibilityBackfill";
+import {
   accountPrivacyFromLegacyVisibility,
   followApprovalPolicyForAccountPrivacy,
   legacyVisibilityForAccountPrivacy,
   normalizeLegacyProfileVisibility,
   resolveAccountPrivacy,
 } from "./profilePrivacyModel";
+import {purgeFeedEntriesForNonFollowers} from "./privacyEnforcement";
 import {
   BACKFILL_DEFAULT_BATCH,
   runBackfillProfilePrivacyDefaults,
@@ -247,6 +253,9 @@ export const updateProfile = onCall(callableOptions, async (request) => {
         toAccountPrivacy: nextAccountPrivacy,
       },
     });
+    if (nextAccountPrivacy !== "public") {
+      await purgeFeedEntriesForNonFollowers(database, uid);
+    }
   }
 
   await writeAuditEvent({
@@ -527,6 +536,63 @@ export const backfillProfilePrivacyDefaults = onCall(
           "profile.privacy_backfill_dry_run",
         targetType: "user",
         targetId: "users",
+        metadata: {
+          scanned: result.scanned,
+          wouldChange: result.changed,
+          skipped: result.skipped,
+          errors: result.errors,
+          nextCursor: result.nextCursor,
+          completed: result.completed,
+        },
+      });
+    }
+    return result;
+  },
+);
+
+function contentCollection(value: unknown): ContentCollection {
+  if (value === "posts" || value === "stories") return value;
+  throw new HttpsError("invalid-argument", "Content collection is invalid.");
+}
+
+export const backfillContentAuthorVisibility = onCall(
+  callableOptions,
+  async (request) => {
+    const actorId = requireUid(request.auth?.uid);
+    if (request.auth?.token.admin !== true) {
+      throw new HttpsError(
+        "permission-denied",
+        "Administrator access required.",
+      );
+    }
+    await consumeRateLimit(actorId, {
+      key: "backfill_content_author_visibility",
+      maxAttempts: 30,
+      windowSeconds: 60 * 60,
+    });
+    const data = recordValue(request.data ?? {});
+    const apply = data.apply === true;
+    const reportOnly = data.reportOnly === true || !apply;
+    const limitValue = typeof data.limit === "number" ?
+      Math.trunc(data.limit) : CONTENT_BACKFILL_DEFAULT_BATCH;
+    const cursor = typeof data.cursor === "string" ? data.cursor : undefined;
+    const collection = contentCollection(data.collection);
+    const database = getFirestore();
+    const result = await runBackfillContentAuthorVisibility(database, {
+      collection,
+      limit: limitValue,
+      cursor,
+      apply,
+      reportOnly,
+    });
+    if (!apply) {
+      await writeAuditEvent({
+        actorId,
+        action: reportOnly ?
+          "content.author_visibility_backfill_report" :
+          "content.author_visibility_backfill_dry_run",
+        targetType: "content",
+        targetId: collection,
         metadata: {
           scanned: result.scanned,
           wouldChange: result.changed,

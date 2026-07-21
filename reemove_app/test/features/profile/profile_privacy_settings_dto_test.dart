@@ -15,7 +15,7 @@ void main() {
             'showSportLevels': false,
             'showGoals': true,
             'showLocation': false,
-            'showFollowerLists': false,
+            'followerListAudience': 'followers',
             'hideLikeCounts': true,
             'discoverableByUsername': false,
             'personalizedSuggestions': false,
@@ -28,9 +28,19 @@ void main() {
       expect(settings.messageAudience, ProfileAudience.followers);
       expect(settings.mentionAudience, ProfileAudience.noOne);
       expect(settings.showActivityStatus, isFalse);
-      expect(settings.showFollowerLists, isFalse);
+      expect(settings.followerListAudience, FollowerListAudience.followers);
+      expect(settings.showFollowerLists, isTrue);
       expect(settings.hideLikeCounts, isTrue);
       expect(settings.discoverableByUsername, isFalse);
+    });
+
+    test('maps legacy showFollowerLists false to owner-only lists', () {
+      final ProfilePrivacySettings settings = ProfilePrivacySettingsDto.fromMap(
+        <String, dynamic>{'showFollowerLists': false},
+      ).toDomain();
+
+      expect(settings.followerListAudience, FollowerListAudience.owner);
+      expect(settings.showFollowerLists, isFalse);
     });
 
     test('supplies privacy-safe documented defaults for missing fields', () {
@@ -42,6 +52,7 @@ void main() {
       expect(settings.messageAudience, ProfileAudience.everyone);
       expect(settings.tagAudience, ProfileAudience.followers);
       expect(settings.showActivityStatus, isTrue);
+      expect(settings.followerListAudience, FollowerListAudience.everyone);
       expect(settings.showFollowerLists, isTrue);
       expect(settings.hideLikeCounts, isFalse);
     });

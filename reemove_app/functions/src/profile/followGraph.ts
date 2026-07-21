@@ -19,7 +19,9 @@ import {safeDocumentId} from "../feed/contentPolicy";
 import {createAndDeliverNotification} from "../notifications/notificationService";
 import {
   assertUsernameDiscoverable,
+  canViewConnectionLists,
   purgeFeedEntriesBetween,
+  resolveFollowerListAudience,
   safeProfilePreview,
 } from "./privacyEnforcement";
 import {
@@ -159,7 +161,7 @@ async function relationshipPayload(
   const messageAudience = (privacy.messageAudience === "followers" ||
     privacy.messageAudience === "noOne") ?
     privacy.messageAudience : "everyone";
-  const showFollowerLists = privacy.showFollowerLists !== false;
+  const followerListAudience = resolveFollowerListAudience(privacy);
   const accountPrivacy = resolveAccountPrivacy(profile);
   const canViewProfile = profile.exists &&
     profile.get("moderationState") === "active" &&
@@ -176,7 +178,13 @@ async function relationshipPayload(
     canMessage: canViewProfile && state !== "blocked" &&
       state !== "blockedBy" &&
       audienceAllows(messageAudience, viewerFollowing.exists),
-    canViewFollowers: canViewProfile && showFollowerLists,
+    canViewFollowers: canViewConnectionLists(
+      viewerId,
+      profileId,
+      followerListAudience,
+      canViewProfile,
+      viewerFollowing.exists,
+    ),
     ...(sentRequest.exists ? {
       requestedAt: (sentRequest.get("createdAt") as Timestamp)
         .toDate().toISOString(),
@@ -637,12 +645,6 @@ export const listProfileConnections = onCall(
       viewerId,
       profileId,
     );
-    if (viewerId !== profileId && relationship.canViewFollowers !== true) {
-      throw new HttpsError(
-        "permission-denied",
-        "This connection list is private.",
-      );
-    }
     if (type === "requests" && viewerId !== profileId) {
       throw new HttpsError(
         "permission-denied",
@@ -655,7 +657,7 @@ export const listProfileConnections = onCall(
         "Sent follow requests are private.",
       );
     }
-    if (type !== "requests" &&
+    if ((type === "followers" || type === "following") &&
         viewerId !== profileId &&
         relationship.canViewFollowers !== true) {
       throw new HttpsError(

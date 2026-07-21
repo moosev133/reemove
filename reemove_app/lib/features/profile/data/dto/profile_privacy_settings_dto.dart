@@ -13,7 +13,7 @@ class ProfilePrivacySettingsDto {
     required this.showSportLevels,
     required this.showGoals,
     required this.showLocation,
-    required this.showFollowerLists,
+    required this.followerListAudience,
     required this.hideLikeCounts,
     required this.discoverableByUsername,
     required this.personalizedSuggestions,
@@ -66,11 +66,7 @@ class ProfilePrivacySettingsDto {
         'showLocation',
         fallback: true,
       ),
-      showFollowerLists: FirestoreParser.boolean(
-        data,
-        'showFollowerLists',
-        fallback: true,
-      ),
+      followerListAudience: _followerListAudience(data),
       hideLikeCounts: FirestoreParser.boolean(
         data,
         'hideLikeCounts',
@@ -89,6 +85,19 @@ class ProfilePrivacySettingsDto {
     );
   }
 
+  static String _followerListAudience(Map<String, dynamic> data) {
+    final Object? raw = data['followerListAudience'];
+    if (raw == 'everyone' || raw == 'followers' || raw == 'owner') {
+      return raw as String;
+    }
+    final bool showLists = FirestoreParser.boolean(
+      data,
+      'showFollowerLists',
+      fallback: true,
+    );
+    return showLists ? 'everyone' : 'owner';
+  }
+
   final String followApprovalPolicy;
   final String messageAudience;
   final String mentionAudience;
@@ -97,7 +106,7 @@ class ProfilePrivacySettingsDto {
   final bool showSportLevels;
   final bool showGoals;
   final bool showLocation;
-  final bool showFollowerLists;
+  final String followerListAudience;
   final bool hideLikeCounts;
   final bool discoverableByUsername;
   final bool personalizedSuggestions;
@@ -113,7 +122,9 @@ class ProfilePrivacySettingsDto {
     showSportLevels: showSportLevels,
     showGoals: showGoals,
     showLocation: showLocation,
-    showFollowerLists: showFollowerLists,
+    followerListAudience: FollowerListAudience.values.byName(
+      followerListAudience,
+    ),
     hideLikeCounts: hideLikeCounts,
     discoverableByUsername: discoverableByUsername,
     personalizedSuggestions: personalizedSuggestions,

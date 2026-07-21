@@ -10,6 +10,7 @@ import {normalizeUsername, validateUsername} from "../account/usernamePolicy";
 
 export type ProfileAudience = "everyone" | "followers" | "noOne";
 export type FollowApprovalPolicy = "automatic" | "approvalRequired";
+export type FollowerListAudience = "everyone" | "followers" | "owner";
 
 export interface ProfilePrivacyInput {
   followApprovalPolicy: FollowApprovalPolicy;
@@ -20,6 +21,7 @@ export interface ProfilePrivacyInput {
   showSportLevels: boolean;
   showGoals: boolean;
   showLocation: boolean;
+  followerListAudience: FollowerListAudience;
   showFollowerLists: boolean;
   hideLikeCounts: boolean;
   discoverableByUsername: boolean;
@@ -124,6 +126,20 @@ function booleanValue(
   return value;
 }
 
+function followerListAudienceValue(
+  data: Record<string, unknown>,
+): FollowerListAudience {
+  const raw = data.followerListAudience;
+  if (raw === "everyone" || raw === "followers" || raw === "owner") {
+    return raw;
+  }
+  return booleanValue(
+    data.showFollowerLists,
+    "Follower-list visibility",
+    true,
+  ) ? "everyone" : "owner";
+}
+
 function audience(value: unknown, field: string): ProfileAudience {
   if (value === "everyone" || value === "followers" || value === "noOne") {
     return value;
@@ -169,11 +185,8 @@ export function parsePrivacy(value: unknown): ProfilePrivacyInput {
       "Location visibility",
       true,
     ),
-    showFollowerLists: booleanValue(
-      data.showFollowerLists,
-      "Follower-list visibility",
-      true,
-    ),
+    followerListAudience: followerListAudienceValue(data),
+    showFollowerLists: followerListAudienceValue(data) !== "owner",
     hideLikeCounts: booleanValue(
       data.hideLikeCounts,
       "Like-count visibility",
