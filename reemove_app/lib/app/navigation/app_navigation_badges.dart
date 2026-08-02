@@ -9,7 +9,9 @@ class AppNavigationBadges {
   final int messages;
 
   int countFor(AppDestination destination) => switch (destination) {
-    AppDestination.home => activity,
+    // Unread activity belongs on the Activity bell / Activity screen only —
+    // never on the Home feed tab.
+    AppDestination.home => 0,
     AppDestination.messages => messages,
     AppDestination.discover ||
     AppDestination.sports ||
@@ -46,7 +48,7 @@ class AppNavigationBadgeController extends Notifier<AppNavigationBadges> {
   void clear(AppDestination destination) {
     switch (destination) {
       case AppDestination.home:
-        updateActivity(0);
+        // Home is feed-only; activity unread is cleared from Activity actions.
         return;
       case AppDestination.messages:
         updateMessages(0);

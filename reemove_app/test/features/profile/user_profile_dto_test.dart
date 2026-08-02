@@ -73,6 +73,35 @@ void main() {
     expect(profile.audit.schemaVersion, 2);
   });
 
+  test('parses sparse private-preview payload from getPublicProfile', () {
+    final UserProfile profile = UserProfileDto.fromMap(<String, dynamic>{
+      'uid': 'private-1',
+      'username': 'mustafaabualhija',
+      'displayName': 'Mustafa',
+      'bio': 'Private athlete',
+      'avatarUrl': 'https://cdn.reemove.app/a.jpg',
+      'visibility': 'followers',
+      'accountPrivacy': 'private',
+      'isVerified': false,
+      'verificationType': 'none',
+      'followersCount': 3,
+      'followingCount': 1,
+      'postsCount': 9,
+      'reelsCount': 2,
+    }, documentId: 'private-1').toDomain();
+
+    expect(profile.usernameNormalized, 'mustafaabualhija');
+    expect(profile.displayName, 'Mustafa');
+    expect(profile.bio, 'Private athlete');
+    expect(profile.avatarUrl, 'https://cdn.reemove.app/a.jpg');
+    expect(profile.followersCount, 3);
+    expect(profile.followingCount, 1);
+    expect(profile.postsCount, 9);
+    expect(profile.reelsCount, 2);
+    expect(profile.websiteUrl, isNull);
+    expect(profile.location, isNull);
+  });
+
   test('uses backward-compatible defaults for older profile documents', () {
     final DateTime now = DateTime.utc(2026, 7, 13, 12);
     final UserProfile profile = UserProfileDto.fromMap(<String, dynamic>{

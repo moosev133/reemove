@@ -3,10 +3,11 @@ import '../dto/app_notification_dto.dart';
 
 extension AppNotificationDtoMapper on AppNotificationDto {
   AppNotification toDomain() {
+    final AppNotificationKind mappedKind = _kind(this);
     return AppNotification(
       id: id,
       category: _category(category),
-      kind: _kind(kind),
+      kind: mappedKind,
       title: title,
       body: body,
       route: route,
@@ -46,20 +47,43 @@ AppNotificationCategory _category(String value) => switch (value) {
   _ => AppNotificationCategory.activity,
 };
 
-AppNotificationKind _kind(String value) => switch (value) {
-  'conversation_message' => AppNotificationKind.conversationMessage,
-  'new_follower' => AppNotificationKind.newFollower,
-  'follow_request' => AppNotificationKind.followRequest,
-  'post_like' => AppNotificationKind.postLike,
-  'post_comment' => AppNotificationKind.postComment,
-  'post_repost' => AppNotificationKind.postRepost,
-  'challenge_submission' => AppNotificationKind.challengeSubmission,
-  'challenge_review' => AppNotificationKind.challengeReview,
-  'challenge_reward' => AppNotificationKind.challengeReward,
-  'challenge_reminder' => AppNotificationKind.challengeReminder,
-  'event_update' => AppNotificationKind.eventUpdate,
-  'marketplace_update' => AppNotificationKind.marketplaceUpdate,
-  'system_alert' => AppNotificationKind.systemAlert,
-  'product_update' => AppNotificationKind.productUpdate,
-  _ => AppNotificationKind.unknown,
-};
+AppNotificationKind _kind(AppNotificationDto notification) {
+  final String value = notification.kind;
+  if (value == 'new_follower') {
+    final String? relationshipStatus = notification.data['relationshipStatus'];
+    final String? source = notification.data['source'];
+    final String? status = notification.data['status'];
+    final bool confirmed =
+        relationshipStatus == 'confirmed' &&
+        source == 'direct_follow' &&
+        status != 'resolved' &&
+        status != 'orphaned';
+    if (!confirmed) {
+      return AppNotificationKind.unknown;
+    }
+    return AppNotificationKind.newFollower;
+  }
+  if (value == 'follow_request') {
+    final String? status = notification.data['status'];
+    if (status == 'resolved' || status == 'accepted' || status == 'declined') {
+      return AppNotificationKind.unknown;
+    }
+    return AppNotificationKind.followRequest;
+  }
+  return switch (value) {
+    'conversation_message' => AppNotificationKind.conversationMessage,
+    'follow_request_accepted' => AppNotificationKind.followRequestAccepted,
+    'post_like' => AppNotificationKind.postLike,
+    'post_comment' => AppNotificationKind.postComment,
+    'post_repost' => AppNotificationKind.postRepost,
+    'challenge_submission' => AppNotificationKind.challengeSubmission,
+    'challenge_review' => AppNotificationKind.challengeReview,
+    'challenge_reward' => AppNotificationKind.challengeReward,
+    'challenge_reminder' => AppNotificationKind.challengeReminder,
+    'event_update' => AppNotificationKind.eventUpdate,
+    'marketplace_update' => AppNotificationKind.marketplaceUpdate,
+    'system_alert' => AppNotificationKind.systemAlert,
+    'product_update' => AppNotificationKind.productUpdate,
+    _ => AppNotificationKind.unknown,
+  };
+}

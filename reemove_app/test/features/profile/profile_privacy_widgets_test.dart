@@ -168,7 +168,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
-    testWidgets('shows unavailable error state', (WidgetTester tester) async {
+    testWidgets('shows retryable load-failure state', (
+      WidgetTester tester,
+    ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -182,7 +184,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Profile unavailable'), findsOneWidget);
+      expect(find.text('Couldn’t load profile'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
     });
 
     testWidgets('shows empty not-found state', (WidgetTester tester) async {

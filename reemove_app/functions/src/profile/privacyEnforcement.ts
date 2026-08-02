@@ -32,20 +32,60 @@ export function canViewConnectionLists(
   isFollowing: boolean,
 ): boolean {
   if (viewerId === profileId) return true;
-  if (!canViewProfile) return false;
+  // Counts stay visible on private previews; list opens follow audience only.
   if (audience === "everyone") return true;
   if (audience === "followers") return isFollowing;
-  return false;
+  if (audience === "owner") return false;
+  return canViewProfile && isFollowing;
+}
+
+/** Callable-safe ISO string. Never return raw Firestore Timestamp objects. */
+export function callableTimestamp(value: unknown): string | undefined {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value === "string" && value.trim()) return value;
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString();
+  }
+  if (typeof value === "object" &&
+      typeof (value as {toDate?: unknown}).toDate === "function") {
+    try {
+      const date = (value as {toDate: () => Date}).toDate();
+      if (date instanceof Date && !Number.isNaN(date.getTime())) {
+        return date.toISOString();
+      }
+    } catch {
+      return undefined;
+    }
+  }
+  if (typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    const seconds = record._seconds ?? record.seconds;
+    const nanos = record._nanoseconds ?? record.nanoseconds ?? 0;
+    if (typeof seconds === "number") {
+      const millis = (seconds * 1000) + Math.floor(Number(nanos) / 1e6);
+      const date = new Date(millis);
+      if (!Number.isNaN(date.getTime())) return date.toISOString();
+    }
+  }
+  return undefined;
 }
 
 export function safeProfilePreview(
   profile: DocumentSnapshot,
 ): Record<string, unknown> {
   const accountPrivacy = resolveAccountPrivacy(profile);
+  const username = String(profile.get("username") ?? "");
+  const usernameNormalized = String(
+    profile.get("usernameNormalized") ?? username.toLowerCase(),
+  );
+  const createdAt = callableTimestamp(profile.get("createdAt"));
+  const updatedAt = callableTimestamp(profile.get("updatedAt"));
   return {
     uid: profile.id,
-    username: String(profile.get("username") ?? ""),
+    username,
+    usernameNormalized,
     displayName: String(profile.get("displayName") ?? "Athlete"),
+    bio: String(profile.get("bio") ?? ""),
     ...(profile.get("avatarUrl") ? {
       avatarUrl: String(profile.get("avatarUrl")),
     } : {}),
@@ -53,6 +93,18 @@ export function safeProfilePreview(
     accountPrivacy,
     isVerified: profile.get("isVerified") === true,
     verificationType: String(profile.get("verificationType") ?? "none"),
+    followersCount: Number(profile.get("followersCount") ?? 0),
+    followingCount: Number(profile.get("followingCount") ?? 0),
+    postsCount: Number(profile.get("postsCount") ?? 0),
+    reelsCount: Number(profile.get("reelsCount") ?? 0),
+    moderationState: "active",
+    followApprovalPolicy: String(
+      profile.get("followApprovalPolicy") ??
+      (accountPrivacy === "public" ? "automatic" : "approvalRequired"),
+    ),
+    schemaVersion: Number(profile.get("schemaVersion") ?? 1),
+    ...(createdAt ? {createdAt} : {}),
+    ...(updatedAt ? {updatedAt} : {}),
   };
 }
 

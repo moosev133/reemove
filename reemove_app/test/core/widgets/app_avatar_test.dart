@@ -7,9 +7,7 @@ void main() {
     testWidgets('shows initials when image url is missing', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: AppAvatar(displayName: 'Mustafa Abualhija'),
-          ),
+          home: Scaffold(body: AppAvatar(displayName: 'Mustafa Abualhija')),
         ),
       );
 

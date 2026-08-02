@@ -6,6 +6,9 @@ import {
 
 import {primaryRegion} from "../core/functionOptions";
 import {collections} from "../core/schema";
+import {resolveAccountPrivacy} from "../profile/profilePrivacyModel";
+import {deliverFollowRequestInboxNotification} from "./followRequestNotifications";
+import {shouldDeliverNewFollowerNotification} from "./newFollowerPolicy";
 import {createAndDeliverNotification} from "./notificationService";
 
 function eventId(value: string | undefined, fallback: string): string {
@@ -30,20 +33,7 @@ export const notifyFollowRequestCreated = onDocumentCreated(
     const requesterId = String(document.get("requesterId") ?? "");
     const targetId = String(document.get("targetId") ?? "");
     if (!requesterId || !targetId) return;
-    await createAndDeliverNotification({
-      eventId: eventId(event.id, `follow-request:${event.params.requestId}`),
-      recipientId: targetId,
-      actorId: requesterId,
-      category: "activity",
-      kind: "follow_request",
-      title: "New follow request",
-      body: "Someone wants to follow your ReeMove profile.",
-      route: `/profile/connections/${targetId}/requests`,
-      groupKey: "follow_requests",
-      entityType: "user",
-      entityId: requesterId,
-      data: {profileId: requesterId},
-    });
+    await deliverFollowRequestInboxNotification(requesterId, targetId);
   },
 );
 
@@ -56,7 +46,22 @@ export const notifyFollowerCreated = onDocumentCreated(
   async (event) => {
     const recipientId = event.params.recipientId;
     const actorId = event.params.actorId;
-    if (!recipientId || !actorId) return;
+    if (!recipientId || !actorId || !event.data?.exists) return;
+    const source = String(event.data.get("source") ?? "");
+    const recipient = await getFirestore().collection(collections.users)
+      .doc(recipientId).get();
+    if (!recipient.exists) return;
+    const accountPrivacy = resolveAccountPrivacy(recipient);
+    const followApprovalPolicy = String(
+      recipient.get("followApprovalPolicy") ?? "",
+    );
+    if (!shouldDeliverNewFollowerNotification({
+      edgeSource: source,
+      accountPrivacy,
+      followApprovalPolicy,
+    })) {
+      return;
+    }
     await createAndDeliverNotification({
       eventId: eventId(event.id, `follower:${recipientId}:${actorId}`),
       recipientId,
@@ -69,7 +74,12 @@ export const notifyFollowerCreated = onDocumentCreated(
       groupKey: "new_followers",
       entityType: "user",
       entityId: actorId,
-      data: {profileId: actorId},
+      data: {
+        profileId: actorId,
+        relationshipStatus: "confirmed",
+        source: "direct_follow",
+        status: "confirmed",
+      },
     });
   },
 );

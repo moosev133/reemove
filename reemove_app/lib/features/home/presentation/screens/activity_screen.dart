@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/errors/failure.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/widgets/adaptive_page_body.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_view.dart';
@@ -13,6 +15,9 @@ import '../../../../core/widgets/app_page_header.dart';
 import '../../../notifications/application/notification_providers.dart';
 import '../../../notifications/domain/entities/app_notification.dart';
 import '../../../notifications/presentation/widgets/notification_tile.dart';
+import '../../../profile/application/profile_providers.dart';
+import '../../../profile/domain/entities/profile_relationship.dart';
+import '../../../profile/domain/repositories/profile_social_repository.dart';
 
 enum _ActivityFilter {
   all,
@@ -177,6 +182,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                       child: NotificationTile(
                         notification: notification,
                         onTap: () => unawaited(_open(context, notification)),
+                        onActorTap: () => unawaited(
+                          _openActorProfile(context, notification),
+                        ),
                         onDelete: () => unawaited(
                           ref
                               .read(
@@ -184,6 +192,24 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                               )
                               .delete(notification.id),
                         ),
+                        onAcceptFollowRequest:
+                            _canRespondToFollowRequest(notification)
+                            ? () => unawaited(
+                                _respondToFollowRequest(
+                                  notification,
+                                  accept: true,
+                                ),
+                              )
+                            : null,
+                        onDeclineFollowRequest:
+                            _canRespondToFollowRequest(notification)
+                            ? () => unawaited(
+                                _respondToFollowRequest(
+                                  notification,
+                                  accept: false,
+                                ),
+                              )
+                            : null,
                       ),
                     ),
                   ),
@@ -237,6 +263,91 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       return;
     }
     context.go(notification.route);
+  }
+
+  Future<void> _openActorProfile(
+    BuildContext context,
+    AppNotification notification,
+  ) async {
+    if (notification.isUnread) {
+      await ref
+          .read(notificationActionControllerProvider.notifier)
+          .markRead(notification.id);
+    }
+    if (!context.mounted) {
+      return;
+    }
+    final NotificationActor? actor = notification.actors.isEmpty
+        ? null
+        : notification.actors.first;
+    final String? username = actor?.username.trim();
+    if (username != null && username.isNotEmpty) {
+      context.go(AppRoutes.publicProfile(username));
+      return;
+    }
+    context.go(notification.route);
+  }
+
+  bool _canRespondToFollowRequest(AppNotification notification) {
+    if (notification.kind != AppNotificationKind.followRequest) {
+      return false;
+    }
+    if (notification.entityId == null || notification.entityId!.isEmpty) {
+      return false;
+    }
+    final String? status = notification.data['status'];
+    return status == null || status.isEmpty || status == 'pending';
+  }
+
+  Future<void> _respondToFollowRequest(
+    AppNotification notification, {
+    required bool accept,
+  }) async {
+    final String? requesterId = notification.entityId;
+    if (requesterId == null || requesterId.isEmpty) {
+      return;
+    }
+    final ProfileSocialRepository social = ref.read(
+      profileSocialRepositoryProvider,
+    );
+    final Result<ProfileRelationship> result = accept
+        ? await social.acceptRequest(requesterId)
+        : await social.declineRequest(requesterId);
+    result.when(
+      success: (_) {
+        unawaited(
+          ref
+              .read(notificationActionControllerProvider.notifier)
+              .markRead(notification.id),
+        );
+        unawaited(
+          ref
+              .read(notificationActionControllerProvider.notifier)
+              .delete(notification.id),
+        );
+        ref.invalidate(notificationsProvider);
+        ref.invalidate(notificationUnreadCountProvider);
+        ref.invalidate(profileConnectionsProvider);
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              accept ? 'Follow request accepted.' : 'Follow request declined.',
+            ),
+          ),
+        );
+      },
+      failure: (Failure failure) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.message)));
+      },
+    );
   }
 }
 

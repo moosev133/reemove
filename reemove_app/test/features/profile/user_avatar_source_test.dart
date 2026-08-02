@@ -13,15 +13,18 @@ void main() {
       );
     });
 
-    test('falls back to auth provider photo when profile avatar is missing', () {
-      expect(
-        resolveUserAvatarImageUrl(
-          profileAvatarUrl: null,
-          authPhotoUrl: 'https://lh3.googleusercontent.com/a/photo',
-        ),
-        'https://lh3.googleusercontent.com/a/photo',
-      );
-    });
+    test(
+      'falls back to auth provider photo when profile avatar is missing',
+      () {
+        expect(
+          resolveUserAvatarImageUrl(
+            profileAvatarUrl: null,
+            authPhotoUrl: 'https://lh3.googleusercontent.com/a/photo',
+          ),
+          'https://lh3.googleusercontent.com/a/photo',
+        );
+      },
+    );
 
     test('falls back to auth photo when profile avatar is blank', () {
       expect(

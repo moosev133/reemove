@@ -1,0 +1,27 @@
+[
+  {
+    "origin": [
+      "http://localhost:7357",
+      "http://127.0.0.1:7357",
+      "http://localhost:7360",
+      "http://127.0.0.1:7360",
+      "https://reemove-staging.web.app",
+      "https://reemove-staging.firebaseapp.com"
+    ],
+    "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
+    "responseHeader": [
+      "Content-Type",
+      "Authorization",
+      "Content-Length",
+      "User-Agent",
+      "X-Requested-With",
+      "x-goog-resumable",
+      "x-goog-meta-ownerId",
+      "x-goog-meta-draftId",
+      "x-goog-meta-assetId",
+      "x-goog-meta-kind",
+      "x-goog-meta-schemaVersion"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

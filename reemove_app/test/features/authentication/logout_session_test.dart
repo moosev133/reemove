@@ -14,30 +14,31 @@ import 'package:reemove/features/feed/domain/repositories/content_draft_reposito
 
 void main() {
   group('logout session cleanup', () {
-    test('signOut clears local drafts and invokes repository signOut', () async {
-      final _RecordingAuthRepository authRepository = _RecordingAuthRepository();
-      final _RecordingContentDraftRepository draftRepository =
-          _RecordingContentDraftRepository();
+    test(
+      'signOut clears local drafts and invokes repository signOut',
+      () async {
+        final _RecordingAuthRepository authRepository =
+            _RecordingAuthRepository();
+        final _RecordingContentDraftRepository draftRepository =
+            _RecordingContentDraftRepository();
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: [
-          authRepositoryProvider.overrideWithValue(authRepository),
-          contentDraftRepositoryProvider.overrideWithValue(draftRepository),
-        ],
-      );
-      addTearDown(container.dispose);
+        final ProviderContainer container = ProviderContainer(
+          overrides: [
+            authRepositoryProvider.overrideWithValue(authRepository),
+            contentDraftRepositoryProvider.overrideWithValue(draftRepository),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      final bool signedOut = await container
-          .read(authActionControllerProvider.notifier)
-          .signOut();
+        final bool signedOut = await container
+            .read(authActionControllerProvider.notifier)
+            .signOut();
 
-      expect(signedOut, isTrue);
-      expect(authRepository.signOutCalls, 1);
-      expect(
-        draftRepository.clearedKinds,
-        containsAll(DraftKind.values),
-      );
-    });
+        expect(signedOut, isTrue);
+        expect(authRepository.signOutCalls, 1);
+        expect(draftRepository.clearedKinds, containsAll(DraftKind.values));
+      },
+    );
   });
 
   group('logout routing', () {
@@ -51,11 +52,9 @@ void main() {
               emulatorsEnabled: false,
             ),
           ),
-          currentAuthUserProvider.overrideWith(
-            (Ref ref) async* {
-              yield null;
-            },
-          ),
+          currentAuthUserProvider.overrideWith((Ref ref) async* {
+            yield null;
+          }),
         ],
       );
       addTearDown(container.dispose);
@@ -102,8 +101,7 @@ class _RecordingAuthRepository implements AuthRepository {
       const Success<void>(null);
 
   @override
-  Future<Result<AuthUser>> linkApple() =>
-      throw UnimplementedError();
+  Future<Result<AuthUser>> linkApple() => throw UnimplementedError();
 
   @override
   Future<Result<AuthUser>> linkEmailPassword({

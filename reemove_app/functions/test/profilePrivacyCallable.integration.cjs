@@ -71,6 +71,132 @@ describe("profile privacy callable emulator integration", () => {
     assert.ok(payload.preview);
     assert.equal(payload.profile.uid, target.uid);
     assert.equal(payload.relationship.canViewProfile, false);
+    assert.equal(payload.preview.username, target.profile.username);
+    assert.equal(payload.preview.usernameNormalized, "pp.private");
+    assert.equal(typeof payload.preview.displayName, "string");
+    assert.equal(typeof payload.preview.bio, "string");
+    assert.equal(typeof payload.preview.followersCount, "number");
+    assert.equal(typeof payload.preview.followingCount, "number");
+    assert.equal(typeof payload.preview.postsCount, "number");
+    assert.equal(typeof payload.preview.createdAt, "string");
+    assert.equal(typeof payload.preview.updatedAt, "string");
+    assert.equal(payload.preview.email, undefined);
+    assert.equal(payload.preview.phoneNumber, undefined);
+    assert.equal(payload.preview.location, undefined);
+  });
+
+  it("followProfile creates an inbox notification for the private target", async () => {
+    const target = await provisionUser("pp-notify-target", {
+      username: "pp.notifytarget",
+      usernameNormalized: "pp.notifytarget",
+      visibility: "followers",
+      accountPrivacy: "private",
+      followApprovalPolicy: "approvalRequired",
+    });
+    const requester = await provisionUser("pp-notify-requester", {
+      username: "pp.notifyrequester",
+      usernameNormalized: "pp.notifyrequester",
+      visibility: "followers",
+      accountPrivacy: "private",
+      followApprovalPolicy: "approvalRequired",
+    });
+    const followProfile = callableFor(requester.client.functions, "followProfile");
+    const followResult = await followProfile({profileId: target.uid});
+    assert.equal(followResult.data.state, "requestSent");
+
+    const requestRef = db.collection("follow_requests")
+      .doc(`${requester.uid}--${target.uid}`);
+    const requestDoc = await requestRef.get();
+    assert.equal(requestDoc.exists, true);
+    assert.equal(requestDoc.get("status"), "pending");
+    assert.equal(requestDoc.get("requesterId"), requester.uid);
+    assert.equal(requestDoc.get("targetId"), target.uid);
+    await assertRelationshipGraph(db, requester.uid, target.uid, {
+      connected: false,
+      followerFollowingCount: 0,
+      targetFollowersCount: 0,
+    });
+
+    // Allow trigger + callable delivery to settle.
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const notifications = await db.collection("users").doc(target.uid)
+      .collection("notifications")
+      .where("kind", "==", "follow_request")
+      .limit(5)
+      .get();
+    assert.ok(notifications.size >= 1, "expected follow_request notification");
+    const notification = notifications.docs[0].data();
+    assert.equal(notification.category, "activity");
+    assert.equal(notification.entityId, requester.uid);
+    assert.match(String(notification.route), /\/profile\/user\//);
+    assert.equal(notification.data?.status, "pending");
+    assert.equal(notification.data?.requestId, `${requester.uid}--${target.uid}`);
+    assert.equal(notification.data?.source, "follow_request_pending");
+    assert.equal(notification.title, "Follow request");
+    assert.match(String(notification.body), /requested to follow you/);
+
+    const newFollowerNotifs = await db.collection("users").doc(target.uid)
+      .collection("notifications")
+      .where("kind", "==", "new_follower")
+      .get();
+    assert.equal(
+      newFollowerNotifs.size,
+      0,
+      "pending private request must not create a new_follower notification",
+    );
+
+    // Sender must never receive their own outbound follow-request notification.
+    const requesterInbox = await db.collection("users").doc(requester.uid)
+      .collection("notifications")
+      .where("kind", "==", "follow_request")
+      .get();
+    assert.equal(requesterInbox.size, 0);
+
+    const summary = await db.doc(`users/${target.uid}/private/notification_summary`).get();
+    assert.equal(summary.exists, true);
+    assert.ok(Number(summary.get("unreadCount")) >= 1);
+
+    const followAgain = await followProfile({profileId: target.uid});
+    assert.equal(followAgain.data.state, "requestSent");
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const afterDuplicate = await db.collection("users").doc(target.uid)
+      .collection("notifications")
+      .where("kind", "==", "follow_request")
+      .get();
+    assert.equal(afterDuplicate.size, notifications.size);
+
+    const listProfileConnections = callableFor(
+      target.client.functions,
+      "listProfileConnections",
+    );
+    const requests = await listProfileConnections({
+      profileId: target.uid,
+      type: "requests",
+      limit: 10,
+    });
+    assert.ok(requests.data.items.some((item) => item.uid === requester.uid));
+  });
+
+  it("getPublicProfile keeps pending follow request as Requested preview", async () => {
+    const target = await provisionUser("pp-private-req", {
+      username: "pp.privatereq",
+      usernameNormalized: "pp.privatereq",
+      visibility: "followers",
+      accountPrivacy: "private",
+      followApprovalPolicy: "approvalRequired",
+    });
+    const viewer = await provisionUser("pp-requester", {
+      username: "pp.requester",
+      usernameNormalized: "pp.requester",
+    });
+    const followProfile = callableFor(viewer.client.functions, "followProfile");
+    const followResult = await followProfile({profileId: target.uid});
+    assert.equal(followResult.data.state, "requestSent");
+    const getPublicProfile = callableFor(viewer.client.functions, "getPublicProfile");
+    const response = await getPublicProfile({username: "pp.privatereq"});
+    assert.equal(response.data.access, "preview");
+    assert.equal(response.data.relationship.state, "requestSent");
+    assert.equal(response.data.relationship.canViewProfile, false);
   });
 
   it("approved follower receives authorized profile for private account", async () => {
@@ -267,6 +393,38 @@ describe("profile privacy callable emulator integration", () => {
       followerFollowingCount: 1,
       targetFollowersCount: 1,
     });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const targetPending = await db.collection("users").doc(target.uid)
+      .collection("notifications")
+      .where("kind", "==", "follow_request")
+      .get();
+    const activePending = targetPending.docs.filter(
+      (doc) => !(doc.get("deletedAt")),
+    );
+    assert.equal(activePending.length, 0);
+
+    const acceptedNotifs = await db.collection("users").doc(requester.uid)
+      .collection("notifications")
+      .where("kind", "==", "follow_request_accepted")
+      .get();
+    assert.equal(acceptedNotifs.size, 1);
+    assert.equal(acceptedNotifs.docs[0].get("entityId"), target.uid);
+    assert.equal(acceptedNotifs.docs[0].get("data")?.status, "accepted");
+    assert.equal(
+      acceptedNotifs.docs[0].get("data")?.requestId,
+      `${requester.uid}--${target.uid}`,
+    );
+
+    const targetFollowerNotifs = await db.collection("users").doc(target.uid)
+      .collection("notifications")
+      .where("kind", "==", "new_follower")
+      .get();
+    assert.equal(
+      targetFollowerNotifs.size,
+      0,
+      "accepting a private follow request must not notify the target as New follower",
+    );
   });
 
   it("respondToFollowRequest declines pending request", async () => {
@@ -309,6 +467,36 @@ describe("profile privacy callable emulator integration", () => {
       followerFollowingCount: 0,
       targetFollowersCount: 0,
     });
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const requesterNotifs = await db.collection("users").doc(requester.uid)
+      .collection("notifications")
+      .get();
+    assert.equal(
+      requesterNotifs.docs.filter((doc) =>
+        ["follow_request", "follow_request_accepted"].includes(doc.get("kind"))
+      ).length,
+      0,
+      "decline must not notify the requester",
+    );
+    const targetPending = await db.collection("users").doc(target.uid)
+      .collection("notifications")
+      .where("kind", "==", "follow_request")
+      .get();
+    const activePending = targetPending.docs.filter(
+      (doc) => !(doc.get("deletedAt")),
+    );
+    assert.equal(activePending.length, 0);
+
+    const targetFollowerNotifs = await db.collection("users").doc(target.uid)
+      .collection("notifications")
+      .where("kind", "==", "new_follower")
+      .get();
+    assert.equal(
+      targetFollowerNotifs.size,
+      0,
+      "decline must not create a new_follower notification",
+    );
   });
 
   it("removeFollower and unfollowProfile", async () => {
@@ -499,6 +687,45 @@ describe("profile privacy callable emulator integration", () => {
         targetFollowersCount: 0,
       });
     }
+  });
+
+  it("repeated accept calls are idempotent for edges counters and requester notification", async () => {
+    const target = await provisionUser("pp-repeat-accept-target", {
+      username: "pp.repeataccepttarget",
+      usernameNormalized: "pp.repeataccepttarget",
+      visibility: "followers",
+      accountPrivacy: "private",
+      followApprovalPolicy: "approvalRequired",
+    });
+    const requester = await provisionUser("pp-repeat-accept-requester", {
+      username: "pp.repeatacceptrequester",
+      usernameNormalized: "pp.repeatacceptrequester",
+    });
+    await callableFor(requester.client.functions, "followProfile")({
+      profileId: target.uid,
+    });
+    await callableFor(target.client.functions, "respondToFollowRequest")({
+      profileId: requester.uid,
+      response: "accept",
+    });
+    await expectCallableError(
+      callableFor(target.client.functions, "respondToFollowRequest")({
+        profileId: requester.uid,
+        response: "accept",
+      }),
+      "not-found",
+    );
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await assertRelationshipGraph(db, requester.uid, target.uid, {
+      connected: true,
+      followerFollowingCount: 1,
+      targetFollowersCount: 1,
+    });
+    const acceptedNotifs = await db.collection("users").doc(requester.uid)
+      .collection("notifications")
+      .where("kind", "==", "follow_request_accepted")
+      .get();
+    assert.equal(acceptedNotifs.size, 1);
   });
 
   it("updateProfile toggles public and private visibility", async () => {
@@ -705,13 +932,28 @@ describe("profile privacy callable emulator integration", () => {
       username: "pp.connpublic",
       usernameNormalized: "pp.connpublic",
     });
-    const privateTarget = await provisionUser("pp-conn-target", {
-      username: "pp.conntarget",
-      usernameNormalized: "pp.conntarget",
+    const privateEveryone = await provisionUser("pp-conn-everyone", {
+      username: "pp.conneveryone",
+      usernameNormalized: "pp.conneveryone",
       visibility: "followers",
       accountPrivacy: "private",
       followApprovalPolicy: "approvalRequired",
     });
+    await db.doc(`users/${privateEveryone.uid}/private/profile_settings`).set({
+      followerListAudience: "everyone",
+    }, {merge: true});
+    const privateOwnerOnlyLists = await provisionUser("pp-conn-ownerlists", {
+      username: "pp.connownerlists",
+      usernameNormalized: "pp.connownerlists",
+      visibility: "followers",
+      accountPrivacy: "private",
+      followApprovalPolicy: "approvalRequired",
+    });
+    await db.doc(
+      `users/${privateOwnerOnlyLists.uid}/private/profile_settings`,
+    ).set({
+      followerListAudience: "owner",
+    }, {merge: true});
     const stranger = await provisionUser("pp-conn-stranger", {
       username: "pp.connstranger",
       usernameNormalized: "pp.connstranger",
@@ -728,16 +970,27 @@ describe("profile privacy callable emulator integration", () => {
     });
     assert.ok(Array.isArray(allowed.data.items));
 
-    const strangerList = callableFor(
-      stranger.client.functions,
-      "listProfileConnections",
-    );
+    const previewEveryone = await listProfileConnections({
+      profileId: privateEveryone.uid,
+      type: "followers",
+      limit: 10,
+    });
+    assert.ok(Array.isArray(previewEveryone.data.items));
+
     await expectCallableError(
-      strangerList({profileId: privateTarget.uid, type: "followers", limit: 10}),
+      listProfileConnections({
+        profileId: privateOwnerOnlyLists.uid,
+        type: "followers",
+        limit: 10,
+      }),
       "permission-denied",
     );
     await expectCallableError(
-      strangerList({profileId: privateTarget.uid, type: "requests", limit: 10}),
+      listProfileConnections({
+        profileId: privateEveryone.uid,
+        type: "requests",
+        limit: 10,
+      }),
       "permission-denied",
     );
   });

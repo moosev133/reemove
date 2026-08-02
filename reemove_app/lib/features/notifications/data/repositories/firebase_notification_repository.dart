@@ -44,20 +44,20 @@ class FirebaseNotificationRepository implements NotificationRepository {
     int limit = 50,
   }) async* {
     try {
+      // Do not query `deletedAt == null` against the SPARSE_ALL
+      // (deletedAt, latestAt) composite index — null deletedAt values are
+      // excluded from that index, so active inbox items never appear.
+      // Order by latestAt and filter soft-deletes client-side.
+      // Over-fetch stays <= 100 to satisfy firestore.rules list limits.
+      final int boundedLimit = limit.clamp(1, 100).toInt();
       final Query<AppNotificationDto> query = _notifications
-          .where('deletedAt', isNull: true)
           .orderBy('latestAt', descending: true)
           .orderBy(FieldPath.documentId, descending: true)
-          .limit(limit.clamp(1, 100).toInt());
+          .limit(_queryFetchLimit(boundedLimit));
       await for (final QuerySnapshot<AppNotificationDto> snapshot
           in query.snapshots()) {
         yield Success<List<AppNotification>>(
-          snapshot.docs
-              .map(
-                (QueryDocumentSnapshot<AppNotificationDto> item) =>
-                    item.data().toDomain(),
-              )
-              .toList(growable: false),
+          _mapActiveNotifications(snapshot.docs, boundedLimit),
         );
       }
     } on FirebaseException catch (error) {
@@ -79,10 +79,9 @@ class FirebaseNotificationRepository implements NotificationRepository {
     try {
       final int boundedLimit = limit.clamp(1, 100).toInt();
       Query<AppNotificationDto> query = _notifications
-          .where('deletedAt', isNull: true)
           .orderBy('latestAt', descending: true)
           .orderBy(FieldPath.documentId, descending: true)
-          .limit(boundedLimit);
+          .limit(_queryFetchLimit(boundedLimit));
       final _NotificationCursor? parsed = _NotificationCursor.tryParse(cursor);
       if (parsed != null) {
         query = query.startAfter(<Object>[
@@ -94,12 +93,10 @@ class FirebaseNotificationRepository implements NotificationRepository {
         ]);
       }
       final QuerySnapshot<AppNotificationDto> snapshot = await query.get();
-      final List<AppNotification> items = snapshot.docs
-          .map(
-            (QueryDocumentSnapshot<AppNotificationDto> item) =>
-                item.data().toDomain(),
-          )
-          .toList(growable: false);
+      final List<AppNotification> items = _mapActiveNotifications(
+        snapshot.docs,
+        boundedLimit,
+      );
       return Success<NotificationPage>(
         NotificationPage(
           items: items,
@@ -117,6 +114,29 @@ class FirebaseNotificationRepository implements NotificationRepository {
         NotificationFailureMapper.unexpected(error),
       );
     }
+  }
+
+  /// Over-fetch for client-side soft-delete filtering, capped by rules
+  /// (`request.query.limit <= 100` on `users/{uid}/notifications`).
+  static int _queryFetchLimit(int boundedLimit) =>
+      (boundedLimit * 3).clamp(1, 100).toInt();
+
+  List<AppNotification> _mapActiveNotifications(
+    List<QueryDocumentSnapshot<AppNotificationDto>> docs,
+    int limit,
+  ) {
+    return docs
+        .map(
+          (QueryDocumentSnapshot<AppNotificationDto> item) =>
+              item.data().toDomain(),
+        )
+        .where(
+          (AppNotification notification) =>
+              notification.deletedAt == null &&
+              notification.kind != AppNotificationKind.unknown,
+        )
+        .take(limit)
+        .toList(growable: false);
   }
 
   @override
