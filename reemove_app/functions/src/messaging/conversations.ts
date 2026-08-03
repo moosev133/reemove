@@ -91,9 +91,13 @@ async function setRealtimeAcl(
   conversationId: string,
   memberIds: Iterable<string>,
 ): Promise<void> {
-  const values: Record<string, boolean> = {};
-  for (const memberId of memberIds) values[memberId] = true;
-  await getDatabase().ref(`messaging_acl/${conversationId}`).set(values);
+  try {
+    const values: Record<string, boolean> = {};
+    for (const memberId of memberIds) values[memberId] = true;
+    await getDatabase().ref(`messaging_acl/${conversationId}`).set(values);
+  } catch {
+    // Conversation docs are authoritative; RTDB ACL is best-effort (emulator/network).
+  }
 }
 
 async function updateRealtimeAcl(
@@ -101,14 +105,20 @@ async function updateRealtimeAcl(
   added: Iterable<string>,
   removed: Iterable<string>,
 ): Promise<void> {
-  const values: Record<string, boolean | null> = {};
-  for (const memberId of added) values[`messaging_acl/${conversationId}/${memberId}`] = true;
-  for (const memberId of removed) {
-    values[`messaging_acl/${conversationId}/${memberId}`] = null;
-    values[`presence/${conversationId}/${memberId}`] = null;
-    values[`typing/${conversationId}/${memberId}`] = null;
+  try {
+    const values: Record<string, boolean | null> = {};
+    for (const memberId of added) {
+      values[`messaging_acl/${conversationId}/${memberId}`] = true;
+    }
+    for (const memberId of removed) {
+      values[`messaging_acl/${conversationId}/${memberId}`] = null;
+      values[`presence/${conversationId}/${memberId}`] = null;
+      values[`typing/${conversationId}/${memberId}`] = null;
+    }
+    if (Object.keys(values).length > 0) await getDatabase().ref().update(values);
+  } catch {
+    // Conversation docs are authoritative; RTDB ACL is best-effort (emulator/network).
   }
-  if (Object.keys(values).length > 0) await getDatabase().ref().update(values);
 }
 
 export const createDirectConversation = onCall(callableOptions, async (request) => {
@@ -122,6 +132,15 @@ export const createDirectConversation = onCall(callableOptions, async (request) 
 
   const database = getFirestore();
   await assertUsersCanMessage(database, uid, targetUserId);
+  return ensureDirectConversationBetween(database, uid, targetUserId);
+});
+
+/** Shared by createDirectConversation and message-request accept. */
+export async function ensureDirectConversationBetween(
+  database: ReturnType<typeof getFirestore>,
+  uid: string,
+  targetUserId: string,
+): Promise<{conversationId: string; existing: boolean}> {
   const [creator, target] = await Promise.all([
     activeProfileSnapshot(database, uid),
     activeProfileSnapshot(database, targetUserId),
@@ -185,14 +204,14 @@ export const createDirectConversation = onCall(callableOptions, async (request) 
   await batch.commit();
   await setRealtimeAcl(conversationId, [uid, targetUserId]);
   await writeAuditEvent({
-    actorId: uid,
     action: "messaging.direct_created",
+    actorId: uid,
     targetType: "conversation",
     targetId: conversationId,
     metadata: {targetUserId},
   });
   return {conversationId, existing: false};
-});
+}
 
 export const createGroupConversation = onCall(callableOptions, async (request) => {
   const uid = requireUid(request.auth?.uid);

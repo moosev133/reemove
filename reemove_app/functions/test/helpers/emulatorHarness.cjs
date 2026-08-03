@@ -111,6 +111,7 @@ async function seedProfile(db, profile) {
     uid: profile.uid,
     followApprovalPolicy: profile.followApprovalPolicy ?? "automatic",
     messageAudience: "everyone",
+    messageRequestAudience: "noOne",
     mentionAudience: "everyone",
     tagAudience: "followers",
     showActivityStatus: true,
@@ -278,6 +279,7 @@ function defaultPrivacy(overrides = {}) {
   return {
     followApprovalPolicy: "automatic",
     messageAudience: "everyone",
+    messageRequestAudience: "noOne",
     mentionAudience: "everyone",
     tagAudience: "followers",
     showActivityStatus: true,

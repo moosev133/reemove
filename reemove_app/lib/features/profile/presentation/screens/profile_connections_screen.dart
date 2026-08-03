@@ -176,7 +176,10 @@ class _ProfileConnectionsScreenState
         onPressed: () => _removeFollower(profile),
         icon: const Icon(Icons.person_remove_outlined),
       ),
-      ProfileConnectionType.following => null,
+      ProfileConnectionType.following => TextButton(
+        onPressed: () => _unfollow(profile),
+        child: const Text('Unfollow'),
+      ),
       ProfileConnectionType.sentRequests => TextButton(
         onPressed: () => _cancelSentRequest(profile),
         child: const Text('Cancel'),
@@ -262,6 +265,47 @@ class _ProfileConnectionsScreenState
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Follower removed.')));
+    } else {
+      _showActionFailure();
+    }
+  }
+
+  Future<void> _unfollow(UserProfile profile) async {
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            title: Text('Unfollow ${profile.displayName}?'),
+            content: const Text(
+              'Their posts will leave your feed. They are not notified.',
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Unfollow'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) {
+      return;
+    }
+    final bool success = await ref
+        .read(profileActionControllerProvider.notifier)
+        .unfollow(profile.uid);
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _removeLocally(profile.uid);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Unfollowed.')));
     } else {
       _showActionFailure();
     }
@@ -379,37 +423,74 @@ class _ConnectionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
+    // Keep profile navigation and trailing actions as separate hit targets so
+    // Unfollow / Remove do not merge into the row's navigation semantics.
+    return Padding(
+      padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: AppSpacing.xs,
       ),
-      leading: AppAvatar(
-        displayName: profile.displayName,
-        imageUrl: profile.avatarUrl,
-      ),
-      title: Row(
+      child: Row(
         children: <Widget>[
-          Flexible(
-            child: Text(
-              profile.displayName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          Expanded(
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                child: Row(
+                  children: <Widget>[
+                    AppAvatar(
+                      displayName: profile.displayName,
+                      imageUrl: profile.avatarUrl,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Row(
+                            children: <Widget>[
+                              Flexible(
+                                child: Text(
+                                  profile.displayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ),
+                              if (profile.isVerified) ...<Widget>[
+                                const SizedBox(width: AppSpacing.xxs),
+                                Icon(
+                                  Icons.verified_rounded,
+                                  size: 17,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ],
+                            ],
+                          ),
+                          Text(
+                            '@${profile.username} · ${profile.profileLabel}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-          if (profile.isVerified) ...<Widget>[
-            const SizedBox(width: AppSpacing.xxs),
-            Icon(
-              Icons.verified_rounded,
-              size: 17,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ],
+          if (trailing != null) ?trailing,
         ],
       ),
-      subtitle: Text('@${profile.username} · ${profile.profileLabel}'),
-      trailing: trailing,
-      onTap: onTap,
     );
   }
 }

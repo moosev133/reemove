@@ -7,6 +7,7 @@ class ProfilePrivacySettingsDto {
   const ProfilePrivacySettingsDto({
     required this.followApprovalPolicy,
     required this.messageAudience,
+    required this.messageRequestAudience,
     required this.mentionAudience,
     required this.tagAudience,
     required this.showActivityStatus,
@@ -39,6 +40,11 @@ class ProfilePrivacySettingsDto {
         data,
         'messageAudience',
         fallback: 'everyone',
+      ),
+      messageRequestAudience: FirestoreParser.string(
+        data,
+        'messageRequestAudience',
+        fallback: 'noOne',
       ),
       mentionAudience: FirestoreParser.string(
         data,
@@ -100,6 +106,7 @@ class ProfilePrivacySettingsDto {
 
   final String followApprovalPolicy;
   final String messageAudience;
+  final String messageRequestAudience;
   final String mentionAudience;
   final String tagAudience;
   final bool showActivityStatus;
@@ -116,6 +123,9 @@ class ProfilePrivacySettingsDto {
       followApprovalPolicy,
     ),
     messageAudience: ProfileAudience.values.byName(messageAudience),
+    messageRequestAudience: ProfileAudience.values.byName(
+      messageRequestAudience,
+    ),
     mentionAudience: ProfileAudience.values.byName(mentionAudience),
     tagAudience: ProfileAudience.values.byName(tagAudience),
     showActivityStatus: showActivityStatus,

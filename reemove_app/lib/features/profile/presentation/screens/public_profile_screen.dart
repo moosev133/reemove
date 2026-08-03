@@ -1,11 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/errors/failure.dart';
+import '../../../../core/result/result.dart';
 import '../../../../core/widgets/adaptive_page_body.dart';
 import '../../../../core/widgets/app_empty_state.dart';
+import '../../../feed/application/feed_providers.dart';
+import '../../../feed/domain/entities/content_report.dart';
+import '../../../feed/presentation/widgets/content_report_reason_sheet.dart';
+import '../../../messages/application/messaging_providers.dart';
 import '../../application/profile_providers.dart';
 import '../../domain/entities/profile_content_page.dart';
 import '../../domain/entities/profile_relationship.dart';
@@ -50,12 +58,16 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
       ),
       body: surfaceValue.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stackTrace) => const AdaptivePageBody(
+        error: (Object error, StackTrace stackTrace) => AdaptivePageBody(
           slivers: <Widget>[
             AppEmptyState(
-              icon: Icons.lock_person_outlined,
-              title: 'Profile unavailable',
-              message: 'This profile is private, inactive, or unavailable.',
+              icon: Icons.cloud_off_outlined,
+              title: 'Couldn’t load profile',
+              message: 'Check your connection and try again.',
+              actionLabel: 'Retry',
+              onAction: () => ref.invalidate(
+                profileSurfaceByUsernameProvider(widget.username),
+              ),
             ),
           ],
         ),
@@ -96,9 +108,14 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
                   isOwnProfile: false,
                   relationship: relationship,
                   onPrimaryAction: () => _primaryAction(profile, relationship),
+                  secondaryLabel: _secondaryLabel(relationship),
                   onSecondaryAction: relationship.canMessage
                       ? () => context.go(
                           AppRoutes.newConversationFor(profile.username),
+                        )
+                      : relationship.canRequestMessage
+                      ? () => unawaited(
+                          _messageRequestAction(profile, relationship),
                         )
                       : null,
                   onFollowers: relationship.canViewFollowers
@@ -210,6 +227,73 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
     }
   }
 
+  String? _secondaryLabel(ProfileRelationship relationship) {
+    if (relationship.canMessage) {
+      return 'Message';
+    }
+    if (!relationship.canRequestMessage) {
+      return null;
+    }
+    return relationship.hasPendingMessageRequest
+        ? 'Requested'
+        : 'Request message';
+  }
+
+  Future<void> _messageRequestAction(
+    UserProfile profile,
+    ProfileRelationship relationship,
+  ) async {
+    final messaging = ref.read(messagingRepositoryProvider);
+    if (relationship.hasPendingMessageRequest) {
+      final Result<void> result = await messaging.cancelMessageRequest(
+        profile.uid,
+      );
+      if (!mounted) {
+        return;
+      }
+      result.when<void>(
+        success: (_) {
+          ref.invalidate(profileSurfaceByUsernameProvider(widget.username));
+          ref.invalidate(profileRelationshipProvider(profile.uid));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Message request cancelled.')),
+          );
+        },
+        failure: (Failure failure) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(failure.message)));
+        },
+      );
+      return;
+    }
+
+    final Result<String?> result = await messaging.createMessageRequest(
+      profile.uid,
+    );
+    if (!mounted) {
+      return;
+    }
+    result.when<void>(
+      success: (String? conversationId) {
+        ref.invalidate(profileSurfaceByUsernameProvider(widget.username));
+        ref.invalidate(profileRelationshipProvider(profile.uid));
+        if (conversationId != null && conversationId.isNotEmpty) {
+          context.go(AppRoutes.conversation(conversationId));
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Message request sent.')),
+        );
+      },
+      failure: (Failure failure) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.message)));
+      },
+    );
+  }
+
   Future<void> _respondToRequest(UserProfile profile) async {
     await showModalBottomSheet<void>(
       context: context,
@@ -268,7 +352,10 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
               leading: const Icon(Icons.flag_outlined),
               title: const Text('Report profile'),
               subtitle: const Text('Send this profile to the safety team.'),
-              onTap: () => Navigator.of(sheetContext).pop(),
+              onTap: () async {
+                Navigator.of(sheetContext).pop();
+                await _reportProfile(profile);
+              },
             ),
             ListTile(
               leading: Icon(
@@ -295,6 +382,40 @@ class _PublicProfileScreenState extends ConsumerState<PublicProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _reportProfile(UserProfile profile) async {
+    final ContentReportReason? reason = await showContentReportReasonSheet(
+      context,
+      title: 'Why are you reporting this profile?',
+    );
+    if (reason == null || !mounted) {
+      return;
+    }
+    final Result<void> result = await ref
+        .read(postInteractionRepositoryProvider)
+        .report(
+          ContentReportRequest(
+            targetType: 'user',
+            targetId: profile.uid,
+            reason: reason,
+          ),
+        );
+    if (!mounted) {
+      return;
+    }
+    result.when<void>(
+      success: (_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Report submitted for review.')),
+        );
+      },
+      failure: (Failure failure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(failure.message)),
+        );
+      },
     );
   }
 

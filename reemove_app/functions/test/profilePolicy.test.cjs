@@ -13,6 +13,7 @@ describe('profile privacy policy', () => {
     assert.deepEqual(parsePrivacy({}), {
       followApprovalPolicy: 'automatic',
       messageAudience: 'everyone',
+      messageRequestAudience: 'noOne',
       mentionAudience: 'everyone',
       tagAudience: 'followers',
       showActivityStatus: true,
@@ -31,6 +32,7 @@ describe('profile privacy policy', () => {
     assert.deepEqual(parsePrivacy({showFollowerLists: false}), {
       followApprovalPolicy: 'automatic',
       messageAudience: 'everyone',
+      messageRequestAudience: 'noOne',
       mentionAudience: 'everyone',
       tagAudience: 'followers',
       showActivityStatus: true,

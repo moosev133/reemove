@@ -3,7 +3,7 @@ import 'package:reemove/features/profile/domain/entities/profile_relationship.da
 import 'package:reemove/features/profile/domain/entities/profile_surface.dart';
 
 void main() {
-  test('ProfileRelationship defaults canViewProfile to true', () {
+  test('ProfileRelationship defaults canViewProfile and message request fields', () {
     const ProfileRelationship relationship = ProfileRelationship(
       viewerId: 'viewer',
       profileId: 'profile',
@@ -13,6 +13,9 @@ void main() {
     );
 
     expect(relationship.canViewProfile, isTrue);
+    expect(relationship.canRequestMessage, isFalse);
+    expect(relationship.messageRequestStatus, isNull);
+    expect(relationship.hasPendingMessageRequest, isFalse);
   });
 
   test('ProfileSurface exposes preview state', () {

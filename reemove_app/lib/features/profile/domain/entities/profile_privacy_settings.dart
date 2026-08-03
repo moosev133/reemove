@@ -12,6 +12,7 @@ class ProfilePrivacySettings {
   const ProfilePrivacySettings({
     required this.followApprovalPolicy,
     required this.messageAudience,
+    required this.messageRequestAudience,
     required this.mentionAudience,
     required this.tagAudience,
     required this.showActivityStatus,
@@ -27,6 +28,7 @@ class ProfilePrivacySettings {
   factory ProfilePrivacySettings.defaults() => const ProfilePrivacySettings(
     followApprovalPolicy: FollowApprovalPolicy.automatic,
     messageAudience: ProfileAudience.everyone,
+    messageRequestAudience: ProfileAudience.noOne,
     mentionAudience: ProfileAudience.everyone,
     tagAudience: ProfileAudience.followers,
     showActivityStatus: true,
@@ -41,6 +43,7 @@ class ProfilePrivacySettings {
 
   final FollowApprovalPolicy followApprovalPolicy;
   final ProfileAudience messageAudience;
+  final ProfileAudience messageRequestAudience;
   final ProfileAudience mentionAudience;
   final ProfileAudience tagAudience;
   final bool showActivityStatus;
@@ -58,6 +61,7 @@ class ProfilePrivacySettings {
   ProfilePrivacySettings copyWith({
     FollowApprovalPolicy? followApprovalPolicy,
     ProfileAudience? messageAudience,
+    ProfileAudience? messageRequestAudience,
     ProfileAudience? mentionAudience,
     ProfileAudience? tagAudience,
     bool? showActivityStatus,
@@ -72,6 +76,8 @@ class ProfilePrivacySettings {
     return ProfilePrivacySettings(
       followApprovalPolicy: followApprovalPolicy ?? this.followApprovalPolicy,
       messageAudience: messageAudience ?? this.messageAudience,
+      messageRequestAudience:
+          messageRequestAudience ?? this.messageRequestAudience,
       mentionAudience: mentionAudience ?? this.mentionAudience,
       tagAudience: tagAudience ?? this.tagAudience,
       showActivityStatus: showActivityStatus ?? this.showActivityStatus,

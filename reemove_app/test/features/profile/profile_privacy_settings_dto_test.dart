@@ -9,6 +9,7 @@ void main() {
           ProfilePrivacySettingsDto.fromMap(<String, dynamic>{
             'followApprovalPolicy': 'approvalRequired',
             'messageAudience': 'followers',
+            'messageRequestAudience': 'everyone',
             'mentionAudience': 'noOne',
             'tagAudience': 'followers',
             'showActivityStatus': false,
@@ -26,6 +27,7 @@ void main() {
         FollowApprovalPolicy.approvalRequired,
       );
       expect(settings.messageAudience, ProfileAudience.followers);
+      expect(settings.messageRequestAudience, ProfileAudience.everyone);
       expect(settings.mentionAudience, ProfileAudience.noOne);
       expect(settings.showActivityStatus, isFalse);
       expect(settings.followerListAudience, FollowerListAudience.followers);
@@ -50,6 +52,7 @@ void main() {
 
       expect(settings.followApprovalPolicy, FollowApprovalPolicy.automatic);
       expect(settings.messageAudience, ProfileAudience.everyone);
+      expect(settings.messageRequestAudience, ProfileAudience.noOne);
       expect(settings.tagAudience, ProfileAudience.followers);
       expect(settings.showActivityStatus, isTrue);
       expect(settings.followerListAudience, FollowerListAudience.everyone);

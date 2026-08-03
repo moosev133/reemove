@@ -74,16 +74,13 @@ abstract final class FirestoreParser {
     throw FormatException('Expected bool at "$key".');
   }
 
-  static DateTime dateTime(FirestoreMap data, String key) {
-    final Object? value = data[key];
-    if (value is Timestamp) {
-      return value.toDate().toUtc();
+  static DateTime dateTime(FirestoreMap data, String key, {DateTime? fallback}) {
+    final DateTime? parsed = _tryParseDateTime(data[key]);
+    if (parsed != null) {
+      return parsed;
     }
-    if (value is DateTime) {
-      return value.toUtc();
-    }
-    if (value is String) {
-      return DateTime.parse(value).toUtc();
+    if (fallback != null) {
+      return fallback.toUtc();
     }
     throw FormatException('Expected Timestamp at "$key".');
   }
@@ -93,6 +90,14 @@ abstract final class FirestoreParser {
     if (value == null) {
       return null;
     }
+    final DateTime? parsed = _tryParseDateTime(value);
+    if (parsed != null) {
+      return parsed;
+    }
+    throw FormatException('Expected nullable Timestamp at "$key".');
+  }
+
+  static DateTime? _tryParseDateTime(Object? value) {
     if (value is Timestamp) {
       return value.toDate().toUtc();
     }
@@ -102,7 +107,18 @@ abstract final class FirestoreParser {
     if (value is String) {
       return DateTime.parse(value).toUtc();
     }
-    throw FormatException('Expected nullable Timestamp at "$key".');
+    if (value is Map) {
+      final Object? seconds = value['_seconds'] ?? value['seconds'];
+      final Object? nanos = value['_nanoseconds'] ?? value['nanoseconds'];
+      if (seconds is num) {
+        final int nanoPart = nanos is num ? nanos.toInt() : 0;
+        return DateTime.fromMillisecondsSinceEpoch(
+          seconds.toInt() * 1000 + (nanoPart / 1000000).round(),
+          isUtc: true,
+        );
+      }
+    }
+    return null;
   }
 
   static GeoPoint geoPoint(FirestoreMap data, String key) {

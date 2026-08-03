@@ -23,8 +23,9 @@ class NotificationTile extends StatelessWidget {
   final VoidCallback? onAcceptFollowRequest;
   final VoidCallback? onDeclineFollowRequest;
 
-  bool get _showFollowRequestActions {
-    if (notification.kind != AppNotificationKind.followRequest) {
+  bool get _showRequestActions {
+    if (notification.kind != AppNotificationKind.followRequest &&
+        notification.kind != AppNotificationKind.messageRequest) {
       return false;
     }
     if (onAcceptFollowRequest == null && onDeclineFollowRequest == null) {
@@ -183,7 +184,7 @@ class NotificationTile extends StatelessWidget {
                         ],
                       ],
                     ),
-                    if (_showFollowRequestActions) ...<Widget>[
+                    if (_showRequestActions) ...<Widget>[
                       const SizedBox(height: AppSpacing.sm),
                       Row(
                         children: <Widget>[
@@ -219,6 +220,8 @@ IconData _icon(AppNotificationKind kind) => switch (kind) {
   AppNotificationKind.newFollower => Icons.person_add_alt_1_rounded,
   AppNotificationKind.followRequest => Icons.person_search_rounded,
   AppNotificationKind.followRequestAccepted => Icons.verified_outlined,
+  AppNotificationKind.messageRequest => Icons.mark_email_unread_outlined,
+  AppNotificationKind.messageRequestAccepted => Icons.mark_email_read_outlined,
   AppNotificationKind.postLike => Icons.favorite_outline_rounded,
   AppNotificationKind.postComment => Icons.mode_comment_outlined,
   AppNotificationKind.postRepost => Icons.repeat_rounded,

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/authentication/domain/entities/auth_routing_state.dart';
 import 'app_routes.dart';
+import 'web_initial_location.dart';
 
 /// Reads the browser/deep-link destination even when [matchedPath] is still `/`.
 String requestedRouterLocation(String uriString, String matchedPath) {
@@ -33,7 +34,16 @@ String? resolveReadyRedirect({
   required String uriString,
   required String? returnTo,
 }) {
-  final String requested = requestedRouterLocation(uriString, matchedPath);
+  String requested = requestedRouterLocation(uriString, matchedPath);
+  if (requested == AppRoutes.startup) {
+    final String? pending = WebInitialLocation.pendingDeepLink(
+      uriString: uriString,
+    );
+    if (pending != null) {
+      requested = pending;
+    }
+  }
+  requested = AppRoutes.normalizeDeepLinkLocation(requested);
 
   if (AppRoutes.isAuthenticatedLocation(requested)) {
     if (matchedPath == AppRoutes.startup && requested != AppRoutes.startup) {
@@ -90,7 +100,9 @@ String? resolveAuthRedirect({
   final String requested = requestedRouterLocation(uriString, matchedPath);
   final String? requestedReturnTo =
       safeReturnToValue(returnTo) ??
-      (AppRoutes.isAuthenticatedLocation(requested) ? requested : null);
+      (AppRoutes.isAuthenticatedLocation(requested)
+          ? AppRoutes.normalizeDeepLinkLocation(requested)
+          : null);
   final AuthDestination destination = routing.requireValue.destination;
   const Set<String> signedOutRoutes = <String>{
     AppRoutes.authWelcome,

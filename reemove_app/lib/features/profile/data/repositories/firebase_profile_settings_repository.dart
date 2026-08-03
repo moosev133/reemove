@@ -140,6 +140,7 @@ class FirebaseProfileSettingsRepository implements ProfileSettingsRepository {
       <String, Object?>{
         'followApprovalPolicy': value.followApprovalPolicy.name,
         'messageAudience': value.messageAudience.name,
+        'messageRequestAudience': value.messageRequestAudience.name,
         'mentionAudience': value.mentionAudience.name,
         'tagAudience': value.tagAudience.name,
         'showActivityStatus': value.showActivityStatus,

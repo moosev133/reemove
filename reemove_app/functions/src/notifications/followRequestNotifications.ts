@@ -84,14 +84,22 @@ export async function deliverFollowRequestInboxNotification(
   if (!requesterId || !targetId || requesterId === targetId) {
     return {created: false};
   }
+  const database = getFirestore();
+  const requestId = `${requesterId}--${targetId}`;
+  const pendingRequest = await database.collection(collections.followRequests)
+    .doc(requestId)
+    .get();
+  if (!pendingRequest.exists || pendingRequest.get("status") !== "pending") {
+    // Decline/cancel raced ahead of the create trigger — do not recreate inbox noise.
+    return {created: false};
+  }
   await clearStaleFollowRequestPendingEvent(targetId, requesterId);
 
-  const requestId = `${requesterId}--${targetId}`;
-  const requester = await getFirestore().collection(collections.users)
+  const requester = await database.collection(collections.users)
     .doc(requesterId).get();
   const username = String(requester.get("username") ?? "Someone");
   const displayName = String(requester.get("displayName") ?? username);
-  return createAndDeliverNotification({
+  const delivered = await createAndDeliverNotification({
     eventId: followRequestPendingEventId(requesterId, targetId),
     recipientId: targetId,
     actorId: requesterId,
@@ -112,6 +120,16 @@ export async function deliverFollowRequestInboxNotification(
       source: "follow_request_pending",
     },
   });
+
+  // Decline/accept may complete while this delivery is in flight.
+  const stillPending = await database.collection(collections.followRequests)
+    .doc(requestId)
+    .get();
+  if (!stillPending.exists || stillPending.get("status") !== "pending") {
+    await resolvePendingFollowRequestNotifications(targetId, requesterId);
+    return {created: false};
+  }
+  return delivered;
 }
 
 /**

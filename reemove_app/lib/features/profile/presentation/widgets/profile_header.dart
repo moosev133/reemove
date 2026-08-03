@@ -14,6 +14,7 @@ class ProfileHeader extends StatelessWidget {
     this.relationship,
     this.onPrimaryAction,
     this.onSecondaryAction,
+    this.secondaryLabel,
     this.onFollowers,
     this.onFollowing,
   });
@@ -23,6 +24,7 @@ class ProfileHeader extends StatelessWidget {
   final ProfileRelationship? relationship;
   final VoidCallback? onPrimaryAction;
   final VoidCallback? onSecondaryAction;
+  final String? secondaryLabel;
   final VoidCallback? onFollowers;
   final VoidCallback? onFollowing;
 
@@ -78,7 +80,10 @@ class ProfileHeader extends StatelessWidget {
                           const SizedBox(width: AppSpacing.xs),
                           OutlinedButton(
                             onPressed: onSecondaryAction,
-                            child: Text(isOwnProfile ? 'Share' : 'Message'),
+                            child: Text(
+                              secondaryLabel ??
+                                  (isOwnProfile ? 'Share' : 'Message'),
+                            ),
                           ),
                         ],
                       ],

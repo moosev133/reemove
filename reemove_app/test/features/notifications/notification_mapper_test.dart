@@ -97,6 +97,30 @@ void main() {
     );
   });
 
+  test('message_request kinds map like follow requests', () {
+    expect(
+      buildDto(
+        kind: 'message_request',
+        data: const <String, String>{'status': 'pending'},
+      ).toDomain().kind,
+      AppNotificationKind.messageRequest,
+    );
+    expect(
+      buildDto(
+        kind: 'message_request',
+        data: const <String, String>{'status': 'resolved'},
+      ).toDomain().kind,
+      AppNotificationKind.unknown,
+    );
+    expect(
+      buildDto(
+        kind: 'message_request_accepted',
+        data: const <String, String>{'status': 'accepted'},
+      ).toDomain().kind,
+      AppNotificationKind.messageRequestAccepted,
+    );
+  });
+
   test('pending follow_request wire shape maps into Activity social filter', () {
     final AppNotificationDto dto = AppNotificationDto(
       id: 'pending-wire',

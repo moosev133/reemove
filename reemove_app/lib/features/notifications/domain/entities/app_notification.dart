@@ -13,6 +13,8 @@ enum AppNotificationKind {
   newFollower,
   followRequest,
   followRequestAccepted,
+  messageRequest,
+  messageRequestAccepted,
   postLike,
   postComment,
   postRepost,

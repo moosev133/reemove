@@ -6,7 +6,7 @@
     "build:functions": "npm --prefix functions run build",
     "lint:functions": "npm --prefix functions run lint",
     "test:rules": "npx --yes firebase-tools@15.23.0 emulators:exec --project demo-reemove --only firestore,storage,database \"npm --prefix firebase_tests test\"",
-    "test:integration": "npm run build:functions && cp functions/.env.test.example functions/.env && npx --yes firebase-tools@15.23.0 emulators:exec --project demo-reemove --only auth,firestore,functions \"npm --prefix functions run test:integration:run\"",
+    "test:integration": "npm run build:functions && cp functions/.env.test.example functions/.env && npx --yes firebase-tools@15.23.0 emulators:exec --project demo-reemove --only auth,firestore,database,functions \"npm --prefix functions run test:integration:run\"",
     "seed:emulator": "npx --yes firebase-tools@15.23.0 emulators:exec --project demo-reemove --only auth,firestore,database \"npm --prefix functions run seed:emulator\"",
     "verify:backend": "npm run lint:functions && npm run build:functions && npm run test:functions && npm run test:rules",
     "test:functions": "npm --prefix functions run test:unit",

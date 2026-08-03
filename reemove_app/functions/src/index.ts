@@ -76,6 +76,11 @@ import {
   updateGroupConversation,
 } from "./messaging/conversations";
 import {
+  cancelMessageRequest,
+  createMessageRequest,
+  respondToMessageRequest,
+} from "./messaging/messageRequests";
+import {
   registerMessagingDevice,
   unregisterMessagingDevice,
 } from "./messaging/deviceTokens";
@@ -225,6 +230,9 @@ export {
   reviewVerificationRequest,
   syncProfileSnapshots,
   createDirectConversation,
+  createMessageRequest,
+  cancelMessageRequest,
+  respondToMessageRequest,
   createGroupConversation,
   updateGroupConversation,
   leaveConversation,

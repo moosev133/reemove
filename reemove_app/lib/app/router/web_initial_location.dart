@@ -58,6 +58,11 @@ abstract final class WebInitialLocation {
     _captured = null;
   }
 
+  /// Test-only: seed a captured browser location without touching Uri.base.
+  static void debugSetCaptured(String? location) {
+    _captured = location;
+  }
+
   static String? _resolve(Uri uri) {
     final String path = uri.path;
     if (path.isNotEmpty && path != AppRoutes.startup) {

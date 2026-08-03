@@ -12,6 +12,8 @@ import '../../../../core/widgets/adaptive_page_body.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_page_header.dart';
+import '../../../messages/application/messaging_providers.dart';
+import '../../../messages/domain/repositories/messaging_repository.dart';
 import '../../../notifications/application/notification_providers.dart';
 import '../../../notifications/domain/entities/app_notification.dart';
 import '../../../notifications/presentation/widgets/notification_tile.dart';
@@ -193,23 +195,9 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                               .delete(notification.id),
                         ),
                         onAcceptFollowRequest:
-                            _canRespondToFollowRequest(notification)
-                            ? () => unawaited(
-                                _respondToFollowRequest(
-                                  notification,
-                                  accept: true,
-                                ),
-                              )
-                            : null,
+                            _acceptRequestHandler(notification),
                         onDeclineFollowRequest:
-                            _canRespondToFollowRequest(notification)
-                            ? () => unawaited(
-                                _respondToFollowRequest(
-                                  notification,
-                                  accept: false,
-                                ),
-                              )
-                            : null,
+                            _declineRequestHandler(notification),
                       ),
                     ),
                   ),
@@ -288,8 +276,47 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     context.go(notification.route);
   }
 
+  VoidCallback? _acceptRequestHandler(AppNotification notification) {
+    if (_canRespondToFollowRequest(notification)) {
+      return () => unawaited(
+        _respondToFollowRequest(notification, accept: true),
+      );
+    }
+    if (_canRespondToMessageRequest(notification)) {
+      return () => unawaited(
+        _respondToMessageRequest(notification, accept: true),
+      );
+    }
+    return null;
+  }
+
+  VoidCallback? _declineRequestHandler(AppNotification notification) {
+    if (_canRespondToFollowRequest(notification)) {
+      return () => unawaited(
+        _respondToFollowRequest(notification, accept: false),
+      );
+    }
+    if (_canRespondToMessageRequest(notification)) {
+      return () => unawaited(
+        _respondToMessageRequest(notification, accept: false),
+      );
+    }
+    return null;
+  }
+
   bool _canRespondToFollowRequest(AppNotification notification) {
     if (notification.kind != AppNotificationKind.followRequest) {
+      return false;
+    }
+    if (notification.entityId == null || notification.entityId!.isEmpty) {
+      return false;
+    }
+    final String? status = notification.data['status'];
+    return status == null || status.isEmpty || status == 'pending';
+  }
+
+  bool _canRespondToMessageRequest(AppNotification notification) {
+    if (notification.kind != AppNotificationKind.messageRequest) {
       return false;
     }
     if (notification.entityId == null || notification.entityId!.isEmpty) {
@@ -335,6 +362,65 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
           SnackBar(
             content: Text(
               accept ? 'Follow request accepted.' : 'Follow request declined.',
+            ),
+          ),
+        );
+      },
+      failure: (Failure failure) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(failure.message)));
+      },
+    );
+  }
+
+  Future<void> _respondToMessageRequest(
+    AppNotification notification, {
+    required bool accept,
+  }) async {
+    final String? requesterId = notification.entityId;
+    if (requesterId == null || requesterId.isEmpty) {
+      return;
+    }
+    final MessagingRepository messaging = ref.read(
+      messagingRepositoryProvider,
+    );
+    final Result<String?> result = await messaging.respondToMessageRequest(
+      requesterId: requesterId,
+      decision: accept ? 'accept' : 'decline',
+    );
+    result.when(
+      success: (String? conversationId) {
+        unawaited(
+          ref
+              .read(notificationActionControllerProvider.notifier)
+              .markRead(notification.id),
+        );
+        unawaited(
+          ref
+              .read(notificationActionControllerProvider.notifier)
+              .delete(notification.id),
+        );
+        ref.invalidate(notificationsProvider);
+        ref.invalidate(notificationUnreadCountProvider);
+        if (!mounted) {
+          return;
+        }
+        if (accept &&
+            conversationId != null &&
+            conversationId.isNotEmpty) {
+          context.go(AppRoutes.conversation(conversationId));
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              accept
+                  ? 'Message request accepted.'
+                  : 'Message request declined.',
             ),
           ),
         );

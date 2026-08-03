@@ -70,9 +70,17 @@ AppNotificationKind _kind(AppNotificationDto notification) {
     }
     return AppNotificationKind.followRequest;
   }
+  if (value == 'message_request') {
+    final String? status = notification.data['status'];
+    if (status == 'resolved' || status == 'accepted' || status == 'declined') {
+      return AppNotificationKind.unknown;
+    }
+    return AppNotificationKind.messageRequest;
+  }
   return switch (value) {
     'conversation_message' => AppNotificationKind.conversationMessage,
     'follow_request_accepted' => AppNotificationKind.followRequestAccepted,
+    'message_request_accepted' => AppNotificationKind.messageRequestAccepted,
     'post_like' => AppNotificationKind.postLike,
     'post_comment' => AppNotificationKind.postComment,
     'post_repost' => AppNotificationKind.postRepost,

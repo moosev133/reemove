@@ -79,40 +79,101 @@ class FirebaseStoryRepository implements StoryRepository {
   }
 
   Story? _parseStory(Map<String, dynamic> data) {
-    final String id = data['id'] is String ? data['id'] as String : '';
-    if (id.isEmpty) {
+    try {
+      final String id = data['id'] is String ? data['id'] as String : '';
+      if (id.isEmpty) {
+        return null;
+      }
+      final Map<String, dynamic>? authorMap = data['authorSnapshot'] is Map
+          ? (data['authorSnapshot'] as Map).cast<String, dynamic>()
+          : data['author'] is Map
+          ? (data['author'] as Map).cast<String, dynamic>()
+          : null;
+      final Map<String, dynamic>? mediaMap = data['media'] is Map
+          ? (data['media'] as Map).cast<String, dynamic>()
+          : null;
+      if (authorMap == null || mediaMap == null) {
+        return null;
+      }
+      final StoryDto dto = StoryDto(
+        id: id,
+        author: PostAuthorSnapshotDto.fromMap(authorMap),
+        media: _storyMediaFromMap(mediaMap, id),
+        caption: data['caption'] is String ? data['caption'] as String : null,
+        sportId: data['sportId'] is String ? data['sportId'] as String : null,
+        visibility: data['visibility'] is String
+            ? data['visibility'] as String
+            : 'public',
+        moderationState: data['moderationState'] is String
+            ? data['moderationState'] as String
+            : 'active',
+        createdAt: DateTime.parse(data['createdAt'] as String).toUtc(),
+        expiresAt: DateTime.parse(data['expiresAt'] as String).toUtc(),
+        viewCount: data['viewCount'] is num
+            ? (data['viewCount'] as num).toInt()
+            : 0,
+      );
+      return dto.toDomain(isViewed: data['isViewed'] == true);
+    } catch (_) {
+      // Skip malformed stories so one bad payload cannot blank the rail.
       return null;
     }
-    final Map<String, dynamic>? authorMap = data['authorSnapshot'] is Map
-        ? (data['authorSnapshot'] as Map).cast<String, dynamic>()
-        : data['author'] is Map
-        ? (data['author'] as Map).cast<String, dynamic>()
+  }
+
+  /// Accepts canonical MediaAsset maps and compact story payloads (`type`/`url`).
+  static MediaAssetDto _storyMediaFromMap(
+    Map<String, dynamic> mediaMap,
+    String storyId,
+  ) {
+    final String? kindRaw = mediaMap['kind'] is String
+        ? mediaMap['kind'] as String
+        : mediaMap['type'] is String
+        ? mediaMap['type'] as String
         : null;
-    final Map<String, dynamic>? mediaMap = data['media'] is Map
-        ? (data['media'] as Map).cast<String, dynamic>()
+    final String kind = kindRaw == 'video' ? 'video' : 'image';
+    final String? downloadUrl = mediaMap['downloadUrl'] is String
+        ? mediaMap['downloadUrl'] as String
+        : mediaMap['url'] is String
+        ? mediaMap['url'] as String
         : null;
-    if (authorMap == null || mediaMap == null) {
-      return null;
-    }
-    final StoryDto dto = StoryDto(
+    final String id = mediaMap['id'] is String &&
+            (mediaMap['id'] as String).isNotEmpty
+        ? mediaMap['id'] as String
+        : 'story-media-$storyId';
+    final String storagePath = mediaMap['storagePath'] is String &&
+            (mediaMap['storagePath'] as String).isNotEmpty
+        ? mediaMap['storagePath'] as String
+        : 'stories/$storyId/media';
+    final String processingState = mediaMap['processingState'] is String &&
+            (mediaMap['processingState'] as String).isNotEmpty
+        ? mediaMap['processingState'] as String
+        : 'ready';
+    return MediaAssetDto(
       id: id,
-      author: PostAuthorSnapshotDto.fromMap(authorMap),
-      media: MediaAssetDto.fromMap(mediaMap),
-      caption: data['caption'] is String ? data['caption'] as String : null,
-      sportId: data['sportId'] is String ? data['sportId'] as String : null,
-      visibility: data['visibility'] is String
-          ? data['visibility'] as String
-          : 'public',
-      moderationState: data['moderationState'] is String
-          ? data['moderationState'] as String
-          : 'active',
-      createdAt: DateTime.parse(data['createdAt'] as String).toUtc(),
-      expiresAt: DateTime.parse(data['expiresAt'] as String).toUtc(),
-      viewCount: data['viewCount'] is num
-          ? (data['viewCount'] as num).toInt()
-          : 0,
+      storagePath: storagePath,
+      kind: kind,
+      processingState: processingState,
+      downloadUrl: downloadUrl,
+      thumbnailUrl: mediaMap['thumbnailUrl'] is String
+          ? mediaMap['thumbnailUrl'] as String
+          : null,
+      width: mediaMap['width'] is num ? (mediaMap['width'] as num).toInt() : null,
+      height: mediaMap['height'] is num
+          ? (mediaMap['height'] as num).toInt()
+          : null,
+      durationMs: mediaMap['durationMs'] is num
+          ? (mediaMap['durationMs'] as num).toInt()
+          : null,
+      blurHash: mediaMap['blurHash'] is String
+          ? mediaMap['blurHash'] as String
+          : null,
+      contentType: mediaMap['contentType'] is String
+          ? mediaMap['contentType'] as String
+          : null,
+      sizeBytes: mediaMap['sizeBytes'] is num
+          ? (mediaMap['sizeBytes'] as num).toInt()
+          : null,
     );
-    return dto.toDomain(isViewed: data['isViewed'] == true);
   }
 
   Future<Result<void>> _callVoid(String name, Map<String, Object?> data) async {

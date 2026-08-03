@@ -80,8 +80,20 @@ class _ProfilePrivacyScreenState extends ConsumerState<ProfilePrivacyScreen> {
                       label: 'Messages',
                       icon: Icons.chat_bubble_outline_rounded,
                       value: draft.messageAudience,
+                      helperText:
+                          'Who can start a direct chat with you. Message requests are controlled separately below.',
                       onChanged: (ProfileAudience item) =>
                           _set(draft.copyWith(messageAudience: item)),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _AudienceField(
+                      label: 'Message requests',
+                      icon: Icons.mark_email_unread_outlined,
+                      value: draft.messageRequestAudience,
+                      helperText:
+                          'Who can send a message request when they cannot message you directly. Default is no one.',
+                      onChanged: (ProfileAudience item) =>
+                          _set(draft.copyWith(messageRequestAudience: item)),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _AudienceField(
@@ -254,18 +266,24 @@ class _AudienceField extends StatelessWidget {
     required this.icon,
     required this.value,
     required this.onChanged,
+    this.helperText,
   });
 
   final String label;
   final IconData icon;
   final ProfileAudience value;
   final ValueChanged<ProfileAudience> onChanged;
+  final String? helperText;
 
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<ProfileAudience>(
       initialValue: value,
-      decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        helperText: helperText,
+      ),
       items: const <DropdownMenuItem<ProfileAudience>>[
         DropdownMenuItem<ProfileAudience>(
           value: ProfileAudience.everyone,
@@ -273,7 +291,7 @@ class _AudienceField extends StatelessWidget {
         ),
         DropdownMenuItem<ProfileAudience>(
           value: ProfileAudience.followers,
-          child: Text('People you follow'),
+          child: Text('Your followers'),
         ),
         DropdownMenuItem<ProfileAudience>(
           value: ProfileAudience.noOne,

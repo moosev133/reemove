@@ -17,6 +17,8 @@ export const notificationKinds = [
   "new_follower",
   "follow_request",
   "follow_request_accepted",
+  "message_request",
+  "message_request_accepted",
   "post_like",
   "post_comment",
   "post_repost",

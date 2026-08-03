@@ -287,6 +287,9 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
     onSuccess: () {
       ref.invalidate(currentUserProfileProvider);
       ref.invalidate(profileConnectionsProvider);
+      ref.invalidate(profileRelationshipProvider(followerId));
+      ref.invalidate(publicProfileByIdProvider(followerId));
+      ref.invalidate(profileSurfaceByIdProvider(followerId));
       ref.invalidate(feedControllerProvider);
       ref.invalidate(storyRailProvider);
     },
@@ -296,8 +299,15 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
     () => ref.read(profileSocialRepositoryProvider).block(profileId),
     onSuccess: () {
       ref.invalidate(blockedProfilesProvider);
-      ref.invalidate(profileRelationshipProvider);
+      ref.invalidate(profileRelationshipProvider(profileId));
+      ref.invalidate(publicProfileByIdProvider(profileId));
+      ref.invalidate(profileSurfaceByIdProvider(profileId));
+      ref.invalidate(publicProfileByUsernameProvider);
+      ref.invalidate(profileSurfaceByUsernameProvider);
+      ref.invalidate(currentUserProfileProvider);
+      ref.invalidate(profileConnectionsProvider);
       ref.invalidate(feedControllerProvider);
+      ref.invalidate(storyRailProvider);
     },
   );
 
@@ -305,8 +315,15 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
     () => ref.read(profileSocialRepositoryProvider).unblock(profileId),
     onSuccess: () {
       ref.invalidate(blockedProfilesProvider);
-      ref.invalidate(profileRelationshipProvider);
+      ref.invalidate(profileRelationshipProvider(profileId));
+      ref.invalidate(publicProfileByIdProvider(profileId));
+      ref.invalidate(profileSurfaceByIdProvider(profileId));
+      ref.invalidate(publicProfileByUsernameProvider);
+      ref.invalidate(profileSurfaceByUsernameProvider);
+      ref.invalidate(currentUserProfileProvider);
+      ref.invalidate(profileConnectionsProvider);
       ref.invalidate(feedControllerProvider);
+      ref.invalidate(storyRailProvider);
     },
   );
 

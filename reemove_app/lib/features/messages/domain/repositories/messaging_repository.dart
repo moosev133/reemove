@@ -32,6 +32,22 @@ abstract interface class MessagingRepository {
 
   Future<Result<String>> createDirectConversation(String targetUserId);
 
+  /// Creates a message request, or opens a direct conversation when allowed.
+  ///
+  /// Returns a conversation id when a chat is opened immediately; otherwise
+  /// null when a pending request was created or already existed.
+  Future<Result<String?>> createMessageRequest(String targetUserId);
+
+  Future<Result<void>> cancelMessageRequest(String targetUserId);
+
+  /// Accepts or declines a message request.
+  ///
+  /// On accept, returns the opened conversation id. On decline, returns null.
+  Future<Result<String?>> respondToMessageRequest({
+    required String requesterId,
+    required String decision,
+  });
+
   Future<Result<String>> createGroupConversation({
     required String title,
     required List<String> memberIds,

@@ -174,10 +174,49 @@ abstract final class AppRoutes {
   static String profileAlias(String username) =>
       '/u/${_segment(username.toLowerCase())}';
 
+  /// Shareable short profile link (`/u/:username`).
+  static String shareableProfile(String username) => profileAlias(username);
+
   static String conversationAlias(String conversationId) =>
       '/c/${_segment(conversationId)}';
 
   static String sportAlias(String sportId) => '/s/${_segment(sportId)}';
+
+  /// Resolves short aliases (for example `/u/:username`) to canonical routes.
+  static String normalizeDeepLinkLocation(String location) {
+    final Uri? uri = Uri.tryParse(location);
+    final String path = (uri?.path.isNotEmpty ?? false) ? uri!.path : location;
+    final Map<String, String> query = uri?.queryParameters ?? const <String, String>{};
+
+    String normalized = path;
+    final Match? profileAliasMatch = RegExp(
+      r'^/u/([^/]+)/?$',
+    ).firstMatch(path);
+    if (profileAliasMatch != null) {
+      normalized = publicProfile(
+        Uri.decodeComponent(profileAliasMatch.group(1)!),
+      );
+    } else {
+      final Match? postAliasMatch = RegExp(r'^/p/([^/]+)/?$').firstMatch(path);
+      if (postAliasMatch != null) {
+        normalized = homePost(Uri.decodeComponent(postAliasMatch.group(1)!));
+      } else {
+        final Match? conversationAliasMatch = RegExp(
+          r'^/c/([^/]+)/?$',
+        ).firstMatch(path);
+        if (conversationAliasMatch != null) {
+          normalized = conversation(
+            Uri.decodeComponent(conversationAliasMatch.group(1)!),
+          );
+        }
+      }
+    }
+
+    if (query.isEmpty) {
+      return normalized;
+    }
+    return Uri(path: normalized, queryParameters: query).toString();
+  }
 
   static String withReturnTo(String target, String? returnTo) {
     if (returnTo == null || returnTo.trim().isEmpty) {

@@ -465,6 +465,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /message_requests/{requestId} {
+      allow read, write: if false;
+    }
+
     match /verification_requests/{uid} {
       allow get: if isOwner(uid) || isAdmin();
       allow list: if isAdmin() && request.query.limit <= 100;

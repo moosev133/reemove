@@ -11,6 +11,7 @@ import {
 } from "@firebase/rules-unit-testing";
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -522,6 +523,28 @@ describe("reports and deny-by-default", () => {
       getDoc(doc(athlete, "account_deletions/athlete")),
     );
     await assertFails(setDoc(doc(athlete, "unknown/document"), {value: true}));
+  });
+
+  it("denies all client access to message_requests", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "message_requests/a--b"), {
+        requesterId: "a",
+        targetId: "b",
+        status: "pending",
+        schemaVersion: 1,
+      });
+    });
+    const athlete = testEnv.authenticatedContext("athlete").firestore();
+    const requester = testEnv.authenticatedContext("a").firestore();
+    await assertFails(getDoc(doc(athlete, "message_requests/a--b")));
+    await assertFails(getDoc(doc(requester, "message_requests/a--b")));
+    await assertFails(setDoc(doc(requester, "message_requests/a--b"), {
+      requesterId: "a",
+      targetId: "b",
+      status: "pending",
+      schemaVersion: 1,
+    }));
+    await assertFails(deleteDoc(doc(requester, "message_requests/a--b")));
   });
 });
 

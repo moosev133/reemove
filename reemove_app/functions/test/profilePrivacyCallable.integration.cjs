@@ -399,9 +399,13 @@ describe("profile privacy callable emulator integration", () => {
       .collection("notifications")
       .where("kind", "==", "follow_request")
       .get();
-    const activePending = targetPending.docs.filter(
-      (doc) => !(doc.get("deletedAt")),
-    );
+    const activePending = targetPending.docs.filter((doc) => {
+      if (doc.get("deletedAt")) {
+        return false;
+      }
+      const status = String(doc.get("data")?.status ?? "pending");
+      return status === "pending";
+    });
     assert.equal(activePending.length, 0);
 
     const acceptedNotifs = await db.collection("users").doc(requester.uid)
@@ -483,9 +487,13 @@ describe("profile privacy callable emulator integration", () => {
       .collection("notifications")
       .where("kind", "==", "follow_request")
       .get();
-    const activePending = targetPending.docs.filter(
-      (doc) => !(doc.get("deletedAt")),
-    );
+    const activePending = targetPending.docs.filter((doc) => {
+      if (doc.get("deletedAt")) {
+        return false;
+      }
+      const status = String(doc.get("data")?.status ?? "pending");
+      return status === "pending";
+    });
     assert.equal(activePending.length, 0);
 
     const targetFollowerNotifs = await db.collection("users").doc(target.uid)

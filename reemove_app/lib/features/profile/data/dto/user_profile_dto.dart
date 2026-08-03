@@ -104,10 +104,15 @@ class UserProfileDto {
     required String documentId,
   }) {
     final Object? locationValue = data['location'];
+    final String username = FirestoreParser.string(data, 'username');
     return UserProfileDto(
       uid: FirestoreParser.string(data, 'uid', fallback: documentId),
-      username: FirestoreParser.string(data, 'username'),
-      usernameNormalized: FirestoreParser.string(data, 'usernameNormalized'),
+      username: username,
+      usernameNormalized: FirestoreParser.string(
+        data,
+        'usernameNormalized',
+        fallback: username.toLowerCase(),
+      ),
       displayName: FirestoreParser.string(data, 'displayName'),
       bio: FirestoreParser.string(data, 'bio', fallback: ''),
       avatarUrl: FirestoreParser.nullableString(data, 'avatarUrl'),

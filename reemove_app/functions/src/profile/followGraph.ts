@@ -29,6 +29,7 @@ import {
   resolveFollowerListAudience,
   safeProfilePreview,
 } from "./privacyEnforcement";
+import {purgeMessageRequestsBetween} from "../messaging/messageRequestCleanup";
 import {
   buildPublicProfileCallableResponse,
   resolveAccountPrivacy,
@@ -134,6 +135,8 @@ async function relationshipPayload(
       profileId,
       state: "self" satisfies RelationshipState,
       canMessage: false,
+      canRequestMessage: false,
+      messageRequestStatus: null,
       canViewFollowers: true,
     };
   }
@@ -170,6 +173,9 @@ async function relationshipPayload(
   const messageAudience = (privacy.messageAudience === "followers" ||
     privacy.messageAudience === "noOne") ?
     privacy.messageAudience : "everyone";
+  const messageRequestAudience = (privacy.messageRequestAudience === "followers" ||
+    privacy.messageRequestAudience === "everyone") ?
+    privacy.messageRequestAudience : "noOne";
   const followerListAudience = resolveFollowerListAudience(privacy);
   const accountPrivacy = resolveAccountPrivacy(profile);
   const canViewProfile = profile.exists &&
@@ -187,14 +193,27 @@ async function relationshipPayload(
       canViewProfile,
       viewerFollowing.exists,
     );
+  const blocked = state === "blocked" || state === "blockedBy";
+  const canMessage = canViewProfile && !blocked &&
+    audienceAllows(messageAudience, viewerFollowing.exists);
+  const canRequestMessage = canViewProfile && !blocked && !canMessage &&
+    audienceAllows(messageRequestAudience, viewerFollowing.exists);
+  const messageRequestRef = database.collection(collections.messageRequests)
+    .doc(`${viewerId}--${profileId}`);
+  const outgoingMessageRequest = await messageRequestRef.get();
+  const messageRequestStatus =
+    outgoingMessageRequest.exists &&
+      outgoingMessageRequest.get("status") === "pending" ?
+      "pending" :
+      null;
   return {
     viewerId,
     profileId,
     state,
     canViewProfile,
-    canMessage: canViewProfile && state !== "blocked" &&
-      state !== "blockedBy" &&
-      audienceAllows(messageAudience, viewerFollowing.exists),
+    canMessage,
+    canRequestMessage: canRequestMessage || messageRequestStatus === "pending",
+    messageRequestStatus,
     canViewFollowers,
     ...(sentRequest.exists ? {
       requestedAt: (sentRequest.get("createdAt") as Timestamp)
@@ -910,4 +929,5 @@ export async function removeRelationshipForBlock(
     transaction.delete(forward.sentRequest);
     transaction.delete(forward.receivedRequest);
   });
+  await purgeMessageRequestsBetween(database, blockerId, blockedId);
 }

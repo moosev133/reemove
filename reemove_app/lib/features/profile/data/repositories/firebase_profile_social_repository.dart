@@ -303,6 +303,10 @@ class FirebaseProfileSocialRepository implements ProfileSocialRepository {
         profileId: data['profileId'] as String,
         state: FollowRelationshipState.values.byName(data['state'] as String),
         canMessage: data['canMessage'] == true,
+        canRequestMessage: data['canRequestMessage'] == true,
+        messageRequestStatus: data['messageRequestStatus'] is String
+            ? data['messageRequestStatus'] as String
+            : null,
         canViewFollowers: data['canViewFollowers'] == true,
         canViewProfile: data['canViewProfile'] != false,
         requestedAt: data['requestedAt'] is String

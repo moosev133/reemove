@@ -15,6 +15,7 @@ export type FollowerListAudience = "everyone" | "followers" | "owner";
 export interface ProfilePrivacyInput {
   followApprovalPolicy: FollowApprovalPolicy;
   messageAudience: ProfileAudience;
+  messageRequestAudience: ProfileAudience;
   mentionAudience: ProfileAudience;
   tagAudience: ProfileAudience;
   showActivityStatus: boolean;
@@ -163,6 +164,10 @@ export function parsePrivacy(value: unknown): ProfilePrivacyInput {
     messageAudience: audience(
       data.messageAudience ?? "everyone",
       "Message audience",
+    ),
+    messageRequestAudience: audience(
+      data.messageRequestAudience ?? "noOne",
+      "Message request audience",
     ),
     mentionAudience: audience(
       data.mentionAudience ?? "everyone",
