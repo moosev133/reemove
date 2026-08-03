@@ -189,3 +189,15 @@ describe("social content upload rules", () => {
     ));
   });
 });
+
+describe("groups storage foundation", () => {
+  it("denies client reads and writes under groups/ until C2 media uploads", async () => {
+    const storage = testEnv.authenticatedContext("alice").storage();
+    const avatar = ref(storage, "groups/g1/avatar");
+    await assertFails(uploadBytes(avatar, bytes, {
+      contentType: "image/png",
+      customMetadata: {ownerId: "alice", schemaVersion: "1"},
+    }));
+    await assertFails(getBytes(avatar));
+  });
+});

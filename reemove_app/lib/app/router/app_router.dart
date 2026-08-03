@@ -28,6 +28,13 @@ import '../../features/discover/presentation/screens/discover_screen.dart';
 import '../../features/discover/presentation/screens/discover_search_screen.dart';
 import '../../features/feed/presentation/screens/reels_screen.dart';
 import '../../features/feed/presentation/screens/story_viewer_screen.dart';
+import '../../features/groups/presentation/screens/create_edit_group_screen.dart';
+import '../../features/groups/presentation/screens/group_detail_screen.dart';
+import '../../features/groups/presentation/screens/group_invitations_screen.dart';
+import '../../features/groups/presentation/screens/group_join_requests_screen.dart';
+import '../../features/groups/presentation/screens/group_members_screen.dart';
+import '../../features/groups/presentation/screens/group_schedule_screen.dart';
+import '../../features/groups/presentation/screens/groups_home_screen.dart';
 import '../../features/home/presentation/screens/activity_screen.dart';
 import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/home/presentation/screens/post_deep_link_screen.dart';
@@ -419,6 +426,98 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                                     child: ChallengeSubmissionsScreen(
                                       challengeId:
                                           state.pathParameters['challengeId'] ??
+                                          '',
+                                    ),
+                                  );
+                                },
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'groups',
+                    name: AppRouteNames.groups,
+                    pageBuilder: _page(const GroupsHomeScreen()),
+                    routes: <RouteBase>[
+                      GoRoute(
+                        path: 'create',
+                        name: AppRouteNames.createGroup,
+                        pageBuilder: _page(const CreateEditGroupScreen()),
+                      ),
+                      GoRoute(
+                        path: 'invitations',
+                        name: AppRouteNames.groupInvitations,
+                        pageBuilder: _page(const GroupInvitationsScreen()),
+                      ),
+                      GoRoute(
+                        path: ':groupId',
+                        name: AppRouteNames.groupDetail,
+                        pageBuilder:
+                            (BuildContext context, GoRouterState state) {
+                              return MaterialPage<void>(
+                                key: state.pageKey,
+                                child: GroupDetailScreen(
+                                  groupId:
+                                      state.pathParameters['groupId'] ?? '',
+                                ),
+                              );
+                            },
+                        routes: <RouteBase>[
+                          GoRoute(
+                            path: 'edit',
+                            name: AppRouteNames.editGroup,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) {
+                                  return MaterialPage<void>(
+                                    key: state.pageKey,
+                                    child: CreateEditGroupScreen(
+                                      groupId:
+                                          state.pathParameters['groupId'],
+                                    ),
+                                  );
+                                },
+                          ),
+                          GoRoute(
+                            path: 'members',
+                            name: AppRouteNames.groupMembers,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) {
+                                  return MaterialPage<void>(
+                                    key: state.pageKey,
+                                    child: GroupMembersScreen(
+                                      groupId:
+                                          state.pathParameters['groupId'] ??
+                                          '',
+                                    ),
+                                  );
+                                },
+                          ),
+                          GoRoute(
+                            path: 'requests',
+                            name: AppRouteNames.groupJoinRequests,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) {
+                                  return MaterialPage<void>(
+                                    key: state.pageKey,
+                                    child: GroupJoinRequestsScreen(
+                                      groupId:
+                                          state.pathParameters['groupId'] ??
+                                          '',
+                                    ),
+                                  );
+                                },
+                          ),
+                          GoRoute(
+                            path: 'schedule',
+                            name: AppRouteNames.groupSchedule,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) {
+                                  return MaterialPage<void>(
+                                    key: state.pageKey,
+                                    child: GroupScheduleScreen(
+                                      groupId:
+                                          state.pathParameters['groupId'] ??
                                           '',
                                     ),
                                   );

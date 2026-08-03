@@ -362,7 +362,7 @@ export const deleteStory = onCall(callableOptions, async (request) => {
   return {deleted: true};
 });
 
-const reportReasons = new Set([
+export const reportReasons = new Set([
   "spam",
   "harassment",
   "hate",
@@ -382,7 +382,7 @@ export const reportContent = onCall(callableOptions, async (request) => {
   const targetId = safeDocumentId(data.targetId, "targetId");
   const reason = String(data.reason ?? "");
   const details = typeof data.details === "string" ? data.details.trim() : "";
-  if (!new Set(["user", "post", "comment", "story", "reel"]).has(targetType) ||
+  if (!new Set(["user", "post", "comment", "story", "reel", "group"]).has(targetType) ||
       !reportReasons.has(reason) || details.length > 2000) {
     throw new HttpsError("invalid-argument", "The report is invalid.");
   }

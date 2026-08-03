@@ -87,6 +87,26 @@ function profileAvatar(snapshot: Record<string, unknown>): string | undefined {
     snapshot.avatarUrl : undefined;
 }
 
+/** RTDB ACL is best-effort; never block callable completion on hung sockets. */
+const realtimeAclTimeoutMs = 2_500;
+
+async function withRealtimeAclTimeout<T>(operation: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new Error("realtime_acl_timeout")),
+          realtimeAclTimeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 async function setRealtimeAcl(
   conversationId: string,
   memberIds: Iterable<string>,
@@ -94,7 +114,9 @@ async function setRealtimeAcl(
   try {
     const values: Record<string, boolean> = {};
     for (const memberId of memberIds) values[memberId] = true;
-    await getDatabase().ref(`messaging_acl/${conversationId}`).set(values);
+    await withRealtimeAclTimeout(
+      getDatabase().ref(`messaging_acl/${conversationId}`).set(values),
+    );
   } catch {
     // Conversation docs are authoritative; RTDB ACL is best-effort (emulator/network).
   }
@@ -115,7 +137,9 @@ async function updateRealtimeAcl(
       values[`presence/${conversationId}/${memberId}`] = null;
       values[`typing/${conversationId}/${memberId}`] = null;
     }
-    if (Object.keys(values).length > 0) await getDatabase().ref().update(values);
+    if (Object.keys(values).length > 0) {
+      await withRealtimeAclTimeout(getDatabase().ref().update(values));
+    }
   } catch {
     // Conversation docs are authoritative; RTDB ACL is best-effort (emulator/network).
   }

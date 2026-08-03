@@ -10,6 +10,7 @@ export const collections = {
   nearbyEntities: "nearby_entities",
   sportsRoutes: "sports_routes",
   teams: "teams",
+  groups: "groups",
   activities: "activities",
   leaderboards: "leaderboards",
   trainerProfiles: "trainer_profiles",
