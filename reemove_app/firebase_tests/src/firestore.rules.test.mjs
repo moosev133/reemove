@@ -603,3 +603,232 @@ describe("Phase 15 AI and server-only collections", () => {
     );
   });
 });
+
+describe("groups foundation rules", () => {
+  it("allows public group get/list and denies client writes", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "groups/public-group"), {
+        name: "Public",
+        privacy: "public",
+        status: "active",
+        moderationState: "active",
+        ownerId: "owner",
+        memberCount: 1,
+      });
+      await setDoc(doc(db, "groups/private-group"), {
+        name: "Private",
+        privacy: "private",
+        status: "active",
+        moderationState: "active",
+        ownerId: "owner",
+        memberCount: 1,
+      });
+      await setDoc(doc(db, "groups/hidden-group"), {
+        name: "Hidden",
+        privacy: "hidden",
+        status: "active",
+        moderationState: "active",
+        ownerId: "owner",
+        memberCount: 1,
+      });
+    });
+
+    const athlete = testEnv.authenticatedContext("athlete").firestore();
+    await assertSucceeds(getDoc(doc(athlete, "groups/public-group")));
+    await assertFails(getDoc(doc(athlete, "groups/private-group")));
+    await assertFails(getDoc(doc(athlete, "groups/hidden-group")));
+    await assertFails(setDoc(doc(athlete, "groups/public-group"), {name: "x"}));
+
+    const publicList = query(
+      collection(athlete, "groups"),
+      where("privacy", "==", "public"),
+      where("status", "==", "active"),
+      where("moderationState", "==", "active"),
+      limit(40),
+    );
+    await assertSucceeds(getDocs(publicList));
+  });
+
+  it("lets members read private groups; join requests stay manager-only", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "groups/member-group"), {
+        name: "Members only",
+        privacy: "private",
+        status: "active",
+        moderationState: "active",
+        ownerId: "owner",
+        memberCount: 2,
+      });
+      await setDoc(doc(db, "groups/member-group/members/member"), {
+        userId: "member",
+        role: "member",
+        status: "active",
+        removedAt: null,
+      });
+      await setDoc(doc(db, "groups/member-group/members/owner"), {
+        userId: "owner",
+        role: "owner",
+        status: "active",
+        removedAt: null,
+      });
+      await setDoc(doc(db, "groups/member-group/join_requests/requester"), {
+        requesterId: "requester",
+        status: "pending",
+      });
+    });
+
+    const member = testEnv.authenticatedContext("member").firestore();
+    const stranger = testEnv.authenticatedContext("stranger").firestore();
+    const owner = testEnv.authenticatedContext("owner").firestore();
+
+    await assertSucceeds(getDoc(doc(member, "groups/member-group")));
+    await assertFails(getDoc(doc(stranger, "groups/member-group")));
+    await assertSucceeds(
+      getDoc(doc(owner, "groups/member-group/join_requests/requester")),
+    );
+    await assertFails(
+      getDoc(doc(member, "groups/member-group/join_requests/requester")),
+    );
+    await assertFails(
+      setDoc(doc(member, "groups/member-group/members/member"), {role: "admin"}),
+    );
+  });
+
+  it("requester can read their own pending join request; strangers cannot", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "groups/req-group"), {
+        name: "Requestable",
+        privacy: "private",
+        status: "active",
+        moderationState: "active",
+        ownerId: "owner",
+        memberCount: 1,
+      });
+      await setDoc(doc(db, "groups/req-group/join_requests/requester"), {
+        requesterId: "requester",
+        status: "pending",
+      });
+    });
+
+    const requester = testEnv.authenticatedContext("requester").firestore();
+    const stranger = testEnv.authenticatedContext("stranger").firestore();
+    await assertSucceeds(
+      getDoc(doc(requester, "groups/req-group/join_requests/requester")),
+    );
+    await assertFails(
+      getDoc(doc(stranger, "groups/req-group/join_requests/requester")),
+    );
+    await assertFails(
+      setDoc(doc(requester, "groups/req-group/join_requests/requester"), {
+        status: "cancelled",
+      }),
+    );
+  });
+
+  it("public group active members are listable by any signed-in user", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "groups/roster-group"), {
+        name: "Roster",
+        privacy: "public",
+        status: "active",
+        moderationState: "active",
+        ownerId: "owner",
+        memberCount: 1,
+      });
+      await setDoc(doc(db, "groups/roster-group/members/owner"), {
+        userId: "owner",
+        role: "owner",
+        status: "active",
+        removedAt: null,
+      });
+    });
+
+    const stranger = testEnv.authenticatedContext("stranger").firestore();
+    await assertSucceeds(
+      getDoc(doc(stranger, "groups/roster-group/members/owner")),
+    );
+    const rosterQuery = query(
+      collection(stranger, "groups/roster-group/members"),
+      where("status", "==", "active"),
+      limit(100),
+    );
+    await assertSucceeds(getDocs(rosterQuery));
+  });
+
+  it("group sessions follow group privacy: public previewable, private members-only", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "groups/public-sched"), {
+        name: "Public Schedule",
+        privacy: "public",
+        status: "active",
+        moderationState: "active",
+        ownerId: "owner",
+        memberCount: 1,
+      });
+      await setDoc(doc(db, "groups/public-sched/sessions/session-1"), {
+        title: "Saturday run",
+        status: "scheduled",
+      });
+      await setDoc(doc(db, "groups/private-sched"), {
+        name: "Private Schedule",
+        privacy: "private",
+        status: "active",
+        moderationState: "active",
+        ownerId: "owner",
+        memberCount: 1,
+      });
+      await setDoc(doc(db, "groups/private-sched/sessions/session-1"), {
+        title: "Members only run",
+        status: "scheduled",
+      });
+    });
+
+    const stranger = testEnv.authenticatedContext("stranger").firestore();
+    await assertSucceeds(
+      getDoc(doc(stranger, "groups/public-sched/sessions/session-1")),
+    );
+    await assertFails(
+      getDoc(doc(stranger, "groups/private-sched/sessions/session-1")),
+    );
+    await assertFails(
+      setDoc(doc(stranger, "groups/public-sched/sessions/session-1"), {
+        title: "Hijacked",
+      }),
+    );
+  });
+
+  it("lets owners read denormalized group inboxes but denies client writes", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "users/member/group_memberships/g1"), {
+        groupId: "g1",
+        role: "member",
+        status: "active",
+      });
+      await setDoc(doc(db, "users/member/group_invitations/g2"), {
+        groupId: "g2",
+        status: "pending",
+      });
+    });
+
+    const member = testEnv.authenticatedContext("member").firestore();
+    const stranger = testEnv.authenticatedContext("stranger").firestore();
+    await assertSucceeds(
+      getDoc(doc(member, "users/member/group_memberships/g1")),
+    );
+    await assertSucceeds(
+      getDoc(doc(member, "users/member/group_invitations/g2")),
+    );
+    await assertFails(
+      getDoc(doc(stranger, "users/member/group_memberships/g1")),
+    );
+    await assertFails(
+      setDoc(doc(member, "users/member/group_memberships/g1"), {role: "owner"}),
+    );
+  });
+});
