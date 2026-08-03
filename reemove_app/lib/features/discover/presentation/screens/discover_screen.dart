@@ -97,6 +97,11 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 onTap: () => context.push(AppRoutes.nearbyForType('event')),
               ),
               _CategoryCard(
+                icon: Icons.groups_outlined,
+                title: 'Groups',
+                onTap: () => context.push(AppRoutes.groups),
+              ),
+              _CategoryCard(
                 icon: Icons.emoji_events_outlined,
                 title: 'Challenges',
                 onTap: () => context.push(AppRoutes.challenges),

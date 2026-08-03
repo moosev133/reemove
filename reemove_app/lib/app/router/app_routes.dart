@@ -66,6 +66,26 @@ abstract final class AppRoutes {
   static const String marketplace = '/discover/marketplace';
   static const String marketplaceFavorites = '/discover/marketplace/favorites';
   static const String myMarketplaceListings = '/profile/marketplace';
+  static const String groups = '/discover/groups';
+  static const String createGroup = '/discover/groups/create';
+  static const String groupInvitations = '/discover/groups/invitations';
+
+  static String group(String groupId) =>
+      '/discover/groups/${_segment(groupId)}';
+
+  static String editGroup(String groupId) =>
+      '${group(groupId)}/edit';
+
+  static String groupMembers(String groupId) =>
+      '${group(groupId)}/members';
+
+  static String groupJoinRequests(String groupId) =>
+      '${group(groupId)}/requests';
+
+  static String groupSchedule(String groupId) =>
+      '${group(groupId)}/schedule';
+
+  static String groupDetail(String groupId) => group(groupId);
 
   static String challengesForSport(String sportId) => Uri(
     path: challenges,
@@ -238,6 +258,7 @@ abstract final class AppRoutes {
       home,
       discover,
       sports,
+      groups,
       create,
       messages,
       profile,
@@ -310,6 +331,14 @@ abstract final class AppRouteNames {
   static const String marketplaceFavorites = 'marketplace-favorites';
   static const String editMarketplaceListing = 'edit-marketplace-listing';
   static const String myMarketplaceListings = 'my-marketplace-listings';
+  static const String groups = 'groups';
+  static const String createGroup = 'create-group';
+  static const String groupInvitations = 'group-invitations';
+  static const String groupDetail = 'group-detail';
+  static const String editGroup = 'edit-group';
+  static const String groupMembers = 'group-members';
+  static const String groupJoinRequests = 'group-join-requests';
+  static const String groupSchedule = 'group-schedule';
   static const String sports = 'sports';
   static const String sportHub = 'sport-hub';
   static const String sportPlaces = 'sport-places';
@@ -324,7 +353,7 @@ abstract final class AppRouteNames {
   static const String sportTrainer = 'sport-trainer';
   static const String manageTrainerService = 'manage-trainer-service';
   static const String sportLeaderboards = 'sport-leaderboards';
-  static const String create = 'create';
+    static const String create = 'create';
   static const String createFlow = 'create-flow';
   static const String messages = 'messages';
   static const String newConversation = 'new-conversation';
