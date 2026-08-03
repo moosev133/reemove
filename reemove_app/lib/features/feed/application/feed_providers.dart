@@ -46,10 +46,7 @@ final Provider<PostInteractionRepository> postInteractionRepositoryProvider =
 
 final Provider<StoryRepository> storyRepositoryProvider =
     Provider<StoryRepository>((Ref ref) {
-      final database = ref.watch(reeMoveFirestoreProvider);
       return FirebaseStoryRepository(
-        stories: database.stories,
-        firestore: ref.watch(firebaseFirestoreProvider),
         functions: ref.watch(firebaseFunctionsProvider),
       );
     });

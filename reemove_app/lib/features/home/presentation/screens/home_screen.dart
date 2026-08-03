@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/navigation/app_navigation_badges.dart';
 import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/widgets/app_avatar.dart';
@@ -19,6 +20,7 @@ import '../../../feed/presentation/widgets/content_actions_sheet.dart';
 import '../../../feed/presentation/widgets/feed_loading_skeleton.dart';
 import '../../../feed/presentation/widgets/feed_post_card.dart';
 import '../../../feed/presentation/widgets/story_rail.dart';
+import '../../../notifications/application/notification_providers.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -79,10 +81,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             onPressed: () => context.push(AppRoutes.reels),
             icon: const Icon(Icons.video_collection_outlined),
           ),
-          IconButton(
-            tooltip: 'Activity',
-            onPressed: () => context.push(AppRoutes.activity),
-            icon: const Icon(Icons.notifications_none_rounded),
+          Consumer(
+            builder: (BuildContext context, WidgetRef ref, Widget? _) {
+              final int unread =
+                  ref.watch(notificationUnreadCountProvider).value ??
+                  ref.watch(appNavigationBadgesProvider).activity;
+              return IconButton(
+                tooltip: 'Activity',
+                onPressed: () => context.push(AppRoutes.activity),
+                icon: Badge(
+                  isLabelVisible: unread > 0,
+                  label: Text(unread > 99 ? '99+' : '$unread'),
+                  child: const Icon(Icons.notifications_none_rounded),
+                ),
+              );
+            },
           ),
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.md),

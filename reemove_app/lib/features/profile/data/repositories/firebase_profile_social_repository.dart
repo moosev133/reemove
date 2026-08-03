@@ -4,6 +4,7 @@ import '../../../../core/result/result.dart';
 import '../../domain/entities/blocked_profile.dart';
 import '../../domain/entities/profile_connection.dart';
 import '../../domain/entities/profile_relationship.dart';
+import '../../domain/entities/profile_surface.dart';
 import '../../domain/entities/user_profile.dart';
 import '../../domain/repositories/profile_social_repository.dart';
 import '../dto/user_profile_dto.dart';
@@ -16,12 +17,36 @@ class FirebaseProfileSocialRepository implements ProfileSocialRepository {
   final FirebaseFunctions _functions;
 
   @override
-  Future<Result<UserProfile?>> getVisibleProfileByUsername(String username) =>
-      _visibleProfileCall(<String, Object?>{'username': username});
+  Future<Result<UserProfile?>> getVisibleProfileByUsername(
+    String username,
+  ) async {
+    final Result<ProfileSurface> surface = await getProfileSurfaceByUsername(
+      username,
+    );
+    return surface.when<Result<UserProfile?>>(
+      success: (ProfileSurface value) => Success<UserProfile?>(value.profile),
+      failure: (failure) => FailureResult<UserProfile?>(failure),
+    );
+  }
 
   @override
-  Future<Result<UserProfile?>> getVisibleProfileById(String profileId) =>
-      _visibleProfileCall(<String, Object?>{'profileId': profileId});
+  Future<Result<UserProfile?>> getVisibleProfileById(String profileId) async {
+    final Result<ProfileSurface> surface = await getProfileSurfaceById(
+      profileId,
+    );
+    return surface.when<Result<UserProfile?>>(
+      success: (ProfileSurface value) => Success<UserProfile?>(value.profile),
+      failure: (failure) => FailureResult<UserProfile?>(failure),
+    );
+  }
+
+  @override
+  Future<Result<ProfileSurface>> getProfileSurfaceByUsername(String username) =>
+      _surfaceCall(<String, Object?>{'username': username});
+
+  @override
+  Future<Result<ProfileSurface>> getProfileSurfaceById(String profileId) =>
+      _surfaceCall(<String, Object?>{'profileId': profileId});
 
   @override
   Future<Result<ProfileRelationship>> getRelationship(String profileId) =>
@@ -165,37 +190,76 @@ class FirebaseProfileSocialRepository implements ProfileSocialRepository {
   Future<Result<void>> unblock(String profileId) =>
       _voidCall('unblockUser', <String, Object?>{'profileId': profileId});
 
-  Future<Result<UserProfile?>> _visibleProfileCall(
-    Map<String, Object?> data,
-  ) async {
+  Future<Result<ProfileSurface>> _surfaceCall(Map<String, Object?> data) async {
     try {
       final HttpsCallableResult<dynamic> response = await _functions
           .httpsCallable('getPublicProfile')
           .call<dynamic>(data);
       final Map<String, dynamic> payload = _map(response.data);
-      if (payload['profile'] is! Map) {
-        return const Success<UserProfile?>(null);
+      final ProfileRelationship relationship = payload['relationship'] is Map
+          ? _relationship(
+              (payload['relationship'] as Map).cast<String, dynamic>(),
+            )
+          : ProfileRelationship(
+              viewerId: '',
+              profileId: '',
+              state: FollowRelationshipState.none,
+              canMessage: false,
+              canViewFollowers: false,
+              canViewProfile: false,
+            );
+      final String access = payload['access'] is String
+          ? payload['access'] as String
+          : (payload['profile'] is Map ? 'full' : 'unavailable');
+      final Map<String, dynamic>? profileMap = switch (access) {
+        'full' when payload['profile'] is Map =>
+          (payload['profile'] as Map).cast<String, dynamic>(),
+        'preview' when payload['preview'] is Map =>
+          (payload['preview'] as Map).cast<String, dynamic>(),
+        'preview' when payload['profile'] is Map =>
+          (payload['profile'] as Map).cast<String, dynamic>(),
+        _ => null,
+      };
+      UserProfile? profile;
+      if (profileMap != null) {
+        final String uid = profileMap['uid'] is String
+            ? profileMap['uid'] as String
+            : '';
+        if (uid.isNotEmpty) {
+          profile = UserProfileDto.fromMap(
+            profileMap,
+            documentId: uid,
+          ).toDomain();
+        }
       }
-      final Map<String, dynamic> profileMap = (payload['profile'] as Map)
-          .cast<String, dynamic>();
-      final String uid = profileMap['uid'] is String
-          ? profileMap['uid'] as String
-          : '';
-      if (uid.isEmpty) {
-        return const Success<UserProfile?>(null);
-      }
-      return Success<UserProfile?>(
-        UserProfileDto.fromMap(profileMap, documentId: uid).toDomain(),
+      return Success<ProfileSurface>(
+        ProfileSurface(
+          access: ProfileAccessLevel.values.byName(access),
+          profile: profile,
+          relationship: relationship,
+        ),
       );
     } on FirebaseFunctionsException catch (error) {
-      if (error.code == 'not-found' || error.code == 'permission-denied') {
-        return const Success<UserProfile?>(null);
+      if (error.code == 'not-found') {
+        return Success<ProfileSurface>(
+          ProfileSurface(
+            access: ProfileAccessLevel.unavailable,
+            relationship: ProfileRelationship(
+              viewerId: '',
+              profileId: '',
+              state: FollowRelationshipState.none,
+              canMessage: false,
+              canViewFollowers: false,
+              canViewProfile: false,
+            ),
+          ),
+        );
       }
-      return FailureResult<UserProfile?>(
+      return FailureResult<ProfileSurface>(
         ProfileFailureMapper.fromFunctions(error),
       );
     } catch (error) {
-      return FailureResult<UserProfile?>(
+      return FailureResult<ProfileSurface>(
         ProfileFailureMapper.unexpected(error),
       );
     }
@@ -239,7 +303,12 @@ class FirebaseProfileSocialRepository implements ProfileSocialRepository {
         profileId: data['profileId'] as String,
         state: FollowRelationshipState.values.byName(data['state'] as String),
         canMessage: data['canMessage'] == true,
+        canRequestMessage: data['canRequestMessage'] == true,
+        messageRequestStatus: data['messageRequestStatus'] is String
+            ? data['messageRequestStatus'] as String
+            : null,
         canViewFollowers: data['canViewFollowers'] == true,
+        canViewProfile: data['canViewProfile'] != false,
         requestedAt: data['requestedAt'] is String
             ? DateTime.parse(data['requestedAt'] as String).toUtc()
             : null,

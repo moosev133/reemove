@@ -1,5 +1,6 @@
 import {getAuth} from "firebase-admin/auth";
 import {
+  FieldValue,
   getFirestore,
   Timestamp,
   type DocumentData,
@@ -15,6 +16,23 @@ import {callableOptions} from "../core/functionOptions";
 import {consumeRateLimit} from "../core/rateLimit";
 import {collections, currentSchemaVersion} from "../core/schema";
 import {safeDocumentId} from "../feed/contentPolicy";
+import {
+  CONTENT_BACKFILL_DEFAULT_BATCH,
+  runBackfillContentAuthorVisibility,
+  type ContentCollection,
+} from "../feed/contentAuthorVisibilityBackfill";
+import {
+  accountPrivacyFromLegacyVisibility,
+  followApprovalPolicyForAccountPrivacy,
+  legacyVisibilityForAccountPrivacy,
+  normalizeLegacyProfileVisibility,
+  resolveAccountPrivacy,
+} from "./profilePrivacyModel";
+import {purgeFeedEntriesForNonFollowers} from "./privacyEnforcement";
+import {
+  BACKFILL_DEFAULT_BATCH,
+  runBackfillProfilePrivacyDefaults,
+} from "./profilePrivacyBackfill";
 import {
   callableProfile,
   parsePrivacy,
@@ -120,6 +138,24 @@ export const updateProfile = onCall(callableOptions, async (request) => {
     ),
   ]);
 
+  const previousLegacyVisibility = normalizeLegacyProfileVisibility(
+    current.get("visibility"),
+  );
+  const previousAccountPrivacy = resolveAccountPrivacy(current);
+  const requestedLegacyVisibility = normalizeLegacyProfileVisibility(
+    input.visibility ?? previousLegacyVisibility,
+  );
+  const nextAccountPrivacy = accountPrivacyFromLegacyVisibility(
+    requestedLegacyVisibility,
+  );
+  const nextVisibility = legacyVisibilityForAccountPrivacy(nextAccountPrivacy);
+  const nextFollowApprovalPolicy = followApprovalPolicyForAccountPrivacy(
+    nextAccountPrivacy,
+    input.privacy.followApprovalPolicy,
+  );
+  const visibilityChanged = nextVisibility !== previousLegacyVisibility ||
+    nextAccountPrivacy !== previousAccountPrivacy;
+
   await database.runTransaction(async (transaction) => {
     const [profile, privateProfile] = await Promise.all([
       transaction.get(userRef),
@@ -178,9 +214,16 @@ export const updateProfile = onCall(callableOptions, async (request) => {
       "primarySportId": input.primarySportId ?? null,
       "favoriteSportIds": input.favoriteSportIds,
       "goals": input.goals,
-      "visibility": input.visibility,
-      "followApprovalPolicy": input.privacy.followApprovalPolicy,
-      "professionalDetails": input.professionalDetails,
+      "visibility": nextVisibility,
+      "accountPrivacy": nextAccountPrivacy,
+      "followApprovalPolicy": nextFollowApprovalPolicy,
+      "professionalDetails": Object.fromEntries(
+        Object.entries(input.professionalDetails)
+          .filter(([, value]) => value !== undefined),
+      ),
+      ...(visibilityChanged ? {
+        visibilityRevision: FieldValue.increment(1),
+      } : {}),
       ...(usernameChanged ? {
         "username": input.username,
         "usernameNormalized": input.usernameNormalized,
@@ -189,10 +232,31 @@ export const updateProfile = onCall(callableOptions, async (request) => {
     });
     transaction.set(
       settingsRef,
-      privacyDocument(uid, input.privacy, now),
+      privacyDocument(uid, {
+        ...input.privacy,
+        followApprovalPolicy: nextFollowApprovalPolicy,
+      }, now),
       {merge: true},
     );
   });
+
+  if (visibilityChanged) {
+    await writeAuditEvent({
+      actorId: uid,
+      action: "profile.visibility_changed",
+      targetType: "user",
+      targetId: uid,
+      metadata: {
+        fromVisibility: previousLegacyVisibility,
+        toVisibility: nextVisibility,
+        fromAccountPrivacy: previousAccountPrivacy,
+        toAccountPrivacy: nextAccountPrivacy,
+      },
+    });
+    if (nextAccountPrivacy !== "public") {
+      await purgeFeedEntriesForNonFollowers(database, uid);
+    }
+  }
 
   await writeAuditEvent({
     actorId: uid,
@@ -418,6 +482,128 @@ export const reviewVerificationRequest = onCall(
       });
     }
     return {reviewed: true, alreadyReviewed};
+  },
+);
+
+export const backfillProfilePrivacyDefaults = onCall(
+  callableOptions,
+  async (request) => {
+    const actorId = requireUid(request.auth?.uid);
+    if (request.auth?.token.admin !== true) {
+      throw new HttpsError(
+        "permission-denied",
+        "Administrator access required.",
+      );
+    }
+    await consumeRateLimit(actorId, {
+      key: "backfill_profile_privacy_defaults",
+      maxAttempts: 30,
+      windowSeconds: 60 * 60,
+    });
+    const data = recordValue(request.data ?? {});
+    const apply = data.apply === true;
+    const reportOnly = data.reportOnly === true || !apply;
+    const limitValue = typeof data.limit === "number" ?
+      Math.trunc(data.limit) : BACKFILL_DEFAULT_BATCH;
+    const cursor = typeof data.cursor === "string" ? data.cursor : undefined;
+    const database = getFirestore();
+    const result = await runBackfillProfilePrivacyDefaults(database, {
+      limit: limitValue,
+      cursor,
+      apply,
+      reportOnly,
+    });
+    if (apply && result.changed > 0) {
+      await writeAuditEvent({
+        actorId,
+        action: "profile.privacy_backfill_batch_applied",
+        targetType: "user",
+        targetId: "users",
+        metadata: {
+          scanned: result.scanned,
+          changed: result.changed,
+          skipped: result.skipped,
+          errors: result.errors,
+          nextCursor: result.nextCursor,
+          completed: result.completed,
+        },
+      });
+    } else if (!apply) {
+      await writeAuditEvent({
+        actorId,
+        action: reportOnly ?
+          "profile.privacy_backfill_report" :
+          "profile.privacy_backfill_dry_run",
+        targetType: "user",
+        targetId: "users",
+        metadata: {
+          scanned: result.scanned,
+          wouldChange: result.changed,
+          skipped: result.skipped,
+          errors: result.errors,
+          nextCursor: result.nextCursor,
+          completed: result.completed,
+        },
+      });
+    }
+    return result;
+  },
+);
+
+function contentCollection(value: unknown): ContentCollection {
+  if (value === "posts" || value === "stories") return value;
+  throw new HttpsError("invalid-argument", "Content collection is invalid.");
+}
+
+export const backfillContentAuthorVisibility = onCall(
+  callableOptions,
+  async (request) => {
+    const actorId = requireUid(request.auth?.uid);
+    if (request.auth?.token.admin !== true) {
+      throw new HttpsError(
+        "permission-denied",
+        "Administrator access required.",
+      );
+    }
+    await consumeRateLimit(actorId, {
+      key: "backfill_content_author_visibility",
+      maxAttempts: 30,
+      windowSeconds: 60 * 60,
+    });
+    const data = recordValue(request.data ?? {});
+    const apply = data.apply === true;
+    const reportOnly = data.reportOnly === true || !apply;
+    const limitValue = typeof data.limit === "number" ?
+      Math.trunc(data.limit) : CONTENT_BACKFILL_DEFAULT_BATCH;
+    const cursor = typeof data.cursor === "string" ? data.cursor : undefined;
+    const collection = contentCollection(data.collection);
+    const database = getFirestore();
+    const result = await runBackfillContentAuthorVisibility(database, {
+      collection,
+      limit: limitValue,
+      cursor,
+      apply,
+      reportOnly,
+    });
+    if (!apply) {
+      await writeAuditEvent({
+        actorId,
+        action: reportOnly ?
+          "content.author_visibility_backfill_report" :
+          "content.author_visibility_backfill_dry_run",
+        targetType: "content",
+        targetId: collection,
+        metadata: {
+          scanned: result.scanned,
+          wouldChange: result.changed,
+          skipped: result.skipped,
+          errors: result.errors,
+          nextCursor: result.nextCursor,
+          completed: result.completed,
+        },
+      });
+    }
+    return result;
   },
 );
 

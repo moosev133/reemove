@@ -81,6 +81,7 @@ class FirebaseFeedRepository implements FeedRepository {
         .where('status', isEqualTo: 'published')
         .where('moderationState', isEqualTo: 'active')
         .where('visibility', isEqualTo: 'public')
+        .where('authorAccountVisibility', isEqualTo: 'public')
         .orderBy('rankingScore', descending: true)
         .orderBy('publishedAt', descending: true)
         .orderBy(FieldPath.documentId)

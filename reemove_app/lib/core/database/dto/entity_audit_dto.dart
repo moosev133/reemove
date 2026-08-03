@@ -10,11 +10,14 @@ class EntityAuditDto {
     required this.schemaVersion,
   });
 
-  factory EntityAuditDto.fromMap(FirestoreMap data) => EntityAuditDto(
-    createdAt: FirestoreParser.dateTime(data, 'createdAt'),
-    updatedAt: FirestoreParser.dateTime(data, 'updatedAt'),
-    schemaVersion: FirestoreParser.integer(data, 'schemaVersion', fallback: 1),
-  );
+  factory EntityAuditDto.fromMap(FirestoreMap data) {
+    final DateTime fallback = DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
+    return EntityAuditDto(
+      createdAt: FirestoreParser.dateTime(data, 'createdAt', fallback: fallback),
+      updatedAt: FirestoreParser.dateTime(data, 'updatedAt', fallback: fallback),
+      schemaVersion: FirestoreParser.integer(data, 'schemaVersion', fallback: 1),
+    );
+  }
 
   final DateTime createdAt;
   final DateTime updatedAt;

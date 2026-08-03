@@ -6,6 +6,7 @@ import {writeAuditEvent} from "../core/audit";
 import {callableOptions} from "../core/functionOptions";
 import {consumeRateLimit} from "../core/rateLimit";
 import {collections, currentSchemaVersion} from "../core/schema";
+import {legacyVisibilityForAccountPrivacy, resolveAccountPrivacy} from "../profile/profilePrivacyModel";
 import {
   extractHashtags,
   extractMentions,
@@ -29,24 +30,35 @@ type TrustedMedia = {
   sizeBytes: number;
 };
 
-async function profileSnapshot(uid: string): Promise<Record<string, unknown>> {
-  const snapshot = await getFirestore().collection(collections.users).doc(uid).get();
-  if (!snapshot.exists || snapshot.get("moderationState") !== "active" ||
-      snapshot.get("onboardingCompleted") !== true) {
+async function profileSnapshot(uid: string): Promise<{
+  snapshot: Record<string, unknown>;
+  authorAccountVisibility: string;
+}> {
+  const document = await getFirestore().collection(collections.users).doc(uid).get();
+  if (!document.exists || document.get("moderationState") !== "active" ||
+      document.get("onboardingCompleted") !== true) {
     throw new HttpsError(
       "failed-precondition",
       "Complete your active ReeMove profile before publishing.",
     );
   }
+  const visibility = document.get("visibility");
+  const authorAccountVisibility =
+    visibility === "public" || visibility === "followers" || visibility === "private" ?
+      String(visibility) :
+      legacyVisibilityForAccountPrivacy(resolveAccountPrivacy(document));
   return {
-    id: uid,
-    username: String(snapshot.get("username") ?? ""),
-    displayName: String(snapshot.get("displayName") ?? "Athlete"),
-    ...(snapshot.get("avatarUrl") ? {
-      avatarUrl: String(snapshot.get("avatarUrl")),
-    } : {}),
-    isVerified: snapshot.get("isVerified") === true,
-    verificationType: String(snapshot.get("verificationType") ?? "none"),
+    authorAccountVisibility,
+    snapshot: {
+      id: uid,
+      username: String(document.get("username") ?? ""),
+      displayName: String(document.get("displayName") ?? "Athlete"),
+      ...(document.get("avatarUrl") ? {
+        avatarUrl: String(document.get("avatarUrl")),
+      } : {}),
+      isVerified: document.get("isVerified") === true,
+      verificationType: String(document.get("verificationType") ?? "none"),
+    },
   };
 }
 
@@ -175,10 +187,11 @@ export const publishPost = onCall(callableOptions, async (request) => {
     throw new HttpsError("invalid-argument", "Use story publishing for stories.");
   }
   await validateSport(input.sportId);
-  const [author, media] = await Promise.all([
+  const [authorProfile, media] = await Promise.all([
     profileSnapshot(uid),
     Promise.all(input.media.map((item) => validateMedia(uid, input.draftId, item))),
   ]);
+  const author = authorProfile.snapshot;
   const database = getFirestore();
   const postRef = database.collection(collections.posts).doc();
   const now = Timestamp.now();
@@ -195,6 +208,7 @@ export const publishPost = onCall(callableOptions, async (request) => {
     ...(input.sportId ? {sportId: input.sportId} : {}),
     ...(input.locationLabel ? {locationLabel: input.locationLabel} : {}),
     visibility: input.visibility,
+    authorAccountVisibility: authorProfile.authorAccountVisibility,
     moderationState: "active",
     status,
     allowComments: input.allowComments,
@@ -244,10 +258,11 @@ export const publishStory = onCall(callableOptions, async (request) => {
     throw new HttpsError("invalid-argument", "This request is not a story.");
   }
   await validateSport(input.sportId);
-  const [author, mediaItems] = await Promise.all([
+  const [authorProfile, mediaItems] = await Promise.all([
     profileSnapshot(uid),
     Promise.all(input.media.map((item) => validateMedia(uid, input.draftId, item))),
   ]);
+  const author = authorProfile.snapshot;
   const media = mediaItems[0];
   const database = getFirestore();
   const storyRef = database.collection(collections.stories).doc();
@@ -262,6 +277,7 @@ export const publishStory = onCall(callableOptions, async (request) => {
     ...(input.caption ? {caption: input.caption} : {}),
     ...(input.sportId ? {sportId: input.sportId} : {}),
     visibility: input.visibility,
+    authorAccountVisibility: authorProfile.authorAccountVisibility,
     moderationState: "active",
     viewCount: 0,
     createdAt: now,

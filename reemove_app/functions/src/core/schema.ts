@@ -40,6 +40,7 @@ export const collections = {
   auditLogs: "audit_logs",
   rateLimits: "rate_limits",
   followRequests: "follow_requests",
+  messageRequests: "message_requests",
   verificationRequests: "verification_requests",
   conversations: "conversations",
   messageReports: "message_reports",

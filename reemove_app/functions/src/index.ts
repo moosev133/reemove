@@ -36,6 +36,7 @@ import {
   togglePostReaction,
 } from "./feed/interactions";
 import {publishPost, publishStory} from "./feed/publishContent";
+import {loadStoryRail} from "./feed/storyRail";
 import {fanoutPublishedPost} from "./feed/fanout";
 import {
   completeMediaProcessing,
@@ -60,6 +61,8 @@ import {loadProfileContent} from "./profile/profileContent";
 import {
   cancelVerificationRequest,
   reviewVerificationRequest,
+  backfillProfilePrivacyDefaults,
+  backfillContentAuthorVisibility,
   submitVerificationRequest,
   syncProfileSnapshots,
   updateProfile,
@@ -72,6 +75,11 @@ import {
   updateConversationPreferences,
   updateGroupConversation,
 } from "./messaging/conversations";
+import {
+  cancelMessageRequest,
+  createMessageRequest,
+  respondToMessageRequest,
+} from "./messaging/messageRequests";
 import {
   registerMessagingDevice,
   unregisterMessagingDevice,
@@ -191,6 +199,7 @@ export {
   completeOnboarding,
   publishPost,
   publishStory,
+  loadStoryRail,
   fanoutPublishedPost,
   togglePostReaction,
   createPostComment,
@@ -214,11 +223,16 @@ export {
   loadProfileContent,
   updateProfile,
   updateProfilePrivacy,
+  backfillProfilePrivacyDefaults,
+  backfillContentAuthorVisibility,
   submitVerificationRequest,
   cancelVerificationRequest,
   reviewVerificationRequest,
   syncProfileSnapshots,
   createDirectConversation,
+  createMessageRequest,
+  cancelMessageRequest,
+  respondToMessageRequest,
   createGroupConversation,
   updateGroupConversation,
   leaveConversation,

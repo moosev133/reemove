@@ -947,7 +947,13 @@ String? _redirect(Ref ref, GoRouterState state) {
     authRoutingStateProvider,
   );
   if (routing.isLoading) {
-    return path == AppRoutes.startup ? null : AppRoutes.startup;
+    if (path == AppRoutes.startup) {
+      return null;
+    }
+    if (AppRoutes.isAuthenticatedLocation(location)) {
+      return AppRoutes.withReturnTo(AppRoutes.startup, location);
+    }
+    return AppRoutes.startup;
   }
   if (routing.hasError) {
     // Surface the failure on the startup screen with a retry action.

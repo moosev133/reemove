@@ -275,6 +275,53 @@ class FirebaseMessagingRepository implements MessagingRepository {
   }
 
   @override
+  Future<Result<String?>> createMessageRequest(String targetUserId) async {
+    try {
+      final Map<String, dynamic> data = await _call(
+        'createMessageRequest',
+        <String, Object?>{'targetUserId': targetUserId},
+      );
+      final Object? conversationId = data['conversationId'];
+      if (conversationId is String && conversationId.trim().isNotEmpty) {
+        return Success<String?>(conversationId.trim());
+      }
+      return const Success<String?>(null);
+    } on FirebaseFunctionsException catch (error) {
+      return FailureResult<String?>(MessagingFailureMapper.fromFunctions(error));
+    } on Object catch (error) {
+      return FailureResult<String?>(MessagingFailureMapper.unexpected(error));
+    }
+  }
+
+  @override
+  Future<Result<void>> cancelMessageRequest(String targetUserId) => _voidCall(
+    'cancelMessageRequest',
+    <String, Object?>{'targetUserId': targetUserId},
+  );
+
+  @override
+  Future<Result<String?>> respondToMessageRequest({
+    required String requesterId,
+    required String decision,
+  }) async {
+    try {
+      final Map<String, dynamic> data = await _call(
+        'respondToMessageRequest',
+        <String, Object?>{'requesterId': requesterId, 'decision': decision},
+      );
+      final Object? conversationId = data['conversationId'];
+      if (conversationId is String && conversationId.trim().isNotEmpty) {
+        return Success<String?>(conversationId.trim());
+      }
+      return const Success<String?>(null);
+    } on FirebaseFunctionsException catch (error) {
+      return FailureResult<String?>(MessagingFailureMapper.fromFunctions(error));
+    } on Object catch (error) {
+      return FailureResult<String?>(MessagingFailureMapper.unexpected(error));
+    }
+  }
+
+  @override
   Future<Result<String>> createGroupConversation({
     required String title,
     required List<String> memberIds,

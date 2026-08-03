@@ -6,6 +6,7 @@ import '../../../../core/errors/failure.dart';
 import '../../../../core/result/result.dart';
 import '../../application/feed_providers.dart';
 import '../../domain/entities/content_report.dart';
+import 'content_report_reason_sheet.dart';
 
 Future<void> showPostActions(
   BuildContext context, {
@@ -34,12 +35,10 @@ class _PostActionsSheetState extends ConsumerState<_PostActionsSheet> {
   bool _busy = false;
 
   Future<void> _report() async {
-    final ContentReportReason? reason =
-        await showModalBottomSheet<ContentReportReason>(
-          context: context,
-          showDragHandle: true,
-          builder: (BuildContext context) => const _ReportReasonSheet(),
-        );
+    final ContentReportReason? reason = await showContentReportReasonSheet(
+      context,
+      title: 'Why are you reporting this post?',
+    );
     if (reason == null || !mounted) {
       return;
     }
@@ -147,69 +146,6 @@ class _PostActionsSheetState extends ConsumerState<_PostActionsSheet> {
               ),
               enabled: !_busy,
               onTap: _block,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ReportReasonSheet extends StatelessWidget {
-  const _ReportReasonSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    const List<(ContentReportReason, String)> reasons =
-        <(ContentReportReason, String)>[
-          (ContentReportReason.spam, 'Spam or scam'),
-          (ContentReportReason.harassment, 'Harassment or bullying'),
-          (ContentReportReason.hate, 'Hateful conduct'),
-          (ContentReportReason.violence, 'Violent content'),
-          (ContentReportReason.dangerousActivity, 'Unsafe activity'),
-          (ContentReportReason.nudity, 'Nudity or sexual content'),
-          (
-            ContentReportReason.misinformation,
-            'False or misleading information',
-          ),
-          (ContentReportReason.impersonation, 'Impersonation'),
-          (ContentReportReason.intellectualProperty, 'Intellectual property'),
-          (ContentReportReason.other, 'Something else'),
-        ];
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: AppSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                0,
-                AppSpacing.lg,
-                AppSpacing.sm,
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Why are you reporting this post?',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-            ),
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                children: reasons
-                    .map(
-                      ((ContentReportReason, String) item) => ListTile(
-                        title: Text(item.$2),
-                        trailing: const Icon(Icons.chevron_right_rounded),
-                        onTap: () => Navigator.of(context).pop(item.$1),
-                      ),
-                    )
-                    .toList(growable: false),
-              ),
             ),
           ],
         ),

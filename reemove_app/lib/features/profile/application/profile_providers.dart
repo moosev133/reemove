@@ -19,6 +19,7 @@ import '../domain/entities/profile_content_page.dart';
 import '../domain/entities/profile_edit_request.dart';
 import '../domain/entities/profile_privacy_settings.dart';
 import '../domain/entities/profile_relationship.dart';
+import '../domain/entities/profile_surface.dart';
 import '../domain/entities/user_profile.dart';
 import '../domain/entities/verification_request.dart';
 import '../domain/repositories/profile_content_repository.dart';
@@ -84,9 +85,31 @@ final publicProfileByUsernameProvider =
       Ref ref,
       String username,
     ) async {
-      final Result<UserProfile?> result = await ref
+      final Result<ProfileSurface> surface = await ref
           .watch(profileSocialRepositoryProvider)
-          .getVisibleProfileByUsername(username);
+          .getProfileSurfaceByUsername(username);
+      return surface.when<UserProfile?>(
+        success: (ProfileSurface value) => value.profile,
+        failure: (Failure failure) => throw failure,
+      );
+    });
+
+final profileSurfaceByUsernameProvider =
+    FutureProvider.family<ProfileSurface, String>((
+      Ref ref,
+      String username,
+    ) async {
+      final Result<ProfileSurface> result = await ref
+          .watch(profileSocialRepositoryProvider)
+          .getProfileSurfaceByUsername(username);
+      return _value(result);
+    });
+
+final profileSurfaceByIdProvider =
+    FutureProvider.family<ProfileSurface, String>((Ref ref, String uid) async {
+      final Result<ProfileSurface> result = await ref
+          .watch(profileSocialRepositoryProvider)
+          .getProfileSurfaceById(uid);
       return _value(result);
     });
 
@@ -205,7 +228,15 @@ final profileConnectionsProvider =
             type: query.type,
             cursor: query.cursor,
           );
-      return _value(result);
+      return result.when<ProfileConnectionPage>(
+        success: (ProfileConnectionPage value) => value,
+        failure: (Failure failure) {
+          if (failure.code == 'permission-denied') {
+            throw const ProfileConnectionsRestricted();
+          }
+          throw StateError(failure.message);
+        },
+      );
     });
 
 final FutureProvider<List<BlockedProfile>> blockedProfilesProvider =
@@ -256,6 +287,11 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
     onSuccess: () {
       ref.invalidate(currentUserProfileProvider);
       ref.invalidate(profileConnectionsProvider);
+      ref.invalidate(profileRelationshipProvider(followerId));
+      ref.invalidate(publicProfileByIdProvider(followerId));
+      ref.invalidate(profileSurfaceByIdProvider(followerId));
+      ref.invalidate(feedControllerProvider);
+      ref.invalidate(storyRailProvider);
     },
   );
 
@@ -263,8 +299,15 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
     () => ref.read(profileSocialRepositoryProvider).block(profileId),
     onSuccess: () {
       ref.invalidate(blockedProfilesProvider);
-      ref.invalidate(profileRelationshipProvider);
+      ref.invalidate(profileRelationshipProvider(profileId));
+      ref.invalidate(publicProfileByIdProvider(profileId));
+      ref.invalidate(profileSurfaceByIdProvider(profileId));
+      ref.invalidate(publicProfileByUsernameProvider);
+      ref.invalidate(profileSurfaceByUsernameProvider);
+      ref.invalidate(currentUserProfileProvider);
+      ref.invalidate(profileConnectionsProvider);
       ref.invalidate(feedControllerProvider);
+      ref.invalidate(storyRailProvider);
     },
   );
 
@@ -272,8 +315,15 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
     () => ref.read(profileSocialRepositoryProvider).unblock(profileId),
     onSuccess: () {
       ref.invalidate(blockedProfilesProvider);
-      ref.invalidate(profileRelationshipProvider);
+      ref.invalidate(profileRelationshipProvider(profileId));
+      ref.invalidate(publicProfileByIdProvider(profileId));
+      ref.invalidate(profileSurfaceByIdProvider(profileId));
+      ref.invalidate(publicProfileByUsernameProvider);
+      ref.invalidate(profileSurfaceByUsernameProvider);
+      ref.invalidate(currentUserProfileProvider);
+      ref.invalidate(profileConnectionsProvider);
       ref.invalidate(feedControllerProvider);
+      ref.invalidate(storyRailProvider);
     },
   );
 
@@ -283,6 +333,8 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
       ref.invalidate(currentUserProfileProvider);
       ref.invalidate(publicProfileByIdProvider);
       ref.invalidate(publicProfileByUsernameProvider);
+      ref.invalidate(profileSurfaceByIdProvider);
+      ref.invalidate(profileSurfaceByUsernameProvider);
       ref.invalidate(profilePrivacySettingsProvider);
     },
   );
@@ -292,6 +344,12 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
     onSuccess: () {
       ref.invalidate(currentUserProfileProvider);
       ref.invalidate(profilePrivacySettingsProvider);
+      ref.invalidate(publicProfileByIdProvider);
+      ref.invalidate(profileSurfaceByIdProvider);
+      ref.invalidate(profileSurfaceByUsernameProvider);
+      ref.invalidate(profileConnectionsProvider);
+      ref.invalidate(feedControllerProvider);
+      ref.invalidate(storyRailProvider);
     },
   );
 
@@ -320,8 +378,13 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
         state = const AsyncValue<void>.data(null);
         ref.invalidate(profileRelationshipProvider(profileId));
         ref.invalidate(publicProfileByIdProvider(profileId));
+        ref.invalidate(profileSurfaceByIdProvider(profileId));
+        ref.invalidate(publicProfileByUsernameProvider);
+        ref.invalidate(profileSurfaceByUsernameProvider);
         ref.invalidate(currentUserProfileProvider);
         ref.invalidate(profileConnectionsProvider);
+        ref.invalidate(feedControllerProvider);
+        ref.invalidate(storyRailProvider);
         return true;
       },
       failure: (Failure failure) {

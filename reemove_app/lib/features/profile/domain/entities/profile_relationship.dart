@@ -17,6 +17,9 @@ class ProfileRelationship {
     required this.state,
     required this.canMessage,
     required this.canViewFollowers,
+    this.canRequestMessage = false,
+    this.messageRequestStatus,
+    this.canViewProfile = true,
     this.requestedAt,
   });
 
@@ -24,8 +27,13 @@ class ProfileRelationship {
   final String profileId;
   final FollowRelationshipState state;
   final bool canMessage;
+  final bool canRequestMessage;
+  final String? messageRequestStatus;
   final bool canViewFollowers;
+  final bool canViewProfile;
   final DateTime? requestedAt;
+
+  bool get hasPendingMessageRequest => messageRequestStatus == 'pending';
 
   bool get isFollowing =>
       state == FollowRelationshipState.following ||

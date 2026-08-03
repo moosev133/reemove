@@ -50,17 +50,33 @@ class _ProfileConnectionsScreenState
       appBar: AppBar(title: Text(_title(widget.type))),
       body: value.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object error, StackTrace stackTrace) => AdaptivePageBody(
-          slivers: <Widget>[
-            AppEmptyState(
-              icon: Icons.people_outline_rounded,
-              title: 'Connections unavailable',
-              message: '$error',
-              actionLabel: 'Try again',
-              onAction: () => ref.invalidate(profileConnectionsProvider(query)),
-            ),
-          ],
-        ),
+        error: (Object error, StackTrace stackTrace) {
+          if (error is ProfileConnectionsRestricted) {
+            return AdaptivePageBody(
+              slivers: <Widget>[
+                AppEmptyState(
+                  icon: Icons.lock_outline_rounded,
+                  title: 'This list is hidden',
+                  message:
+                      error.message ??
+                      'The profile owner limited who can view this list.',
+                ),
+              ],
+            );
+          }
+          return AdaptivePageBody(
+            slivers: <Widget>[
+              AppEmptyState(
+                icon: Icons.people_outline_rounded,
+                title: 'Connections unavailable',
+                message: '$error',
+                actionLabel: 'Try again',
+                onAction: () =>
+                    ref.invalidate(profileConnectionsProvider(query)),
+              ),
+            ],
+          );
+        },
         data: (ProfileConnectionPage initial) {
           _page ??= initial;
           final ProfileConnectionPage page = _page!;
@@ -160,8 +176,32 @@ class _ProfileConnectionsScreenState
         onPressed: () => _removeFollower(profile),
         icon: const Icon(Icons.person_remove_outlined),
       ),
-      ProfileConnectionType.following => null,
+      ProfileConnectionType.following => TextButton(
+        onPressed: () => _unfollow(profile),
+        child: const Text('Unfollow'),
+      ),
+      ProfileConnectionType.sentRequests => TextButton(
+        onPressed: () => _cancelSentRequest(profile),
+        child: const Text('Cancel'),
+      ),
     };
+  }
+
+  Future<void> _cancelSentRequest(UserProfile profile) async {
+    final bool success = await ref
+        .read(profileActionControllerProvider.notifier)
+        .cancelRequest(profile.uid);
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _removeLocally(profile.uid);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Follow request canceled.')));
+    } else {
+      _showActionFailure();
+    }
   }
 
   Future<void> _respond(UserProfile profile, {required bool accept}) async {
@@ -225,6 +265,47 @@ class _ProfileConnectionsScreenState
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Follower removed.')));
+    } else {
+      _showActionFailure();
+    }
+  }
+
+  Future<void> _unfollow(UserProfile profile) async {
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            title: Text('Unfollow ${profile.displayName}?'),
+            content: const Text(
+              'Their posts will leave your feed. They are not notified.',
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Unfollow'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) {
+      return;
+    }
+    final bool success = await ref
+        .read(profileActionControllerProvider.notifier)
+        .unfollow(profile.uid);
+    if (!mounted) {
+      return;
+    }
+    if (success) {
+      _removeLocally(profile.uid);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Unfollowed.')));
     } else {
       _showActionFailure();
     }
@@ -300,18 +381,21 @@ class _ProfileConnectionsScreenState
     ProfileConnectionType.followers => 'Followers',
     ProfileConnectionType.following => 'Following',
     ProfileConnectionType.requests => 'Follow requests',
+    ProfileConnectionType.sentRequests => 'Sent requests',
   };
 
   static IconData _emptyIcon(ProfileConnectionType type) => switch (type) {
     ProfileConnectionType.followers => Icons.people_outline_rounded,
     ProfileConnectionType.following => Icons.person_search_outlined,
     ProfileConnectionType.requests => Icons.mark_email_read_outlined,
+    ProfileConnectionType.sentRequests => Icons.send_outlined,
   };
 
   static String _emptyTitle(ProfileConnectionType type) => switch (type) {
     ProfileConnectionType.followers => 'No followers yet',
     ProfileConnectionType.following => 'Not following anyone yet',
     ProfileConnectionType.requests => 'No pending requests',
+    ProfileConnectionType.sentRequests => 'No sent requests',
   };
 
   static String _emptyMessage(ProfileConnectionType type) => switch (type) {
@@ -321,6 +405,8 @@ class _ProfileConnectionsScreenState
       'Profiles followed by this account will appear here.',
     ProfileConnectionType.requests =>
       'New follow requests will be available here for review.',
+    ProfileConnectionType.sentRequests =>
+      'Profiles you have requested to follow will appear here.',
   };
 }
 
@@ -337,37 +423,74 @@ class _ConnectionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
+    // Keep profile navigation and trailing actions as separate hit targets so
+    // Unfollow / Remove do not merge into the row's navigation semantics.
+    return Padding(
+      padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.sm,
         vertical: AppSpacing.xs,
       ),
-      leading: AppAvatar(
-        displayName: profile.displayName,
-        imageUrl: profile.avatarUrl,
-      ),
-      title: Row(
+      child: Row(
         children: <Widget>[
-          Flexible(
-            child: Text(
-              profile.displayName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          Expanded(
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                child: Row(
+                  children: <Widget>[
+                    AppAvatar(
+                      displayName: profile.displayName,
+                      imageUrl: profile.avatarUrl,
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Row(
+                            children: <Widget>[
+                              Flexible(
+                                child: Text(
+                                  profile.displayName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                              ),
+                              if (profile.isVerified) ...<Widget>[
+                                const SizedBox(width: AppSpacing.xxs),
+                                Icon(
+                                  Icons.verified_rounded,
+                                  size: 17,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ],
+                            ],
+                          ),
+                          Text(
+                            '@${profile.username} · ${profile.profileLabel}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-          if (profile.isVerified) ...<Widget>[
-            const SizedBox(width: AppSpacing.xxs),
-            Icon(
-              Icons.verified_rounded,
-              size: 17,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ],
+          if (trailing != null) ?trailing,
         ],
       ),
-      subtitle: Text('@${profile.username} · ${profile.profileLabel}'),
-      trailing: trailing,
-      onTap: onTap,
     );
   }
 }

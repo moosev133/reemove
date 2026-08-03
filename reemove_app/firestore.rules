@@ -94,6 +94,8 @@ service cloud.firestore {
     }
 
     function canReadUserProfile(uid, data) {
+      // Account privacy is stored in users.visibility:
+      // public | followers (private account) | private (owner-only account).
       return signedIn()
         && data.moderationState == 'active'
         && !isBlocked(request.auth.uid, uid)
@@ -105,33 +107,105 @@ service cloud.firestore {
         );
     }
 
+    function contentAuthorId(data) {
+      return 'authorId' in data && data.authorId is string ?
+        data.authorId : null;
+    }
+
+    function authorAccountVisible(authorId) {
+      return authorId != null
+        && exists(/databases/$(database)/documents/users/$(authorId))
+        && canReadUserProfile(
+          authorId,
+          get(/databases/$(database)/documents/users/$(authorId)).data,
+        );
+    }
+
+    function authorAccountVisibleForList(data) {
+      let authorId = contentAuthorId(data);
+      return authorId != null && (
+        request.auth.uid == authorId
+        || (
+          'authorAccountVisibility' in data
+          && (
+            data.authorAccountVisibility == 'public'
+            || (
+              data.authorAccountVisibility == 'followers'
+              && follows(request.auth.uid, authorId)
+            )
+          )
+        )
+      );
+    }
+
     function canReadPublishedContent(data) {
-      return signedIn()
+      let authorId = contentAuthorId(data);
+      return authorId != null
+        && signedIn()
         && data.moderationState == 'active'
-        && !isBlocked(request.auth.uid, data.authorId)
+        && !isBlocked(request.auth.uid, authorId)
+        && authorAccountVisible(authorId)
         && (
-          request.auth.uid == data.authorId
+          request.auth.uid == authorId
           || (
             data.status == 'published'
             && (
               data.visibility == 'public'
               || (data.visibility == 'followers'
-                && follows(request.auth.uid, data.authorId))
+                && follows(request.auth.uid, authorId))
+            )
+          )
+        );
+    }
+
+    function canListPublishedContent(data) {
+      let authorId = contentAuthorId(data);
+      return authorId != null
+        && signedIn()
+        && data.moderationState == 'active'
+        && !isBlocked(request.auth.uid, authorId)
+        && authorAccountVisibleForList(data)
+        && (
+          request.auth.uid == authorId
+          || (
+            data.status == 'published'
+            && (
+              data.visibility == 'public'
+              || (data.visibility == 'followers'
+                && follows(request.auth.uid, authorId))
             )
           )
         );
     }
 
     function canReadStory(data) {
-      return signedIn()
+      let authorId = contentAuthorId(data);
+      return authorId != null
+        && signedIn()
         && data.moderationState == 'active'
         && data.expiresAt > request.time
-        && !isBlocked(request.auth.uid, data.authorId)
+        && !isBlocked(request.auth.uid, authorId)
+        && authorAccountVisible(authorId)
         && (
-          request.auth.uid == data.authorId
+          request.auth.uid == authorId
           || data.visibility == 'public'
           || (data.visibility == 'followers'
-            && follows(request.auth.uid, data.authorId))
+            && follows(request.auth.uid, authorId))
+        );
+    }
+
+    function canListStory(data) {
+      let authorId = contentAuthorId(data);
+      return authorId != null
+        && signedIn()
+        && data.moderationState == 'active'
+        && !isBlocked(request.auth.uid, authorId)
+        && authorAccountVisibleForList(data)
+        && (
+          request.auth.uid == authorId
+          || data.visibility == 'public'
+          || (data.visibility == 'followers'
+            && follows(request.auth.uid, authorId))
         );
     }
 
@@ -391,6 +465,10 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    match /message_requests/{requestId} {
+      allow read, write: if false;
+    }
+
     match /verification_requests/{uid} {
       allow get: if isOwner(uid) || isAdmin();
       allow list: if isAdmin() && request.query.limit <= 100;
@@ -642,9 +720,10 @@ service cloud.firestore {
     match /posts/{postId} {
       allow get: if canReadPublishedContent(resource.data);
       allow list: if signedIn()
+        && resource.data.moderationState == 'active'
         && resource.data.status == 'published'
         && resource.data.visibility == 'public'
-        && resource.data.moderationState == 'active'
+        && resource.data.authorAccountVisibility == 'public'
         && request.query.limit <= 25;
       allow write: if false;
 
@@ -667,8 +746,9 @@ service cloud.firestore {
       // surfaces as permission-denied even with a matching expiresAt filter.
       // Single-document reads still enforce expiry via canReadStory().
       allow list: if signedIn()
-        && resource.data.visibility == 'public'
         && resource.data.moderationState == 'active'
+        && resource.data.visibility == 'public'
+        && resource.data.authorAccountVisibility == 'public'
         && request.query.limit <= 50;
       allow write: if false;
     }

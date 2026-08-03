@@ -7,6 +7,9 @@ import {
 import {HttpsError} from "firebase-functions/v2/https";
 
 import {collections} from "../core/schema";
+import {isMessageAudienceAllowed} from "./messageAudiencePolicy";
+
+export {isMessageAudienceAllowed} from "./messageAudiencePolicy";
 
 export type MemberAccess = {
   database: Firestore;
@@ -85,7 +88,7 @@ export async function assertUsersCanMessage(
     throw new HttpsError("failed-precondition", "This conversation is unavailable.");
   }
   const audience = String(targetSettings.get("messageAudience") ?? "everyone");
-  if (audience === "noOne" || (audience === "followers" && !follows.exists)) {
+  if (!isMessageAudienceAllowed(audience, follows.exists)) {
     throw new HttpsError(
       "permission-denied",
       "This person is not accepting messages from your account.",

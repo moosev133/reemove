@@ -10,12 +10,33 @@ class NotificationTile extends StatelessWidget {
     required this.notification,
     required this.onTap,
     required this.onDelete,
+    this.onActorTap,
+    this.onAcceptFollowRequest,
+    this.onDeclineFollowRequest,
     super.key,
   });
 
   final AppNotification notification;
   final VoidCallback onTap;
   final VoidCallback onDelete;
+  final VoidCallback? onActorTap;
+  final VoidCallback? onAcceptFollowRequest;
+  final VoidCallback? onDeclineFollowRequest;
+
+  bool get _showRequestActions {
+    if (notification.kind != AppNotificationKind.followRequest &&
+        notification.kind != AppNotificationKind.messageRequest) {
+      return false;
+    }
+    if (onAcceptFollowRequest == null && onDeclineFollowRequest == null) {
+      return false;
+    }
+    final String? status = notification.data['status'];
+    if (status == null || status.isEmpty) {
+      return true;
+    }
+    return status == 'pending';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,44 +80,47 @@ class NotificationTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Stack(
-                clipBehavior: Clip.none,
-                children: <Widget>[
-                  if (actor != null)
-                    AppAvatar(
-                      displayName: actor.displayName,
-                      imageUrl: actor.avatarUrl,
-                      radius: 24,
-                    )
-                  else
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: colors.primaryContainer,
-                      child: Icon(
-                        _icon(notification.kind),
-                        color: colors.onPrimaryContainer,
-                      ),
-                    ),
-                  Positioned(
-                    right: -4,
-                    bottom: -4,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: colors.surfaceContainerHighest,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: colors.surface, width: 2),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(4),
+              GestureDetector(
+                onTap: onActorTap ?? onTap,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: <Widget>[
+                    if (actor != null)
+                      AppAvatar(
+                        displayName: actor.displayName,
+                        imageUrl: actor.avatarUrl,
+                        radius: 24,
+                      )
+                    else
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: colors.primaryContainer,
                         child: Icon(
                           _icon(notification.kind),
-                          size: 13,
-                          color: colors.onSurfaceVariant,
+                          color: colors.onPrimaryContainer,
+                        ),
+                      ),
+                    Positioned(
+                      right: -4,
+                      bottom: -4,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colors.surfaceContainerHighest,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: colors.surface, width: 2),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4),
+                          child: Icon(
+                            _icon(notification.kind),
+                            size: 13,
+                            color: colors.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
@@ -106,14 +130,17 @@ class NotificationTile extends StatelessWidget {
                     Row(
                       children: <Widget>[
                         Expanded(
-                          child: Text(
-                            notification.title,
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(
-                                  fontWeight: notification.isUnread
-                                      ? FontWeight.w700
-                                      : FontWeight.w600,
-                                ),
+                          child: GestureDetector(
+                            onTap: onActorTap ?? onTap,
+                            child: Text(
+                              notification.title,
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(
+                                    fontWeight: notification.isUnread
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                  ),
+                            ),
                           ),
                         ),
                         if (notification.isUnread)
@@ -157,6 +184,26 @@ class NotificationTile extends StatelessWidget {
                         ],
                       ],
                     ),
+                    if (_showRequestActions) ...<Widget>[
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: <Widget>[
+                          if (onAcceptFollowRequest != null)
+                            FilledButton(
+                              onPressed: onAcceptFollowRequest,
+                              child: const Text('Accept'),
+                            ),
+                          if (onAcceptFollowRequest != null &&
+                              onDeclineFollowRequest != null)
+                            const SizedBox(width: AppSpacing.xs),
+                          if (onDeclineFollowRequest != null)
+                            OutlinedButton(
+                              onPressed: onDeclineFollowRequest,
+                              child: const Text('Decline'),
+                            ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -172,6 +219,9 @@ IconData _icon(AppNotificationKind kind) => switch (kind) {
   AppNotificationKind.conversationMessage => Icons.chat_bubble_outline_rounded,
   AppNotificationKind.newFollower => Icons.person_add_alt_1_rounded,
   AppNotificationKind.followRequest => Icons.person_search_rounded,
+  AppNotificationKind.followRequestAccepted => Icons.verified_outlined,
+  AppNotificationKind.messageRequest => Icons.mark_email_unread_outlined,
+  AppNotificationKind.messageRequestAccepted => Icons.mark_email_read_outlined,
   AppNotificationKind.postLike => Icons.favorite_outline_rounded,
   AppNotificationKind.postComment => Icons.mode_comment_outlined,
   AppNotificationKind.postRepost => Icons.repeat_rounded,

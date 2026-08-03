@@ -17,6 +17,25 @@ import {collections, currentSchemaVersion} from "../core/schema";
 import {normalizeUsername} from "../account/usernamePolicy";
 import {safeDocumentId} from "../feed/contentPolicy";
 import {
+  deliverFollowRequestAcceptedNotification,
+  deliverFollowRequestInboxNotification,
+  resolveOrphanNewFollowerNotifications,
+  resolvePendingFollowRequestNotifications,
+} from "../notifications/followRequestNotifications";
+import {
+  assertUsernameDiscoverable,
+  canViewConnectionLists,
+  purgeFeedEntriesBetween,
+  resolveFollowerListAudience,
+  safeProfilePreview,
+} from "./privacyEnforcement";
+import {purgeMessageRequestsBetween} from "../messaging/messageRequestCleanup";
+import {
+  buildPublicProfileCallableResponse,
+  resolveAccountPrivacy,
+  viewerCanViewFullAccount,
+} from "./profilePrivacyModel";
+import {
   recordValue,
   sanitizedCallableProfile,
   type ProfileAudience,
@@ -32,6 +51,10 @@ type RelationshipState =
   "requestReceived" |
   "blocked" |
   "blockedBy";
+
+type FollowEdgeSource =
+  "direct_follow" |
+  "accepted_follow_request";
 
 function requireUid(uid: string | undefined): string {
   if (!uid) throw new HttpsError("unauthenticated", "Sign in to continue.");
@@ -112,6 +135,8 @@ async function relationshipPayload(
       profileId,
       state: "self" satisfies RelationshipState,
       canMessage: false,
+      canRequestMessage: false,
+      messageRequestStatus: null,
       canViewFollowers: true,
     };
   }
@@ -148,20 +173,48 @@ async function relationshipPayload(
   const messageAudience = (privacy.messageAudience === "followers" ||
     privacy.messageAudience === "noOne") ?
     privacy.messageAudience : "everyone";
-  const showFollowerLists = privacy.showFollowerLists !== false;
-  const visibility = String(profile.get("visibility") ?? "private");
+  const messageRequestAudience = (privacy.messageRequestAudience === "followers" ||
+    privacy.messageRequestAudience === "everyone") ?
+    privacy.messageRequestAudience : "noOne";
+  const followerListAudience = resolveFollowerListAudience(privacy);
+  const accountPrivacy = resolveAccountPrivacy(profile);
   const canViewProfile = profile.exists &&
     profile.get("moderationState") === "active" &&
-    (viewerId === profileId || visibility === "public" ||
-      (visibility === "followers" && viewerFollowing.exists));
+    viewerCanViewFullAccount(
+      accountPrivacy,
+      viewerId === profileId,
+      viewerFollowing.exists,
+    );
+  const canViewFollowers = state !== "blocked" && state !== "blockedBy" &&
+    canViewConnectionLists(
+      viewerId,
+      profileId,
+      followerListAudience,
+      canViewProfile,
+      viewerFollowing.exists,
+    );
+  const blocked = state === "blocked" || state === "blockedBy";
+  const canMessage = canViewProfile && !blocked &&
+    audienceAllows(messageAudience, viewerFollowing.exists);
+  const canRequestMessage = canViewProfile && !blocked && !canMessage &&
+    audienceAllows(messageRequestAudience, viewerFollowing.exists);
+  const messageRequestRef = database.collection(collections.messageRequests)
+    .doc(`${viewerId}--${profileId}`);
+  const outgoingMessageRequest = await messageRequestRef.get();
+  const messageRequestStatus =
+    outgoingMessageRequest.exists &&
+      outgoingMessageRequest.get("status") === "pending" ?
+      "pending" :
+      null;
   return {
     viewerId,
     profileId,
     state,
-    canMessage: canViewProfile && state !== "blocked" &&
-      state !== "blockedBy" &&
-      audienceAllows(messageAudience, viewerFollowing.exists),
-    canViewFollowers: canViewProfile && showFollowerLists,
+    canViewProfile,
+    canMessage,
+    canRequestMessage: canRequestMessage || messageRequestStatus === "pending",
+    messageRequestStatus,
+    canViewFollowers,
     ...(sentRequest.exists ? {
       requestedAt: (sentRequest.get("createdAt") as Timestamp)
         .toDate().toISOString(),
@@ -169,9 +222,19 @@ async function relationshipPayload(
   };
 }
 
-function edgeData(userId: string, now: Timestamp): Record<string, unknown> {
+function edgeData(
+  userId: string,
+  now: Timestamp,
+  options?: {
+    source?: FollowEdgeSource;
+    requestId?: string;
+  },
+): Record<string, unknown> {
   return {
     userId,
+    source: options?.source ?? "direct_follow",
+    relationshipStatus: "confirmed",
+    ...(options?.requestId ? {requestId: options.requestId} : {}),
     createdAt: now,
     updatedAt: now,
     schemaVersion: currentSchemaVersion,
@@ -189,6 +252,7 @@ async function assertActiveProfile(
 async function resolveVisibleProfileId(
   database: Firestore,
   data: Record<string, unknown>,
+  viewerId?: string,
 ): Promise<string> {
   if (typeof data.profileId === "string" && data.profileId.trim()) {
     return safeDocumentId(data.profileId, "profileId");
@@ -205,6 +269,9 @@ async function resolveVisibleProfileId(
   const uid = reservation.get("uid");
   if (!reservation.exists || typeof uid !== "string" || !uid) {
     throw new HttpsError("not-found", "This profile is unavailable.");
+  }
+  if (viewerId !== uid) {
+    await assertUsernameDiscoverable(database, uid);
   }
   return uid;
 }
@@ -227,9 +294,12 @@ async function sanitizedProfileForViewer(
       viewerBlock.exists || profileBlock.exists) {
     throw new HttpsError("not-found", "This profile is unavailable.");
   }
-  const visibility = String(profile.get("visibility") ?? "private");
-  const canView = viewerId === profileId || visibility === "public" ||
-    (visibility === "followers" && follower.exists);
+  const accountPrivacy = resolveAccountPrivacy(profile);
+  const canView = viewerCanViewFullAccount(
+    accountPrivacy,
+    viewerId === profileId,
+    follower.exists,
+  );
   if (!canView) {
     throw new HttpsError("permission-denied", "This profile is private.");
   }
@@ -242,10 +312,46 @@ export const getPublicProfile = onCall(
     const viewerId = requireUid(request.auth?.uid);
     const data = recordValue(request.data);
     const database = getFirestore();
-    const profileId = await resolveVisibleProfileId(database, data);
-    return {
-      profile: await sanitizedProfileForViewer(database, viewerId, profileId),
-    };
+    const profileId = await resolveVisibleProfileId(database, data, viewerId);
+    const relationship = await relationshipPayload(
+      database,
+      viewerId,
+      profileId,
+    );
+    try {
+      const profile = await sanitizedProfileForViewer(
+        database,
+        viewerId,
+        profileId,
+      );
+      return buildPublicProfileCallableResponse({
+        access: "full",
+        profile,
+        relationship,
+      });
+    } catch (error) {
+      if (!(error instanceof HttpsError)) throw error;
+      if (error.code !== "permission-denied" && error.code !== "not-found") {
+        throw error;
+      }
+      const profile = await database.collection(collections.users)
+        .doc(profileId).get();
+      if (!profile.exists || profile.get("moderationState") !== "active") {
+        throw error;
+      }
+      const [viewerBlock, profileBlock] = await Promise.all([
+        database.doc(`users/${viewerId}/blocks/${profileId}`).get(),
+        database.doc(`users/${profileId}/blocks/${viewerId}`).get(),
+      ]);
+      if (viewerBlock.exists || profileBlock.exists) {
+        throw error;
+      }
+      return buildPublicProfileCallableResponse({
+        access: "preview",
+        preview: safeProfilePreview(profile),
+        relationship,
+      });
+    }
   },
 );
 
@@ -299,8 +405,9 @@ export const followProfile = onCall(callableOptions, async (request) => {
     }
     if (existing.exists || requestDoc.exists) return;
 
+    const accountPrivacy = resolveAccountPrivacy(profile);
     const approvalPolicy = profile.get("followApprovalPolicy") ===
-      "approvalRequired" || profile.get("visibility") !== "public";
+      "approvalRequired" || accountPrivacy !== "public";
     const now = Timestamp.now();
     if (approvalPolicy) {
       transaction.create(refs.sentRequest, {
@@ -314,8 +421,14 @@ export const followProfile = onCall(callableOptions, async (request) => {
       return;
     }
 
-    transaction.create(refs.viewerFollowing, edgeData(profileId, now));
-    transaction.create(refs.profileFollowers, edgeData(viewerId, now));
+    transaction.create(
+      refs.viewerFollowing,
+      edgeData(profileId, now, {source: "direct_follow"}),
+    );
+    transaction.create(
+      refs.profileFollowers,
+      edgeData(viewerId, now, {source: "direct_follow"}),
+    );
     transaction.update(viewerRef, {
       followingCount: Math.max(0, Number(viewer.get("followingCount") ?? 0)) + 1,
       updatedAt: now,
@@ -326,12 +439,17 @@ export const followProfile = onCall(callableOptions, async (request) => {
     });
   });
 
-  await writeAuditEvent({
-    actorId: viewerId,
-    action: "profile.follow_requested",
-    targetType: "user",
-    targetId: profileId,
-  });
+  const pendingRequest = await refs.sentRequest.get();
+  if (pendingRequest.exists && pendingRequest.get("status") === "pending") {
+    await writeAuditEvent({
+      actorId: viewerId,
+      action: "profile.follow_requested",
+      targetType: "user",
+      targetId: profileId,
+    });
+    await deliverFollowRequestInboxNotification(viewerId, profileId);
+  }
+
   return relationshipPayload(database, viewerId, profileId);
 });
 
@@ -376,6 +494,8 @@ export const unfollowProfile = onCall(callableOptions, async (request) => {
       });
     }
   });
+  await purgeFeedEntriesBetween(database, viewerId, profileId);
+  await resolveOrphanNewFollowerNotifications(profileId, viewerId);
   return relationshipPayload(database, viewerId, profileId);
 });
 
@@ -385,8 +505,13 @@ export const cancelFollowRequest = onCall(
     const viewerId = requireUid(request.auth?.uid);
     const profileId = profileIdFrom(request.data);
     const database = getFirestore();
-    await database.collection("follow_requests")
-      .doc(followRequestId(viewerId, profileId)).delete();
+    const requestRef = database.collection("follow_requests")
+      .doc(followRequestId(viewerId, profileId));
+    const requestDoc = await requestRef.get();
+    if (requestDoc.exists) {
+      await requestRef.delete();
+      await resolvePendingFollowRequestNotifications(profileId, viewerId);
+    }
     return relationshipPayload(database, viewerId, profileId);
   },
 );
@@ -404,6 +529,7 @@ export const respondToFollowRequest = onCall(
     const database = getFirestore();
     const requestRef = database.collection("follow_requests")
       .doc(followRequestId(requesterId, targetId));
+    const requestId = followRequestId(requesterId, targetId);
     const requesterRef = database.collection(collections.users).doc(requesterId);
     const targetRef = database.collection(collections.users).doc(targetId);
     const refs = relationshipRefs(database, requesterId, targetId);
@@ -418,7 +544,12 @@ export const respondToFollowRequest = onCall(
           transaction.get(refs.viewerBlock),
           transaction.get(refs.profileBlock),
         ]);
-      if (!requestDoc.exists || requestDoc.get("status") !== "pending") {
+      if (!requestDoc.exists) {
+        if (response === "decline") return;
+        throw new HttpsError("not-found", "This follow request is unavailable.");
+      }
+      if (requestDoc.get("status") !== "pending") {
+        if (response === "decline") return;
         throw new HttpsError("not-found", "This follow request is unavailable.");
       }
       transaction.delete(requestRef);
@@ -432,8 +563,20 @@ export const respondToFollowRequest = onCall(
         );
       }
       const now = Timestamp.now();
-      transaction.create(refs.viewerFollowing, edgeData(targetId, now));
-      transaction.create(refs.profileFollowers, edgeData(requesterId, now));
+      transaction.create(
+        refs.viewerFollowing,
+        edgeData(targetId, now, {
+          source: "accepted_follow_request",
+          requestId,
+        }),
+      );
+      transaction.create(
+        refs.profileFollowers,
+        edgeData(requesterId, now, {
+          source: "accepted_follow_request",
+          requestId,
+        }),
+      );
       transaction.update(requesterRef, {
         followingCount:
           Math.max(0, Number(requester.get("followingCount") ?? 0)) + 1,
@@ -454,6 +597,16 @@ export const respondToFollowRequest = onCall(
       targetType: "user",
       targetId: requesterId,
     });
+
+    // Always clear the target's actionable pending request notification.
+    await resolvePendingFollowRequestNotifications(targetId, requesterId);
+
+    // Decline is silent for the requester. Accept sends an informational item
+    // without Accept/Decline actions.
+    if (response === "accept") {
+      await deliverFollowRequestAcceptedNotification(requesterId, targetId);
+    }
+
     return relationshipPayload(database, targetId, requesterId);
   },
 );
@@ -466,6 +619,7 @@ export const removeFollower = onCall(callableOptions, async (request) => {
   const followerRef = database.collection(collections.users).doc(followerId);
   const profileRef = database.collection(collections.users).doc(profileId);
 
+  let removed = false;
   await database.runTransaction(async (transaction) => {
     const [follower, profile, edge] = await Promise.all([
       transaction.get(followerRef),
@@ -473,6 +627,7 @@ export const removeFollower = onCall(callableOptions, async (request) => {
       transaction.get(refs.viewerFollowing),
     ]);
     if (!edge.exists) return;
+    removed = true;
     transaction.delete(refs.viewerFollowing);
     transaction.delete(refs.profileFollowers);
     if (follower.exists) {
@@ -494,7 +649,11 @@ export const removeFollower = onCall(callableOptions, async (request) => {
       });
     }
   });
-  return {removed: true};
+  if (removed) {
+    await purgeFeedEntriesBetween(database, followerId, profileId);
+    await resolveOrphanNewFollowerNotifications(profileId, followerId);
+  }
+  return {removed};
 });
 
 function parsedCursor(data: Record<string, unknown>): {
@@ -531,7 +690,8 @@ export const listProfileConnections = onCall(
     const data = recordValue(request.data);
     const profileId = safeDocumentId(data.profileId, "profileId");
     const type = data.type;
-    if (type !== "followers" && type !== "following" && type !== "requests") {
+    if (type !== "followers" && type !== "following" &&
+        type !== "requests" && type !== "sentRequests") {
       throw new HttpsError("invalid-argument", "Connection type is invalid.");
     }
     const limitValue = typeof data.limit === "number" ?
@@ -543,19 +703,19 @@ export const listProfileConnections = onCall(
       viewerId,
       profileId,
     );
-    if (viewerId !== profileId && relationship.canViewFollowers !== true) {
-      throw new HttpsError(
-        "permission-denied",
-        "This connection list is private.",
-      );
-    }
     if (type === "requests" && viewerId !== profileId) {
       throw new HttpsError(
         "permission-denied",
         "Follow requests are private.",
       );
     }
-    if (type !== "requests" &&
+    if (type === "sentRequests" && viewerId !== profileId) {
+      throw new HttpsError(
+        "permission-denied",
+        "Sent follow requests are private.",
+      );
+    }
+    if ((type === "followers" || type === "following") &&
         viewerId !== profileId &&
         relationship.canViewFollowers !== true) {
       throw new HttpsError(
@@ -568,6 +728,17 @@ export const listProfileConnections = onCall(
     if (type === "requests") {
       let query = database.collection("follow_requests")
         .where("targetId", "==", profileId)
+        .where("status", "==", "pending")
+        .orderBy("createdAt", "desc")
+        .orderBy(FieldPath.documentId())
+        .limit(limit + 1);
+      if (cursor.id && cursor.at) {
+        query = query.startAfter(cursor.at, cursor.id);
+      }
+      documents = (await query.get()).docs;
+    } else if (type === "sentRequests") {
+      let query = database.collection("follow_requests")
+        .where("requesterId", "==", profileId)
         .where("status", "==", "pending")
         .orderBy("createdAt", "desc")
         .orderBy(FieldPath.documentId())
@@ -589,24 +760,40 @@ export const listProfileConnections = onCall(
       documents = (await query.get()).docs;
     }
     const page = documents.slice(0, limit);
-    const ids = page.map((item) => type === "requests" ?
-      String(item.get("requesterId") ?? "") : item.id);
-    const profiles = await profileDocuments(database, ids);
+    const ids = page.map((item) => {
+      if (type === "requests") {
+        return String(item.get("requesterId") ?? "");
+      }
+      if (type === "sentRequests") {
+        return String(item.get("targetId") ?? "");
+      }
+      return item.id;
+    });
     const items = await Promise.all(ids.map(async (id) => {
-      const profile = profiles.get(id);
-      if (!profile?.exists || profile.get("moderationState") !== "active") {
+      if (!id) return undefined;
+      if (type === "requests" || type === "sentRequests") {
+        const profile = await database.collection(collections.users).doc(id)
+          .get();
+        if (!profile.exists || profile.get("moderationState") !== "active") {
+          return undefined;
+        }
+        const [viewerBlock, profileBlock] = await Promise.all([
+          database.doc(`users/${viewerId}/blocks/${id}`).get(),
+          database.doc(`users/${id}/blocks/${viewerId}`).get(),
+        ]);
+        if (viewerBlock.exists || profileBlock.exists) return undefined;
+        return safeProfilePreview(profile);
+      }
+      try {
+        return await sanitizedProfileForViewer(database, viewerId, id);
+      } catch {
         return undefined;
       }
-      const privacy = await privacyFor(database, id);
-      return sanitizedCallableProfile(profile, privacy, viewerId === id);
     }));
     const last = page.at(-1);
     return {
       items: items.filter(
-        (item): item is {
-          profile: Record<string, unknown>;
-          blockedAt: string;
-        } => item !== undefined,
+        (item): item is Record<string, unknown> => item !== undefined,
       ),
       hasMore: documents.length > limit,
       ...(last ? {
@@ -742,4 +929,5 @@ export async function removeRelationshipForBlock(
     transaction.delete(forward.sentRequest);
     transaction.delete(forward.receivedRequest);
   });
+  await purgeMessageRequestsBetween(database, blockerId, blockedId);
 }

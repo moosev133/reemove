@@ -298,25 +298,30 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         'Profile visibility',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        'Public account: anyone can view. Approved followers: private account. Owner only: no follower access.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
                       const SizedBox(height: AppSpacing.md),
                       DropdownButtonFormField<Visibility>(
                         initialValue: _visibility,
                         decoration: const InputDecoration(
-                          labelText: 'Who can view your profile',
+                          labelText: 'Account privacy',
                           prefixIcon: Icon(Icons.visibility_outlined),
                         ),
                         items: const <DropdownMenuItem<Visibility>>[
                           DropdownMenuItem<Visibility>(
                             value: Visibility.public,
-                            child: Text('Public'),
+                            child: Text('Public account'),
                           ),
                           DropdownMenuItem<Visibility>(
                             value: Visibility.followers,
-                            child: Text('Approved followers'),
+                            child: Text('Private account (approved followers)'),
                           ),
                           DropdownMenuItem<Visibility>(
                             value: Visibility.private,
-                            child: Text('Private'),
+                            child: Text('Owner only'),
                           ),
                         ],
                         onChanged: (Visibility? value) {

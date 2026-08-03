@@ -11,6 +11,8 @@ import {writeAuditEvent} from "../core/audit";
 import {callableOptions} from "../core/functionOptions";
 import {consumeRateLimit} from "../core/rateLimit";
 import {collections, currentSchemaVersion} from "../core/schema";
+import {removeRelationshipForBlock} from "../profile/followGraph";
+import {purgeFeedEntriesBothDirections} from "../profile/privacyEnforcement";
 import {assertCanAccessPost, assertCanAccessStory} from "./contentAccess";
 import {parseCommentText, safeDocumentId} from "./contentPolicy";
 import {contentRankingScore} from "./ranking";
@@ -441,11 +443,9 @@ export const blockUser = onCall(callableOptions, async (request) => {
   const batch = database.batch();
   batch.set(blockRef, blockRecord, {merge: true});
   batch.set(blockedByRef, blockRecord, {merge: true});
-  batch.delete(database.doc(`users/${uid}/following/${targetUserId}`));
-  batch.delete(database.doc(`users/${targetUserId}/followers/${uid}`));
-  batch.delete(database.doc(`users/${targetUserId}/following/${uid}`));
-  batch.delete(database.doc(`users/${uid}/followers/${targetUserId}`));
   await batch.commit();
+  await removeRelationshipForBlock(database, uid, targetUserId);
+  await purgeFeedEntriesBothDirections(database, uid, targetUserId);
   await writeAuditEvent({
     actorId: uid,
     action: "safety.user_blocked",

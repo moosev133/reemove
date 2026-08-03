@@ -11,6 +11,7 @@ import {
 } from "@firebase/rules-unit-testing";
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -103,6 +104,7 @@ async function seedFirestore() {
         hashtags: ["running"],
         mentions: [],
         visibility: "public",
+        authorAccountVisibility: "public",
         moderationState: "active",
         status: "published",
         allowComments: true,
@@ -143,7 +145,7 @@ async function seedFirestore() {
         authorId: "public-user",
         authorSnapshot: {id: "public-user", username: "public_user", displayName: "Public User", isVerified: false, verificationType: "none"},
         media: {id: "asset-1", storagePath: "content/public-user/draft/asset-1/photo.jpg", kind: "image", processingState: "ready", downloadUrl: "https://example.com/photo.jpg"},
-        caption: "Training", visibility: "public", moderationState: "active", viewCount: 0,
+        caption: "Training", visibility: "public", authorAccountVisibility: "public", moderationState: "active", viewCount: 0,
         createdAt: new Date("2026-07-13T12:00:00Z"), updatedAt: new Date("2026-07-13T12:00:00Z"),
         expiresAt: new Date("2099-07-14T12:00:00Z"), schemaVersion: 1,
       }),
@@ -196,6 +198,28 @@ describe("user profile rules", () => {
     await assertFails(getDoc(doc(other, "users/private-user")));
     await assertSucceeds(getDoc(doc(follower, "users/private-user")));
     await assertSucceeds(getDoc(doc(owner, "users/private-user")));
+  });
+
+  it("denies approved followers when the account is owner-only", async () => {
+    await seedFirestore();
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "users/owner-only-user"), {
+        ...publicUser("owner-only-user", "private"),
+        accountPrivacy: "ownerOnly",
+      });
+      await setDoc(doc(db, "users/owner-only-user/followers/approved-reader"), {
+        userId: "approved-reader",
+        createdAt: new Date("2026-07-13T12:00:00Z"),
+        updatedAt: new Date("2026-07-13T12:00:00Z"),
+        schemaVersion: 1,
+      });
+    });
+    const follower = testEnv.authenticatedContext("approved-reader").firestore();
+    const owner = testEnv.authenticatedContext("owner-only-user").firestore();
+
+    await assertFails(getDoc(doc(follower, "users/owner-only-user")));
+    await assertSucceeds(getDoc(doc(owner, "users/owner-only-user")));
   });
 
   it("lets a first-time user observe their own missing profile document", async () => {
@@ -383,6 +407,7 @@ describe("social content rules", () => {
     const railQuery = query(
       collection(reader, "stories"),
       where("visibility", "==", "public"),
+      where("authorAccountVisibility", "==", "public"),
       where("moderationState", "==", "active"),
       where("expiresAt", ">", new Date("2026-07-19T00:00:00Z")),
       orderBy("expiresAt"),
@@ -392,6 +417,7 @@ describe("social content rules", () => {
     const deniedQuery = query(
       collection(unauthenticated, "stories"),
       where("visibility", "==", "public"),
+      where("authorAccountVisibility", "==", "public"),
       where("moderationState", "==", "active"),
       where("expiresAt", ">", new Date("2026-07-19T00:00:00Z")),
       orderBy("expiresAt"),
@@ -447,6 +473,7 @@ describe("social content rules", () => {
       collection(reader, "posts"),
       where("status", "==", "published"),
       where("visibility", "==", "public"),
+      where("authorAccountVisibility", "==", "public"),
       where("moderationState", "==", "active"),
       limit(25),
     );
@@ -496,6 +523,28 @@ describe("reports and deny-by-default", () => {
       getDoc(doc(athlete, "account_deletions/athlete")),
     );
     await assertFails(setDoc(doc(athlete, "unknown/document"), {value: true}));
+  });
+
+  it("denies all client access to message_requests", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "message_requests/a--b"), {
+        requesterId: "a",
+        targetId: "b",
+        status: "pending",
+        schemaVersion: 1,
+      });
+    });
+    const athlete = testEnv.authenticatedContext("athlete").firestore();
+    const requester = testEnv.authenticatedContext("a").firestore();
+    await assertFails(getDoc(doc(athlete, "message_requests/a--b")));
+    await assertFails(getDoc(doc(requester, "message_requests/a--b")));
+    await assertFails(setDoc(doc(requester, "message_requests/a--b"), {
+      requesterId: "a",
+      targetId: "b",
+      status: "pending",
+      schemaVersion: 1,
+    }));
+    await assertFails(deleteDoc(doc(requester, "message_requests/a--b")));
   });
 });
 
