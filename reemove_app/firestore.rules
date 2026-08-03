@@ -450,6 +450,19 @@ service cloud.firestore {
         }
       }
 
+      // Denormalized group inbox — owner-readable; all writes via Admin SDK.
+      match /group_memberships/{groupId} {
+        allow get: if isOwner(uid);
+        allow list: if isOwner(uid) && request.query.limit <= 100;
+        allow write: if false;
+      }
+
+      match /group_invitations/{groupId} {
+        allow get: if isOwner(uid);
+        allow list: if isOwner(uid) && request.query.limit <= 100;
+        allow write: if false;
+      }
+
       match /{subcollection}/{documentId} {
         allow read, write: if false;
       }
@@ -530,6 +543,24 @@ service cloud.firestore {
       }
     }
 
+    function isGroupMember(groupId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid))
+        && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.status == 'active'
+        && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.removedAt == null;
+    }
+
+    function isGroupManager(groupId) {
+      return isGroupMember(groupId)
+        && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role in ['owner', 'admin'];
+    }
+
+    function isPublicActiveGroup(data) {
+      return data.privacy == 'public'
+        && data.status == 'active'
+        && data.moderationState == 'active';
+    }
+
     match /teams/{communityId} {
       allow get: if signedIn() && isPublicActive(resource.data);
       allow list: if signedIn()
@@ -561,6 +592,82 @@ service cloud.firestore {
             )
           );
         allow write: if false;
+      }
+    }
+
+    match /groups/{groupId} {
+      // Private/hidden groups are never listable. Gets are membership- or public-gated.
+      allow get: if signedIn()
+        && resource.data.moderationState == 'active'
+        && resource.data.status != 'deleted'
+        && (
+          isPublicActiveGroup(resource.data)
+          || isGroupMember(groupId)
+        );
+      allow list: if signedIn()
+        && isPublicActiveGroup(resource.data)
+        && request.query.limit <= 40;
+      allow write: if false;
+
+      match /members/{memberId} {
+        allow get: if isOwner(memberId)
+          || isGroupMember(groupId)
+          || (
+            signedIn()
+            && isPublicActiveGroup(get(/databases/$(database)/documents/groups/$(groupId)).data)
+            && resource.data.status == 'active'
+            && resource.data.removedAt == null
+          );
+        allow list: if signedIn()
+          && request.query.limit <= 100
+          && resource.data.status == 'active'
+          && resource.data.get('removedAt', null) == null
+          && (
+            isGroupMember(groupId)
+            || isPublicActiveGroup(get(/databases/$(database)/documents/groups/$(groupId)).data)
+          );
+        allow write: if false;
+      }
+
+      match /join_requests/{requesterId} {
+        allow get: if isOwner(requesterId) || isGroupManager(groupId);
+        allow list: if isGroupManager(groupId)
+          && resource.data.status == 'pending'
+          && request.query.limit <= 50;
+        allow write: if false;
+      }
+
+      match /invitations/{inviteeId} {
+        allow get: if isOwner(inviteeId) || isGroupManager(groupId);
+        allow list: if isGroupManager(groupId)
+          && resource.data.status == 'pending'
+          && request.query.limit <= 50;
+        allow write: if false;
+      }
+
+      match /sessions/{sessionId} {
+        allow get: if signedIn()
+          && (
+            isGroupMember(groupId)
+            || isPublicActiveGroup(get(/databases/$(database)/documents/groups/$(groupId)).data)
+          );
+        allow list: if signedIn()
+          && request.query.limit <= 50
+          && (
+            isGroupMember(groupId)
+            || isPublicActiveGroup(get(/databases/$(database)/documents/groups/$(groupId)).data)
+          );
+        allow write: if false;
+      }
+
+      match /channels/{channelId} {
+        allow get: if isGroupMember(groupId);
+        allow list: if isGroupMember(groupId) && request.query.limit <= 10;
+        allow write: if false;
+      }
+
+      match /{subcollection}/{documentId} {
+        allow read, write: if false;
       }
     }
 
