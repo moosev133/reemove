@@ -36,6 +36,42 @@ export const viewOnceSignedUrlTtlMs = 60_000;
 export const groupMediaAccessUrlTtlMs = 10 * 60_000;
 export const abandonedGroupMediaHours = 24;
 
+
+/**
+ * Production uses V4 signed URLs. The Storage/Functions emulators cannot sign
+ * without a real service account — after authorization succeeds, return a
+ * deterministic emulator read URL instead. Never used when FUNCTIONS_EMULATOR
+ * is unset (production/staging).
+ */
+async function createMediaReadUrl(
+  storagePath: string,
+  expiresAtMs: number,
+): Promise<string> {
+  const file = getStorage().bucket().file(storagePath);
+  const emulatorHost = process.env.FIREBASE_STORAGE_EMULATOR_HOST?.trim();
+  if (emulatorHost) {
+    const bucket = file.bucket.name;
+    const encoded = encodeURIComponent(storagePath);
+    return `http://${emulatorHost}/v0/b/${bucket}/o/${encoded}` +
+      `?alt=media&emulatorExpires=${expiresAtMs}`;
+  }
+  try {
+    const [url] = await file.getSignedUrl({
+      action: "read",
+      version: "v4",
+      expires: expiresAtMs,
+    });
+    return url;
+  } catch (error) {
+    if (process.env.FUNCTIONS_EMULATOR === "true") {
+      return "https://firebasestorage.emulator.invalid/v0/b/" +
+        `demo-reemove.appspot.com/o/${encodeURIComponent(storagePath)}` +
+        `?alt=media&expires=${expiresAtMs}`;
+    }
+    throw error;
+  }
+}
+
 function claimDocId(uid: string, attachmentId: string): string {
   return `${uid}--${attachmentId}`;
 }
@@ -314,11 +350,7 @@ export const claimViewOnceMedia = onCall(callableOptions, async (request) => {
   });
 
   const expiresAt = Date.now() + viewOnceSignedUrlTtlMs;
-  const [url] = await getStorage().bucket().file(result.storagePath).getSignedUrl({
-    action: "read",
-    version: "v4",
-    expires: expiresAt,
-  });
+  const url = await createMediaReadUrl(result.storagePath, expiresAt);
 
   await writeAuditEvent({
     actorId: uid,
@@ -399,11 +431,7 @@ export const getGroupMediaAccessUrl = onCall(callableOptions, async (request) =>
   }
 
   const expiresAt = Date.now() + groupMediaAccessUrlTtlMs;
-  const [url] = await getStorage().bucket().file(storagePath).getSignedUrl({
-    action: "read",
-    version: "v4",
-    expires: expiresAt,
-  });
+  const url = await createMediaReadUrl(storagePath, expiresAt);
   return {
     url,
     expiresAt: new Date(expiresAt).toISOString(),

@@ -41,6 +41,11 @@ import {
   safeString,
   type ProfilePrivacyInput,
 } from "./profilePolicy";
+import {
+  isAllowedVerificationEvidenceContentType,
+  parseVerificationEvidenceList,
+  parseVerificationType,
+} from "./verificationPolicy";
 
 function requireUid(uid: string | undefined): string {
   if (!uid) throw new HttpsError("unauthenticated", "Sign in to continue.");
@@ -86,6 +91,44 @@ async function assertOwnedProfileAsset(
     throw new HttpsError(
       "failed-precondition",
       "The selected profile image could not be verified.",
+    );
+  }
+}
+
+async function assertOwnedVerificationEvidence(
+  uid: string,
+  storagePath: string,
+): Promise<void> {
+  const expectedPrefix = `verification/${uid}/`;
+  if (!storagePath.startsWith(expectedPrefix)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "The selected verification evidence is invalid.",
+    );
+  }
+  try {
+    const [metadata] = await getStorage().bucket().file(storagePath).getMetadata();
+    const contentType = String(metadata.contentType ?? "");
+    const size = Number(metadata.size ?? 0);
+    if (metadata.metadata?.ownerId !== uid ||
+        metadata.metadata?.schemaVersion !== "1" ||
+        !isAllowedVerificationEvidenceContentType(contentType)) {
+      throw new HttpsError(
+        "permission-denied",
+        "The selected verification evidence is not owned by this account.",
+      );
+    }
+    if (!Number.isFinite(size) || size <= 0 || size > 15 * 1024 * 1024) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Evidence files must be between 1 byte and 15 MB.",
+      );
+    }
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError(
+      "failed-precondition",
+      "The selected verification evidence could not be verified. Finish the upload, then try again.",
     );
   }
 }
@@ -292,52 +335,83 @@ export const updateProfilePrivacy = onCall(
   },
 );
 
-function verificationType(value: unknown): "athlete" | "trainer" | "business" {
-  if (value === "athlete" || value === "trainer" || value === "business") {
-    return value;
-  }
-  throw new HttpsError("invalid-argument", "Verification type is invalid.");
-}
-
-interface VerificationEvidence {
-  storagePath: string;
-  label: string;
-}
-
-function verificationEvidence(value: unknown): VerificationEvidence[] {
-  if (!Array.isArray(value) || value.length < 1 || value.length > 6) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Attach between one and six verification documents.",
-    );
-  }
-  return value.map((item) => {
-    const data = recordValue(item);
-    return {
-      storagePath: safeString(data.storagePath, "Evidence path", 500, 1),
-      label: safeString(data.label, "Evidence label", 80, 1),
-    };
-  });
-}
+export const saveVerificationDraft = onCall(
+  callableOptions,
+  async (request) => {
+    const uid = requireUid(request.auth?.uid);
+    const data = recordValue(request.data);
+    const requestedType = parseVerificationType(data.requestedType);
+    const legalName = typeof data.legalName === "string" ?
+      data.legalName.trim().slice(0, 120) :
+      "";
+    const summary = typeof data.summary === "string" ?
+      data.summary.trim().slice(0, 1500) :
+      "";
+    const evidence = parseVerificationEvidenceList(data.evidence ?? [], {
+      min: 0,
+      max: 6,
+    });
+    await Promise.all(evidence.map((item) => assertOwnedVerificationEvidence(
+      uid,
+      item.storagePath,
+    )));
+    const database = getFirestore();
+    const requestRef = database.collection(collections.verificationRequests)
+      .doc(uid);
+    const existing = await requestRef.get();
+    const status = existing.exists ? String(existing.get("status") ?? "") : "";
+    if (status === "pending") {
+      throw new HttpsError(
+        "failed-precondition",
+        "A verification request is already under review.",
+      );
+    }
+    if (status === "approved") {
+      throw new HttpsError(
+        "failed-precondition",
+        "This profile is already verified.",
+      );
+    }
+    const now = Timestamp.now();
+    await requestRef.set({
+      uid,
+      requestedType,
+      status: "draft",
+      legalName,
+      summary,
+      evidence,
+      submittedAt: null,
+      reviewedAt: null,
+      reviewedBy: null,
+      rejectionReason: null,
+      createdAt: existing.get("createdAt") ?? now,
+      updatedAt: now,
+      schemaVersion: currentSchemaVersion,
+    }, {merge: false});
+    return {saved: true, requestId: uid, status: "draft"};
+  },
+);
 
 export const submitVerificationRequest = onCall(
   callableOptions,
   async (request) => {
     const uid = requireUid(request.auth?.uid);
     const data = recordValue(request.data);
-    const requestedType = verificationType(data.requestedType);
+    const requestedType = parseVerificationType(data.requestedType);
     const legalName = safeString(data.legalName, "Legal name", 120, 2);
     const summary = safeString(data.summary, "Verification summary", 1500, 20);
-    const evidence = verificationEvidence(data.evidence);
+    const evidence = parseVerificationEvidenceList(data.evidence, {
+      min: 1,
+      max: 6,
+    });
     await consumeRateLimit(uid, {
       key: "verification_request",
       maxAttempts: 5,
       windowSeconds: 30 * 24 * 60 * 60,
     });
-    await Promise.all(evidence.map((item) => assertOwnedProfileAsset(
+    await Promise.all(evidence.map((item) => assertOwnedVerificationEvidence(
       uid,
       item.storagePath,
-      `verification/${uid}/`,
     )));
     const database = getFirestore();
     const requestRef = database.collection(collections.verificationRequests)

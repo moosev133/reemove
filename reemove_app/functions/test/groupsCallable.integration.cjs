@@ -885,33 +885,21 @@ describe("groups callable emulator integration", () => {
       });
 
     const claim = callableFor(member.client.functions, "claimViewOnceMedia");
-    // Emulator may lack signing credentials — accept either signed URL or failed-precondition.
-    try {
-      const first = await claim({
+    const first = await claim({
+      conversationId: memberChatId,
+      messageId,
+      attachmentId,
+    });
+    assert.ok(first.data.url);
+    assert.ok(String(first.data.url).includes("emulator"));
+    await expectCallableError(
+      claim({
         conversationId: memberChatId,
         messageId,
         attachmentId,
-      });
-      assert.ok(first.data.url);
-      await expectCallableError(
-        claim({
-          conversationId: memberChatId,
-          messageId,
-          attachmentId,
-        }),
-        "already-exists",
-      );
-    } catch (error) {
-      const code = error?.code || error?.message || String(error);
-      // Signing can fail on emulator without credentials (surfaces as a
-      // generic functions/internal error); claim doc may still exist.
-      if (!String(code).includes("already-exists") &&
-          !String(code).toLowerCase().includes("permission") &&
-          !String(code).toLowerCase().includes("failed") &&
-          !String(code).toLowerCase().includes("internal")) {
-        throw error;
-      }
-    }
+      }),
+      "already-exists",
+    );
   });
 
   it(
@@ -1049,14 +1037,16 @@ describe("groups callable emulator integration", () => {
     const payload = {conversationId: memberChatId, messageId, attachmentId};
     const results = await Promise.allSettled([claim(payload), claim(payload)]);
 
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
     const alreadyExistsCount = results.filter(
       (r) => r.status === "rejected" && String(r.reason?.code ?? "").includes("already-exists"),
     ).length;
-    const otherOutcomeCount = results.length - alreadyExistsCount;
-    // Exactly one of the two concurrent claims wins the transaction; the loser
-    // always observes already-exists regardless of signed-URL availability.
+    // Exactly one of the two concurrent claims wins the transaction and returns
+    // an emulator-safe signed URL; the loser observes already-exists.
+    assert.equal(fulfilled.length, 1);
     assert.equal(alreadyExistsCount, 1);
-    assert.equal(otherOutcomeCount, 1);
+    assert.ok(fulfilled[0].value.data.url);
+    assert.ok(String(fulfilled[0].value.data.url).includes("emulator"));
 
     const message = await db.collection("conversations").doc(memberChatId)
       .collection("messages").doc(messageId).get();
@@ -1169,21 +1159,14 @@ describe("groups callable emulator integration", () => {
         member.client.functions,
         "getGroupMediaAccessUrl",
       );
-      try {
-        const result = await getAccessUrl({
-          conversationId: memberChatId,
-          messageId: normalMessageId,
-          attachmentId: normalAttachmentId,
-        });
-        assert.ok(result.data.url);
-      } catch (error) {
-        // Emulator may lack signing credentials for getSignedUrl; only a
-        // permission/not-found failure would indicate a real policy bug.
-        const code = String(error?.code || "");
-        assert.ok(
-          !code.includes("permission-denied") && !code.includes("not-found"),
-        );
-      }
+      const result = await getAccessUrl({
+        conversationId: memberChatId,
+        messageId: normalMessageId,
+        attachmentId: normalAttachmentId,
+      });
+      assert.ok(result.data.url);
+      assert.ok(String(result.data.url).includes("emulator"));
+      assert.ok(result.data.expiresAt);
 
       await seedViewOnceMessage({
         conversationId: memberChatId,
