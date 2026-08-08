@@ -53,7 +53,7 @@ jobs:
           fi
       - name: Build AAB
         run: ./scripts/build_android_release.sh "${{ inputs.version }}" "${{ inputs.build_number }}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: reemove-android-${{ inputs.version }}-${{ inputs.build_number }}
           path: |

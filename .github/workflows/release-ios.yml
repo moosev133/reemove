@@ -48,7 +48,7 @@ jobs:
           fi
       - name: Build IPA
         run: ./scripts/build_ios_release.sh "${{ inputs.version }}" "${{ inputs.build_number }}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: reemove-ios-${{ inputs.version }}-${{ inputs.build_number }}
           path: |

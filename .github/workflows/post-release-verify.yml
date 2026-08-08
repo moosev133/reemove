@@ -23,7 +23,7 @@ jobs:
       - name: Skip notice when status URL missing
         if: ${{ vars.PUBLIC_STATUS_BASE_URL == '' }}
         run: echo "PUBLIC_STATUS_BASE_URL is not configured; smoke checks skipped."
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: production-smoke-evidence
