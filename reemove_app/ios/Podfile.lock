@@ -1216,6 +1216,8 @@ PODS:
     - Flutter
   - connectivity_plus (0.0.1):
     - Flutter
+  - file_selector_ios (0.0.1):
+    - Flutter
   - Firebase/Auth (12.15.0):
     - Firebase/CoreOnly
     - FirebaseAuth (~> 12.15.0)
@@ -1639,6 +1641,7 @@ DEPENDENCIES:
   - cloud_firestore (from `.symlinks/plugins/cloud_firestore/ios`)
   - cloud_functions (from `.symlinks/plugins/cloud_functions/ios`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
+  - file_selector_ios (from `.symlinks/plugins/file_selector_ios/ios`)
   - firebase_analytics (from `.symlinks/plugins/firebase_analytics/ios`)
   - firebase_app_check (from `.symlinks/plugins/firebase_app_check/ios`)
   - firebase_auth (from `.symlinks/plugins/firebase_auth/ios`)
@@ -1716,6 +1719,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/cloud_functions/ios"
   connectivity_plus:
     :path: ".symlinks/plugins/connectivity_plus/ios"
+  file_selector_ios:
+    :path: ".symlinks/plugins/file_selector_ios/ios"
   firebase_analytics:
     :path: ".symlinks/plugins/firebase_analytics/ios"
   firebase_app_check:
@@ -1769,6 +1774,7 @@ SPEC CHECKSUMS:
   cloud_firestore: 9233f35ca10ef27d5e5131f930507d00d5bc794d
   cloud_functions: 87096942a5fc49359e6b3e8f011c044142c32b09
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
+  file_selector_ios: ec57ec07954363dd730b642e765e58f199bb621a
   Firebase: a8539b633d474fbeb654c7043f9c1649e274045b
   firebase_analytics: eb8345c126a25cd1914597079faf3e64c2e6835f
   firebase_app_check: a44c7f943be4484099b8373a10e29f1bfe453914

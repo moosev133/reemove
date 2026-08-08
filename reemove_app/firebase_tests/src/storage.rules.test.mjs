@@ -8,6 +8,7 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from "@firebase/rules-unit-testing";
+import {doc, setDoc} from "firebase/firestore";
 import {deleteObject, getBytes, ref, uploadBytes} from "firebase/storage";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -18,6 +19,11 @@ let testEnv;
 before(async () => {
   testEnv = await initializeTestEnvironment({
     projectId,
+    firestore: {
+      host: "127.0.0.1",
+      port: 8180,
+      rules: fs.readFileSync(path.join(projectRoot, "firestore.rules"), "utf8"),
+    },
     storage: {
       host: "127.0.0.1",
       port: 9199,
@@ -27,6 +33,7 @@ before(async () => {
 });
 
 beforeEach(async () => {
+  await testEnv.clearFirestore();
   await testEnv.clearStorage();
 });
 
@@ -191,7 +198,7 @@ describe("social content upload rules", () => {
 });
 
 describe("groups storage foundation", () => {
-  it("denies client reads and writes under groups/ until C2 media uploads", async () => {
+  it("denies client reads and writes under groups/{groupId}/{assetId}", async () => {
     const storage = testEnv.authenticatedContext("alice").storage();
     const avatar = ref(storage, "groups/g1/avatar");
     await assertFails(uploadBytes(avatar, bytes, {
@@ -199,5 +206,180 @@ describe("groups storage foundation", () => {
       customMetadata: {ownerId: "alice", schemaVersion: "1"},
     }));
     await assertFails(getBytes(avatar));
+  });
+
+  it("allows conversation members to upload normal group channel media", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "conversations/conv-sports/members/alice"), {
+        removedAt: null,
+        role: "member",
+      });
+    });
+    const storage = testEnv.authenticatedContext("alice").storage();
+    const path =
+      "groups/g1/channels/member_chat/msg1/asset1/photo.jpg";
+    await assertSucceeds(uploadBytes(ref(storage, path), bytes, {
+      contentType: "image/jpeg",
+      customMetadata: {
+        ownerId: "alice",
+        groupId: "g1",
+        channelType: "member_chat",
+        conversationId: "conv-sports",
+        messageId: "msg1",
+        assetId: "asset1",
+        kind: "image",
+        mediaMode: "normal",
+        schemaVersion: "1",
+      },
+    }));
+    await assertSucceeds(getBytes(ref(storage, path)));
+  });
+
+  it("denies client read of view_once group channel media", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      const storage = context.storage();
+      await setDoc(doc(db, "conversations/conv-sports/members/alice"), {
+        removedAt: null,
+        role: "member",
+      });
+      await uploadBytes(
+        ref(storage, "groups/g1/channels/member_chat/msg2/asset2/secret.jpg"),
+        bytes,
+        {
+          contentType: "image/jpeg",
+          customMetadata: {
+            ownerId: "alice",
+            groupId: "g1",
+            channelType: "member_chat",
+            conversationId: "conv-sports",
+            messageId: "msg2",
+            assetId: "asset2",
+            kind: "image",
+            mediaMode: "view_once",
+            schemaVersion: "1",
+          },
+        },
+      );
+    });
+    const storage = testEnv.authenticatedContext("alice").storage();
+    await assertFails(getBytes(
+      ref(storage, "groups/g1/channels/member_chat/msg2/asset2/secret.jpg"),
+    ));
+  });
+
+  it("denies a removed group member from reading normal group channel media", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      const storage = context.storage();
+      await setDoc(doc(db, "conversations/conv-sports/members/alice"), {
+        removedAt: null,
+        role: "member",
+      });
+      await uploadBytes(
+        ref(storage, "groups/g1/channels/member_chat/msg5/asset5/photo.jpg"),
+        bytes,
+        {
+          contentType: "image/jpeg",
+          customMetadata: {
+            ownerId: "alice",
+            groupId: "g1",
+            channelType: "member_chat",
+            conversationId: "conv-sports",
+            messageId: "msg5",
+            assetId: "asset5",
+            kind: "image",
+            mediaMode: "normal",
+            schemaVersion: "1",
+          },
+        },
+      );
+      // Simulate removeUserFromGroupChannels marking the conversation member removed.
+      await setDoc(doc(db, "conversations/conv-sports/members/alice"), {
+        removedAt: new Date(),
+        role: "member",
+      });
+    });
+    const storage = testEnv.authenticatedContext("alice").storage();
+    await assertFails(getBytes(
+      ref(storage, "groups/g1/channels/member_chat/msg5/asset5/photo.jpg"),
+    ));
+  });
+
+  it("delete allows the uploader or a conversation admin, denies others", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      const storage = context.storage();
+      await setDoc(doc(db, "conversations/conv-del/members/alice"), {
+        removedAt: null,
+        role: "member",
+      });
+      await setDoc(doc(db, "conversations/conv-del/members/admin"), {
+        removedAt: null,
+        role: "admin",
+      });
+      await setDoc(doc(db, "conversations/conv-del/members/stranger"), {
+        removedAt: null,
+        role: "member",
+      });
+      await uploadBytes(
+        ref(storage, "groups/g1/channels/member_chat/msg4/asset4/photo.jpg"),
+        bytes,
+        {
+          contentType: "image/jpeg",
+          customMetadata: {
+            ownerId: "alice",
+            groupId: "g1",
+            channelType: "member_chat",
+            conversationId: "conv-del",
+            messageId: "msg4",
+            assetId: "asset4",
+            kind: "image",
+            mediaMode: "normal",
+            schemaVersion: "1",
+          },
+        },
+      );
+    });
+
+    const strangerStorage = testEnv.authenticatedContext("stranger").storage();
+    await assertFails(deleteObject(
+      ref(strangerStorage, "groups/g1/channels/member_chat/msg4/asset4/photo.jpg"),
+    ));
+
+    const adminStorage = testEnv.authenticatedContext("admin").storage();
+    await assertSucceeds(deleteObject(
+      ref(adminStorage, "groups/g1/channels/member_chat/msg4/asset4/photo.jpg"),
+    ));
+  });
+
+  it("denies view_once upload to announcements channel", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "conversations/conv-announce/members/alice"), {
+        removedAt: null,
+        role: "admin",
+      });
+    });
+    const storage = testEnv.authenticatedContext("alice").storage();
+    await assertFails(uploadBytes(
+      ref(storage, "groups/g1/channels/announcements/msg3/asset3/x.jpg"),
+      bytes,
+      {
+        contentType: "image/jpeg",
+        customMetadata: {
+          ownerId: "alice",
+          groupId: "g1",
+          channelType: "announcements",
+          conversationId: "conv-announce",
+          messageId: "msg3",
+          assetId: "asset3",
+          kind: "image",
+          mediaMode: "view_once",
+          schemaVersion: "1",
+        },
+      },
+    ));
   });
 });

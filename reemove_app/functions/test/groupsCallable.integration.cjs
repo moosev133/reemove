@@ -1447,17 +1447,21 @@ describe("groups callable emulator integration", () => {
       text: "member should be notified",
       mediaMode: "normal",
     });
-    await new Promise((resolve) => setTimeout(resolve, 250));
 
-    const announcementNotifications = await db.collection("users").doc(member.uid)
-      .collection("notifications")
-      .where("kind", "==", "group_announcement")
-      .limit(10)
-      .get();
-    const announcementHit = announcementNotifications.docs.find(
-      (doc) => doc.get("data")?.groupId === groupId &&
-        doc.get("data")?.channelType === "announcements",
-    );
+    let announcementHit;
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const announcementNotifications = await db.collection("users").doc(member.uid)
+        .collection("notifications")
+        .where("kind", "==", "group_announcement")
+        .limit(10)
+        .get();
+      announcementHit = announcementNotifications.docs.find(
+        (doc) => doc.get("data")?.groupId === groupId &&
+          doc.get("data")?.channelType === "announcements",
+      );
+      if (announcementHit) break;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
     assert.ok(announcementHit);
   });
 

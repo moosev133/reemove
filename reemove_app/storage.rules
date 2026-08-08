@@ -245,6 +245,66 @@ service firebase.storage {
         && resource.metadata.ownerId == uid;
     }
 
+    // Sports group channel media. view_once: client read DENIED — only Admin
+    // SDK signed URLs after claimViewOnceMedia. Screenshot prevention cannot
+    // be guaranteed on clients.
+    match /groups/{groupId}/channels/{channelType}/{messageId}/{assetId}/{filename} {
+      function groupChannelMetaOk() {
+        return request.resource != null
+          && request.resource.metadata.ownerId == request.auth.uid
+          && request.resource.metadata.groupId == groupId
+          && request.resource.metadata.channelType == channelType
+          && request.resource.metadata.messageId == messageId
+          && request.resource.metadata.assetId == assetId
+          && request.resource.metadata.schemaVersion == '1'
+          && request.resource.metadata.kind in ['image', 'video', 'audio']
+          && request.resource.metadata.mediaMode in ['normal', 'keep_in_chat', 'view_once']
+          && request.resource.metadata.conversationId is string
+          && request.resource.metadata.conversationId.size() > 0;
+      }
+
+      function linkedConversationMember() {
+        return signedIn()
+          && request.resource.metadata.conversationId is string
+          && isConversationMember(request.resource.metadata.conversationId);
+      }
+
+      function storedConversationMember() {
+        return signedIn()
+          && resource != null
+          && resource.metadata.conversationId is string
+          && isConversationMember(resource.metadata.conversationId);
+      }
+
+      allow read: if storedConversationMember()
+        && resource.metadata.mediaMode in ['normal', 'keep_in_chat'];
+      // view_once reads are denied for clients (signed URL only).
+      allow create: if channelType in ['member_chat', 'announcements']
+        && linkedConversationMember()
+        && request.resource.size > 0
+        && request.resource.size < 100 * 1024 * 1024
+        && groupChannelMetaOk()
+        && ((request.resource.metadata.kind == 'image'
+              && request.resource.contentType.matches('image/.*')
+              && request.resource.size < 15 * 1024 * 1024)
+          || (request.resource.metadata.kind == 'video'
+              && request.resource.contentType.matches('video/.*')
+              && request.resource.size < 100 * 1024 * 1024)
+          || (request.resource.metadata.kind == 'audio'
+              && request.resource.contentType.matches('audio/.*')
+              && request.resource.size < 25 * 1024 * 1024))
+        && (channelType != 'announcements'
+          || request.resource.metadata.mediaMode != 'view_once');
+      allow update: if false;
+      allow delete: if storedConversationMember()
+        && resource.metadata.groupId == groupId
+        && resource.metadata.channelType == channelType
+        && resource.metadata.messageId == messageId
+        && resource.metadata.assetId == assetId
+        && (resource.metadata.ownerId == request.auth.uid
+          || isConversationAdmin(resource.metadata.conversationId));
+    }
+
     match /groups/{groupId}/{assetId} {
       allow read, write: if false;
     }

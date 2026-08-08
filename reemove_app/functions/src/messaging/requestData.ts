@@ -1,5 +1,7 @@
 import {HttpsError} from "firebase-functions/v2/https";
 
+import {parseGroupMediaMode} from "../groups/groupChannelAccess";
+import type {GroupMediaMode} from "../groups/groupsPolicy";
 import {
   groupTitle,
   normalizedMessageText,
@@ -70,6 +72,7 @@ export function parseSendRequest(value: unknown): {
   text: string;
   attachments: AttachmentInput[];
   replyToMessageId?: string;
+  mediaMode: GroupMediaMode;
 } {
   const data = recordValue(value);
   const text = normalizedMessageText(data.text);
@@ -77,12 +80,20 @@ export function parseSendRequest(value: unknown): {
   if (text.length === 0 && attachments.length === 0) {
     throw new HttpsError("invalid-argument", "Write a message or add media.");
   }
+  const mediaMode = parseGroupMediaMode(data.mediaMode ?? "normal");
+  if (mediaMode === "view_once" && attachments.length === 0) {
+    throw new HttpsError(
+      "invalid-argument",
+      "View-once messages require an attachment.",
+    );
+  }
   return {
     conversationId: safeId(data.conversationId, "conversationId"),
     clientMessageId: safeId(data.clientMessageId, "clientMessageId"),
     text,
     attachments,
     replyToMessageId: optionalId(data.replyToMessageId, "replyToMessageId"),
+    mediaMode,
   };
 }
 

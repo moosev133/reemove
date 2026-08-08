@@ -1,6 +1,7 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:reemove/core/firebase/firebase_bootstrap.dart';
 import 'package:reemove/core/providers/core_providers.dart';
@@ -21,7 +22,6 @@ import 'package:reemove/features/messages/domain/entities/message.dart';
 import 'package:reemove/features/messages/domain/entities/messaging_presence.dart';
 import 'package:reemove/features/messages/domain/entities/messaging_user.dart';
 import 'package:reemove/features/messages/domain/repositories/messaging_presence_repository.dart';
-import 'package:reemove/features/messages/presentation/screens/conversation_screen.dart';
 
 const AuthUser _owner = AuthUser(
   uid: 'owner-a',
@@ -185,12 +185,12 @@ ConversationMessage _deletedPeerMessage() {
   );
 }
 
-_baseOverrides({
+List<Override> _baseOverrides({
   required AuthUser viewer,
   required List<ConversationMessage> messages,
   Stream<List<ConversationMessage>>? messageStream,
 }) {
-  return [
+  return <Override>[
     firebaseBootstrapReportProvider.overrideWithValue(
       const FirebaseBootstrapReport(
         status: FirebaseBootstrapStatus.ready,
@@ -226,12 +226,12 @@ Future<void> _pumpChannelScreen(
   required AuthUser viewer,
   required List<ConversationMessage> messages,
   Stream<List<ConversationMessage>>? messageStream,
-  extraOverrides = const [],
+  List<Override> extraOverrides = const <Override>[],
   MessagingActionController Function()? actionController,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [
+      overrides: <Override>[
         ..._baseOverrides(
           viewer: viewer,
           messages: messages,

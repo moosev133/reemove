@@ -107,7 +107,7 @@ async function withRealtimeAclTimeout<T>(operation: Promise<T>): Promise<T> {
   }
 }
 
-async function setRealtimeAcl(
+export async function setRealtimeAcl(
   conversationId: string,
   memberIds: Iterable<string>,
 ): Promise<void> {
@@ -122,7 +122,7 @@ async function setRealtimeAcl(
   }
 }
 
-async function updateRealtimeAcl(
+export async function updateRealtimeAcl(
   conversationId: string,
   added: Iterable<string>,
   removed: Iterable<string>,
