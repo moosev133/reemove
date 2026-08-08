@@ -22,7 +22,7 @@
     "firebase-functions": "^7.2.5",
     "geofire-common": "^6.0.0",
     "openai": "^4.104.0",
-    "zod": "^3.25.76"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.36.0",
