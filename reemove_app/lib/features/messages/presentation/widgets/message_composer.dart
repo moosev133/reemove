@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_spacing.dart';
+import '../../../groups/domain/entities/group_enums.dart';
 import '../../domain/entities/message.dart';
 import '../../domain/entities/message_attachment_draft.dart';
 
@@ -18,6 +19,9 @@ class MessageComposer extends StatelessWidget {
     this.reply,
     this.onCancelReply,
     this.uploadProgress,
+    this.mediaMode,
+    this.supportedMediaModes,
+    this.onMediaModeChanged,
   });
 
   final TextEditingController controller;
@@ -31,6 +35,9 @@ class MessageComposer extends StatelessWidget {
   final MessageReplyPreview? reply;
   final VoidCallback? onCancelReply;
   final double? uploadProgress;
+  final GroupMediaMode? mediaMode;
+  final List<GroupMediaMode>? supportedMediaModes;
+  final ValueChanged<GroupMediaMode>? onMediaModeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +120,41 @@ class MessageComposer extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                   child: LinearProgressIndicator(value: uploadProgress),
+                ),
+              if (mediaMode != null &&
+                  supportedMediaModes != null &&
+                  supportedMediaModes!.isNotEmpty &&
+                  onMediaModeChanged != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: Wrap(
+                    spacing: AppSpacing.xs,
+                    children: supportedMediaModes!
+                        .map(
+                          (GroupMediaMode mode) => ChoiceChip(
+                            label: Text(mode.displayLabel),
+                            selected: mediaMode == mode,
+                            onSelected: isSending
+                                ? null
+                                : (bool selected) {
+                                    if (selected) {
+                                      onMediaModeChanged!(mode);
+                                    }
+                                  },
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+                ),
+              if (mediaMode == GroupMediaMode.viewOnce)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: Text(
+                    'View once: each recipient can open this media only once. Screenshot prevention cannot be guaranteed on every platform.',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
                 ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,

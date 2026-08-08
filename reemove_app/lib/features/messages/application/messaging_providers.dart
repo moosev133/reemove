@@ -10,6 +10,7 @@ import '../../../core/providers/core_providers.dart';
 import '../../../core/result/result.dart';
 import '../../authentication/application/authentication_providers.dart';
 import '../../authentication/domain/entities/auth_user.dart';
+import '../../groups/domain/entities/group_enums.dart';
 import '../data/repositories/firebase_message_attachment_repository.dart';
 import '../data/repositories/firebase_messaging_device_repository.dart';
 import '../data/repositories/firebase_messaging_presence_repository.dart';
@@ -272,6 +273,8 @@ class MessagingActionController extends Notifier<AsyncValue<void>> {
     required String text,
     List<MessageAttachmentDraft> drafts = const <MessageAttachmentDraft>[],
     String? replyToMessageId,
+    String? sportsGroupId,
+    String? channelType,
     void Function(double progress)? onProgress,
   }) async {
     final AuthUser? user = await ref.read(currentAuthUserProvider.future);
@@ -309,6 +312,9 @@ class MessagingActionController extends Notifier<AsyncValue<void>> {
               text: text,
               attachments: uploaded,
               replyToMessageId: replyToMessageId,
+              mediaMode: drafts.isEmpty
+                  ? GroupMediaMode.normal
+                  : drafts.first.mediaMode,
             ),
           );
       _value(result);

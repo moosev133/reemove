@@ -59,9 +59,10 @@ class CreateGroupSessionRequest {
   const CreateGroupSessionRequest({
     required this.groupId,
     required this.title,
-    required this.activity,
+    required this.sessionType,
     required this.startAt,
     required this.endAt,
+    this.activity = '',
     this.description = '',
     this.capacity = 0,
     this.location = GroupLocation.empty,
@@ -69,6 +70,7 @@ class CreateGroupSessionRequest {
 
   final String groupId;
   final String title;
+  final GroupSessionType sessionType;
   final String activity;
   final DateTime startAt;
   final DateTime endAt;
@@ -82,6 +84,7 @@ class UpdateGroupSessionRequest {
     required this.groupId,
     required this.sessionId,
     this.title,
+    this.sessionType,
     this.activity,
     this.description,
     this.startAt,
@@ -93,6 +96,7 @@ class UpdateGroupSessionRequest {
   final String groupId;
   final String sessionId;
   final String? title;
+  final GroupSessionType? sessionType;
   final String? activity;
   final String? description;
   final DateTime? startAt;

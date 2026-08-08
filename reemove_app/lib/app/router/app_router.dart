@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/release/release_feature_gate.dart';
+import '../../core/release/release_providers.dart';
+import '../../core/release/release_state.dart';
 import '../../core/widgets/app_error_view.dart';
 import '../../features/ai/presentation/screens/ai_hub_screen.dart';
 import '../../features/ai/presentation/screens/ai_module_form_screen.dart';
 import '../../features/authentication/application/authentication_providers.dart';
 import '../../features/authentication/domain/entities/auth_routing_state.dart';
+import '../../features/authentication/domain/value_objects/auth_validators.dart';
 import '../../features/authentication/presentation/screens/account_blocked_screen.dart';
 import '../../features/authentication/presentation/screens/account_security_screen.dart';
 import '../../features/authentication/presentation/screens/auth_unavailable_screen.dart';
@@ -29,8 +33,11 @@ import '../../features/discover/presentation/screens/discover_search_screen.dart
 import '../../features/feed/presentation/screens/reels_screen.dart';
 import '../../features/feed/presentation/screens/story_viewer_screen.dart';
 import '../../features/groups/presentation/screens/create_edit_group_screen.dart';
+import '../../features/groups/presentation/screens/group_channel_conversation_screen.dart';
+import '../../features/groups/presentation/screens/group_channels_screen.dart';
 import '../../features/groups/presentation/screens/group_detail_screen.dart';
 import '../../features/groups/presentation/screens/group_invitations_screen.dart';
+import '../../features/groups/presentation/screens/group_invite_screen.dart';
 import '../../features/groups/presentation/screens/group_join_requests_screen.dart';
 import '../../features/groups/presentation/screens/group_members_screen.dart';
 import '../../features/groups/presentation/screens/group_schedule_screen.dart';
@@ -51,6 +58,7 @@ import '../../features/messages/presentation/screens/new_conversation_screen.dar
 import '../../features/nearby/presentation/screens/nearby_discovery_screen.dart';
 import '../../features/nearby/presentation/screens/sports_route_detail_screen.dart';
 import '../../features/notifications/presentation/screens/notification_settings_screen.dart';
+import '../../features/notifications/presentation/screens/group_notification_settings_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_flow_screen.dart';
 import '../../features/profile/domain/entities/profile_connection.dart';
 import '../../features/profile/presentation/screens/blocked_profiles_screen.dart';
@@ -472,8 +480,7 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                                   return MaterialPage<void>(
                                     key: state.pageKey,
                                     child: CreateEditGroupScreen(
-                                      groupId:
-                                          state.pathParameters['groupId'],
+                                      groupId: state.pathParameters['groupId'],
                                     ),
                                   );
                                 },
@@ -487,8 +494,7 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                                     key: state.pageKey,
                                     child: GroupMembersScreen(
                                       groupId:
-                                          state.pathParameters['groupId'] ??
-                                          '',
+                                          state.pathParameters['groupId'] ?? '',
                                     ),
                                   );
                                 },
@@ -502,8 +508,21 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                                     key: state.pageKey,
                                     child: GroupJoinRequestsScreen(
                                       groupId:
-                                          state.pathParameters['groupId'] ??
-                                          '',
+                                          state.pathParameters['groupId'] ?? '',
+                                    ),
+                                  );
+                                },
+                          ),
+                          GoRoute(
+                            path: 'invite',
+                            name: AppRouteNames.groupInvite,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) {
+                                  return MaterialPage<void>(
+                                    key: state.pageKey,
+                                    child: GroupInviteScreen(
+                                      groupId:
+                                          state.pathParameters['groupId'] ?? '',
                                     ),
                                   );
                                 },
@@ -517,11 +536,66 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                                     key: state.pageKey,
                                     child: GroupScheduleScreen(
                                       groupId:
-                                          state.pathParameters['groupId'] ??
-                                          '',
+                                          state.pathParameters['groupId'] ?? '',
                                     ),
                                   );
                                 },
+                          ),
+                          GoRoute(
+                            path: 'notifications',
+                            name:
+                                AppRouteNames.groupNotificationSettings,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) {
+                              return MaterialPage<void>(
+                                key: state.pageKey,
+                                child: GroupNotificationSettingsScreen(
+                                  groupId:
+                                      state.pathParameters['groupId'] ?? '',
+                                ),
+                              );
+                            },
+                          ),
+                          GoRoute(
+                            path: 'channels',
+                            name: AppRouteNames.groupChannels,
+                            pageBuilder:
+                                (BuildContext context, GoRouterState state) {
+                                  return MaterialPage<void>(
+                                    key: state.pageKey,
+                                    child: GroupChannelsScreen(
+                                      groupId:
+                                          state.pathParameters['groupId'] ?? '',
+                                    ),
+                                  );
+                                },
+                            routes: <RouteBase>[
+                              GoRoute(
+                                path: ':channelType',
+                                name: AppRouteNames.groupChannel,
+                                pageBuilder:
+                                    (
+                                      BuildContext context,
+                                      GoRouterState state,
+                                    ) {
+                                      return MaterialPage<void>(
+                                        key: state.pageKey,
+                                        child: GroupChannelConversationScreen(
+                                          groupId:
+                                              state.pathParameters['groupId'] ??
+                                              '',
+                                          channelType:
+                                              state
+                                                  .pathParameters['channelType'] ??
+                                              'member_chat',
+                                          focusMessageId: state
+                                              .uri
+                                              .queryParameters['messageId'],
+                                        ),
+                                      );
+                                    },
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -956,7 +1030,9 @@ final Provider<GoRouter> appRouterProvider = Provider<GoRouter>((Ref ref) {
                       return MaterialPage<void>(
                         key: state.pageKey,
                         child: PublicProfileScreen(
-                          username: state.pathParameters['username'] ?? '',
+                          username: AuthValidators.normalizeUsername(
+                            state.pathParameters['username'] ?? '',
+                          ),
                         ),
                       );
                     },
@@ -1021,6 +1097,26 @@ List<RouteBase> _aliasRoutes() {
       name: AppRouteNames.marketplaceAlias,
       redirect: (BuildContext context, GoRouterState state) =>
           AppRoutes.marketplaceListing(state.pathParameters['listingId'] ?? ''),
+    ),
+    // Sports-group notification routes use `/groups/...` (server contract).
+    GoRoute(
+      path: '/groups/:groupId',
+      redirect: (BuildContext context, GoRouterState state) =>
+          AppRoutes.normalizeDeepLinkLocation(state.uri.toString()),
+      routes: <RouteBase>[
+        GoRoute(
+          path: 'channels',
+          redirect: (BuildContext context, GoRouterState state) =>
+              AppRoutes.normalizeDeepLinkLocation(state.uri.toString()),
+          routes: <RouteBase>[
+            GoRoute(
+              path: ':channelType',
+              redirect: (BuildContext context, GoRouterState state) =>
+                  AppRoutes.normalizeDeepLinkLocation(state.uri.toString()),
+            ),
+          ],
+        ),
+      ],
     ),
   ];
 }
@@ -1091,6 +1187,7 @@ String? _redirect(Ref ref, GoRouterState state) {
           ? null
           : AppRoutes.withReturnTo(AppRoutes.onboarding, requestedReturnTo),
     AuthDestination.ready => _readyRedirect(
+      ref: ref,
       path: path,
       currentLocation: location,
       returnTo: inheritedReturnTo,
@@ -1101,10 +1198,21 @@ String? _redirect(Ref ref, GoRouterState state) {
 }
 
 String? _readyRedirect({
+  required Ref ref,
   required String path,
   required String currentLocation,
   required String? returnTo,
 }) {
+  final AsyncValue<ReleaseState> release = ref.read(releaseStateProvider);
+  final String? featureRedirect = release.maybeWhen(
+    data: (ReleaseState state) =>
+        ReleaseFeatureGate.redirectForLocation(currentLocation, state) ??
+        ReleaseFeatureGate.redirectForLocation(path, state),
+    orElse: () => null,
+  );
+  if (featureRedirect != null && featureRedirect != path) {
+    return featureRedirect;
+  }
   if (AppRoutes.isAuthenticatedLocation(currentLocation)) {
     return null;
   }
@@ -1136,6 +1244,12 @@ class _RouterRefreshNotifier extends ChangeNotifier {
     ref.listen<AsyncValue<AuthRoutingState>>(authRoutingStateProvider, (
       AsyncValue<AuthRoutingState>? previous,
       AsyncValue<AuthRoutingState> next,
+    ) {
+      notifyListeners();
+    });
+    ref.listen<AsyncValue<ReleaseState>>(releaseStateProvider, (
+      AsyncValue<ReleaseState>? previous,
+      AsyncValue<ReleaseState> next,
     ) {
       notifyListeners();
     });

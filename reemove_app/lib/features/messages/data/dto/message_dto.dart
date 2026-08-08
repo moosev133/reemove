@@ -16,6 +16,8 @@ class MessageAttachmentDto {
     this.width,
     this.height,
     this.durationMs,
+    this.mediaMode = 'normal',
+    this.viewOnceConsumed = false,
   });
 
   factory MessageAttachmentDto.fromMap(FirestoreMap data) =>
@@ -35,6 +37,12 @@ class MessageAttachmentDto {
           'processingState',
           fallback: 'ready',
         ),
+        mediaMode: FirestoreParser.string(data, 'mediaMode', fallback: 'normal'),
+        viewOnceConsumed: FirestoreParser.boolean(
+          data,
+          'viewOnceConsumed',
+          fallback: false,
+        ),
       );
 
   final String id;
@@ -48,6 +56,8 @@ class MessageAttachmentDto {
   final int? height;
   final int? durationMs;
   final String processingState;
+  final String mediaMode;
+  final bool viewOnceConsumed;
 }
 
 class MessageReplyPreviewDto {

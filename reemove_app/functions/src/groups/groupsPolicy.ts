@@ -23,10 +23,21 @@ export const groupSessionStatuses = [
 ] as const;
 export type GroupSessionStatus = typeof groupSessionStatuses[number];
 
+/** Typed schedule kinds for training / match / event (Phase C3). */
+export const groupSessionTypes = ["training", "match", "event"] as const;
+export type GroupSessionType = typeof groupSessionTypes[number];
+
+export const groupSessionRsvpStatuses = [
+  "going",
+  "maybe",
+  "not_going",
+] as const;
+export type GroupSessionRsvpStatus = typeof groupSessionRsvpStatuses[number];
+
 export const groupChannelTypes = ["member_chat", "announcements"] as const;
 export type GroupChannelType = typeof groupChannelTypes[number];
 
-/** C1 media contracts only — deep view-once behavior is Phase C2. */
+/** Media mode contracts for sports group channels (Phase C2 live). */
 export const groupMediaModes = ["normal", "keep_in_chat", "view_once"] as const;
 export type GroupMediaMode = typeof groupMediaModes[number];
 
@@ -66,6 +77,7 @@ export type UpdateGroupInput = {
 export type CreateSessionInput = {
   groupId: string;
   title: string;
+  sessionType: GroupSessionType;
   activity: string;
   startAt: Date;
   endAt: Date;
@@ -259,6 +271,59 @@ export function parseUpdateGroupInput(data: unknown): UpdateGroupInput {
   return patch;
 }
 
+export function parseGroupSessionType(value: unknown): GroupSessionType {
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if ((groupSessionTypes as readonly string[]).includes(normalized)) {
+      return normalized as GroupSessionType;
+    }
+  }
+  throw new HttpsError(
+    "invalid-argument",
+    "sessionType must be training, match, or event.",
+  );
+}
+
+/**
+ * Resolves sessionType for create/update. Accepts explicit sessionType, or
+ * legacy freeform activity strings that already match a known type. Defaults
+ * to event so older C1 clients without sessionType keep working.
+ */
+export function resolveGroupSessionType(
+  sessionType: unknown,
+  activity: unknown,
+): GroupSessionType {
+  if (sessionType !== undefined && sessionType !== null && sessionType !== "") {
+    return parseGroupSessionType(sessionType);
+  }
+  if (typeof activity === "string") {
+    const normalized = activity.trim().toLowerCase();
+    if ((groupSessionTypes as readonly string[]).includes(normalized)) {
+      return normalized as GroupSessionType;
+    }
+  }
+  return "event";
+}
+
+export function parseGroupSessionRsvpStatus(
+  value: unknown,
+): GroupSessionRsvpStatus {
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if ((groupSessionRsvpStatuses as readonly string[]).includes(normalized)) {
+      return normalized as GroupSessionRsvpStatus;
+    }
+  }
+  throw new HttpsError(
+    "invalid-argument",
+    "status must be going, maybe, or not_going.",
+  );
+}
+
+export function emptyRsvpCounts(): Record<GroupSessionRsvpStatus, number> {
+  return {going: 0, maybe: 0, not_going: 0};
+}
+
 export function parseCreateSessionInput(data: unknown): CreateSessionInput {
   const body = asRecord(data);
   const startAt = parseIsoDate(body.startAt, "startAt");
@@ -266,10 +331,14 @@ export function parseCreateSessionInput(data: unknown): CreateSessionInput {
   if (endAt.getTime() <= startAt.getTime()) {
     throw new HttpsError("invalid-argument", "endAt must be after startAt.");
   }
+  const sessionType = resolveGroupSessionType(body.sessionType, body.activity);
+  const activity =
+    optionalString(body.activity, "activity", 64) || sessionType;
   return {
     groupId: requiredString(body.groupId, "groupId", 128),
     title: requiredString(body.title, "title", 120),
-    activity: requiredString(body.activity, "activity", 64),
+    sessionType,
+    activity,
     startAt,
     endAt,
     description: optionalString(body.description, "description", 2000),

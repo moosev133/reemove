@@ -34,6 +34,14 @@ class GroupMembersScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Members')),
+      floatingActionButton: isManager
+          ? FloatingActionButton.extended(
+              key: const Key('group-members-invite-fab'),
+              onPressed: () => context.push(AppRoutes.groupInvite(groupId)),
+              icon: const Icon(Icons.person_add_alt_1_rounded),
+              label: const Text('Invite'),
+            )
+          : null,
       body: membersValue.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (Object error, StackTrace _) => AppErrorView(
@@ -68,9 +76,8 @@ class GroupMembersScreen extends ConsumerWidget {
                 final bool isSelf = member.userId == viewer?.uid;
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
-                  onTap: () => context.push(
-                    AppRoutes.publicProfile(member.username),
-                  ),
+                  onTap: () =>
+                      context.push(AppRoutes.publicProfile(member.username)),
                   leading: AppAvatar(
                     displayName: member.displayName,
                     imageUrl: member.avatarUrl,
@@ -151,12 +158,20 @@ class GroupMembersScreen extends ConsumerWidget {
   ) async {
     final bool ok = await ref
         .read(groupsActionControllerProvider.notifier)
-        .setGroupMemberRole(groupId: groupId, memberId: member.userId, role: role);
+        .setGroupMemberRole(
+          groupId: groupId,
+          memberId: member.userId,
+          role: role,
+        );
     if (!context.mounted || !ok) {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${member.displayName} is now ${groupMemberRoleLabel(role).toLowerCase()}.')),
+      SnackBar(
+        content: Text(
+          '${member.displayName} is now ${groupMemberRoleLabel(role).toLowerCase()}.',
+        ),
+      ),
     );
   }
 
@@ -233,8 +248,8 @@ class GroupMembersScreen extends ConsumerWidget {
     if (!context.mounted || !ok) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('${member.displayName} was removed.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${member.displayName} was removed.')),
+    );
   }
 }

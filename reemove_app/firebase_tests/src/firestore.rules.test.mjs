@@ -602,6 +602,26 @@ describe("Phase 15 AI and server-only collections", () => {
       setDoc(doc(athlete, "moderation_queue/item-1"), {status: "open"}),
     );
   });
+
+  it("clients cannot write per-group notification preferences", async () => {
+    const athlete = testEnv.authenticatedContext("athlete").firestore();
+    await assertFails(
+      setDoc(
+        doc(
+          athlete,
+          "users/athlete/private/group_notification_preferences:group-1",
+        ),
+        {
+          muted: false,
+          memberChatEnabled: false,
+          announcementsEnabled: false,
+          sessionsEnabled: false,
+          invitationsEnabled: false,
+          updatedAt: serverTimestamp(),
+        },
+      ),
+    );
+  });
 });
 
 describe("groups foundation rules", () => {
@@ -802,6 +822,135 @@ describe("groups foundation rules", () => {
     );
   });
 
+  it("pending invitations: managers can list; members and strangers cannot; writes denied", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "groups/invite-group"), {
+        name: "Invite crew",
+        privacy: "hidden",
+        status: "active",
+        moderationState: "active",
+        ownerId: "owner",
+        memberCount: 2,
+      });
+      await setDoc(doc(db, "groups/invite-group/members/owner"), {
+        userId: "owner",
+        role: "owner",
+        status: "active",
+        removedAt: null,
+      });
+      await setDoc(doc(db, "groups/invite-group/members/member"), {
+        userId: "member",
+        role: "member",
+        status: "active",
+        removedAt: null,
+      });
+      await setDoc(doc(db, "groups/invite-group/invitations/invitee"), {
+        inviteeId: "invitee",
+        inviterId: "owner",
+        status: "pending",
+        createdAt: new Date("2026-08-04T12:00:00Z"),
+      });
+    });
+
+    const owner = testEnv.authenticatedContext("owner").firestore();
+    const member = testEnv.authenticatedContext("member").firestore();
+    const stranger = testEnv.authenticatedContext("stranger").firestore();
+    const invitee = testEnv.authenticatedContext("invitee").firestore();
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(owner, "groups/invite-group/invitations"),
+          where("status", "==", "pending"),
+          limit(50),
+        ),
+      ),
+    );
+    await assertSucceeds(
+      getDoc(doc(invitee, "groups/invite-group/invitations/invitee")),
+    );
+    await assertFails(
+      getDocs(
+        query(
+          collection(member, "groups/invite-group/invitations"),
+          where("status", "==", "pending"),
+          limit(50),
+        ),
+      ),
+    );
+    await assertFails(
+      getDocs(
+        query(
+          collection(stranger, "groups/invite-group/invitations"),
+          where("status", "==", "pending"),
+          limit(50),
+        ),
+      ),
+    );
+    await assertFails(
+      setDoc(doc(owner, "groups/invite-group/invitations/forged"), {
+        status: "pending",
+      }),
+    );
+  });
+
+  it("session RSVPs are readable by members only; clients cannot write", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "groups/rsvp-group"), {
+        name: "RSVP crew",
+        privacy: "private",
+        status: "active",
+        moderationState: "active",
+        ownerId: "owner",
+        memberCount: 2,
+      });
+      await setDoc(doc(db, "groups/rsvp-group/members/owner"), {
+        userId: "owner",
+        role: "owner",
+        status: "active",
+        removedAt: null,
+      });
+      await setDoc(doc(db, "groups/rsvp-group/members/member"), {
+        userId: "member",
+        role: "member",
+        status: "active",
+        removedAt: null,
+      });
+      await setDoc(doc(db, "groups/rsvp-group/sessions/s1"), {
+        title: "Match day",
+        sessionType: "match",
+        status: "scheduled",
+      });
+      await setDoc(doc(db, "groups/rsvp-group/sessions/s1/rsvps/member"), {
+        userId: "member",
+        status: "going",
+      });
+    });
+
+    const member = testEnv.authenticatedContext("member").firestore();
+    const stranger = testEnv.authenticatedContext("stranger").firestore();
+    await assertSucceeds(
+      getDoc(doc(member, "groups/rsvp-group/sessions/s1/rsvps/member")),
+    );
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(member, "groups/rsvp-group/sessions/s1/rsvps"),
+          limit(50),
+        ),
+      ),
+    );
+    await assertFails(
+      getDoc(doc(stranger, "groups/rsvp-group/sessions/s1/rsvps/member")),
+    );
+    await assertFails(
+      setDoc(doc(member, "groups/rsvp-group/sessions/s1/rsvps/member"), {
+        status: "maybe",
+      }),
+    );
+  });
+
   it("lets owners read denormalized group inboxes but denies client writes", async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();
@@ -829,6 +978,123 @@ describe("groups foundation rules", () => {
     );
     await assertFails(
       setDoc(doc(member, "users/member/group_memberships/g1"), {role: "owner"}),
+    );
+  });
+
+  it("lets group members read channel docs but denies client writes", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "groups/chan-group"), {
+        name: "Channel Group",
+        privacy: "private",
+        status: "active",
+        moderationState: "active",
+        ownerId: "owner",
+        memberCount: 1,
+      });
+      await setDoc(doc(db, "groups/chan-group/members/owner"), {
+        userId: "owner",
+        role: "owner",
+        status: "active",
+        removedAt: null,
+      });
+      await setDoc(doc(db, "groups/chan-group/channels/member_chat"), {
+        type: "member_chat",
+        conversationId: "conv-chan",
+        phase: "c2_live",
+      });
+      await setDoc(doc(db, "groups/chan-group/pending_media/upload-1"), {
+        status: "pending",
+        ownerId: "owner",
+      });
+    });
+
+    const owner = testEnv.authenticatedContext("owner").firestore();
+    const stranger = testEnv.authenticatedContext("stranger").firestore();
+    await assertSucceeds(
+      getDoc(doc(owner, "groups/chan-group/channels/member_chat")),
+    );
+    await assertFails(
+      getDoc(doc(stranger, "groups/chan-group/channels/member_chat")),
+    );
+    await assertFails(
+      setDoc(doc(owner, "groups/chan-group/channels/member_chat"), {
+        phase: "hacked",
+      }),
+    );
+    await assertFails(
+      getDoc(doc(owner, "groups/chan-group/pending_media/upload-1")),
+    );
+    await assertFails(
+      setDoc(doc(owner, "groups/chan-group/pending_media/upload-1"), {
+        status: "finalized",
+      }),
+    );
+  });
+
+  it("view_once_claims: owner reads own claim; clients never write", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "conversations/conv-vo"), {
+        type: "group",
+        source: "sports_group",
+        moderationState: "active",
+      });
+      await setDoc(doc(db, "conversations/conv-vo/members/member"), {
+        userId: "member",
+        role: "member",
+        removedAt: null,
+      });
+      await setDoc(doc(db, "conversations/conv-vo/members/other-member"), {
+        userId: "other-member",
+        role: "member",
+        removedAt: null,
+      });
+      await setDoc(doc(db, "conversations/conv-vo/messages/msg-1"), {
+        senderId: "owner",
+        isDeleted: false,
+      });
+      await setDoc(
+        doc(db, "conversations/conv-vo/messages/msg-1/view_once_claims/member--asset1"),
+        {
+          uid: "member",
+          attachmentId: "asset1",
+          conversationId: "conv-vo",
+          messageId: "msg-1",
+        },
+      );
+    });
+
+    const member = testEnv.authenticatedContext("member").firestore();
+    const otherMember = testEnv.authenticatedContext("other-member").firestore();
+    const stranger = testEnv.authenticatedContext("stranger").firestore();
+    await assertSucceeds(
+      getDoc(doc(
+        member,
+        "conversations/conv-vo/messages/msg-1/view_once_claims/member--asset1",
+      )),
+    );
+    await assertFails(
+      getDoc(doc(
+        stranger,
+        "conversations/conv-vo/messages/msg-1/view_once_claims/member--asset1",
+      )),
+    );
+    // Another active conversation member cannot read someone else's claim doc.
+    await assertFails(
+      getDoc(doc(
+        otherMember,
+        "conversations/conv-vo/messages/msg-1/view_once_claims/member--asset1",
+      )),
+    );
+    await assertFails(
+      setDoc(
+        doc(
+          member,
+          "conversations/conv-vo/messages/msg-1/view_once_claims/member--asset2",
+        ),
+        {uid: "member", attachmentId: "asset2"},
+      ),
     );
   });
 });

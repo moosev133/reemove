@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/release/release_control_service.dart';
+import '../../../../core/release/release_feature_gate.dart';
+import '../../../../core/release/release_providers.dart';
+import '../../../../core/release/release_state.dart';
 import '../../../../core/widgets/adaptive_page_body.dart';
 import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/app_page_header.dart';
 import '../../../../core/widgets/app_section_header.dart';
 import '../../../../core/widgets/premium_surface.dart';
 
-class DiscoverScreen extends StatefulWidget {
+class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
 
   @override
-  State<DiscoverScreen> createState() => _DiscoverScreenState();
+  ConsumerState<DiscoverScreen> createState() => _DiscoverScreenState();
 }
 
-class _DiscoverScreenState extends State<DiscoverScreen>
+class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     with AutomaticKeepAliveClientMixin<DiscoverScreen> {
   @override
   bool get wantKeepAlive => true;
@@ -24,6 +29,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final ReleaseState release = ref.watch(releaseStateProvider).maybeWhen(
+          data: (ReleaseState value) => value,
+          orElse: () => ReleaseControlService.loadSafeDefaults(),
+        );
+    final bool showNearby = ReleaseFeatureGate.showNearby(release);
+    final bool showMarketplace = ReleaseFeatureGate.showMarketplace(release);
+    final bool showAi = ReleaseFeatureGate.showAiModules(release);
     return Scaffold(
       appBar: AppBar(title: const Text('Discover')),
       body: AdaptivePageBody(
@@ -41,6 +53,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             onTap: () => context.push(AppRoutes.discoverSearch),
           ),
           const SizedBox(height: AppSpacing.lg),
+          if (showNearby) ...<Widget>[
           PremiumSurface(
             onTap: () => context.push(AppRoutes.nearby),
             child: Row(
@@ -71,6 +84,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             ),
           ),
           const SizedBox(height: AppSpacing.xl),
+          ],
           const AppSectionHeader(
             title: 'Explore by category',
             subtitle:
@@ -81,6 +95,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
             spacing: AppSpacing.md,
             runSpacing: AppSpacing.md,
             children: <Widget>[
+              if (showNearby) ...<Widget>[
               _CategoryCard(
                 icon: Icons.people_alt_outlined,
                 title: 'People',
@@ -96,6 +111,7 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 title: 'Events',
                 onTap: () => context.push(AppRoutes.nearbyForType('event')),
               ),
+              ],
               _CategoryCard(
                 icon: Icons.groups_outlined,
                 title: 'Groups',
@@ -106,11 +122,13 @@ class _DiscoverScreenState extends State<DiscoverScreen>
                 title: 'Challenges',
                 onTap: () => context.push(AppRoutes.challenges),
               ),
+              if (showMarketplace)
               _CategoryCard(
                 icon: Icons.storefront_outlined,
                 title: 'Marketplace',
                 onTap: () => context.push(AppRoutes.marketplace),
               ),
+              if (showAi)
               _CategoryCard(
                 icon: Icons.smart_toy_outlined,
                 title: 'ReeMove AI',

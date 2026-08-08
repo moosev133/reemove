@@ -41,6 +41,9 @@ class ConversationSummaryDto {
     this.lastMessage,
     this.mutedUntil,
     this.archivedAt,
+    this.source,
+    this.sportsGroupId,
+    this.sportsChannelType,
   });
 
   factory ConversationSummaryDto.fromFirestore(
@@ -72,6 +75,9 @@ class ConversationSummaryDto {
         fallback: true,
       ),
       updatedAt: FirestoreParser.dateTime(data, 'updatedAt'),
+      source: FirestoreParser.nullableString(data, 'source'),
+      sportsGroupId: FirestoreParser.nullableString(data, 'groupId'),
+      sportsChannelType: FirestoreParser.nullableString(data, 'channelType'),
     );
   }
 
@@ -86,6 +92,9 @@ class ConversationSummaryDto {
   final DateTime? archivedAt;
   final bool notificationsEnabled;
   final DateTime updatedAt;
+  final String? source;
+  final String? sportsGroupId;
+  final String? sportsChannelType;
 }
 
 class ConversationDto {
@@ -100,6 +109,9 @@ class ConversationDto {
     required this.updatedAt,
     this.avatarUrl,
     this.lastMessage,
+    this.source,
+    this.sportsGroupId,
+    this.sportsChannelType,
   });
 
   factory ConversationDto.fromFirestore(
@@ -127,6 +139,9 @@ class ConversationDto {
           : ConversationLastMessageDto.fromMap(last),
       createdAt: FirestoreParser.dateTime(data, 'createdAt'),
       updatedAt: FirestoreParser.dateTime(data, 'updatedAt'),
+      source: FirestoreParser.nullableString(data, 'source'),
+      sportsGroupId: FirestoreParser.nullableString(data, 'groupId'),
+      sportsChannelType: FirestoreParser.nullableString(data, 'channelType'),
     );
   }
 
@@ -140,6 +155,9 @@ class ConversationDto {
   final ConversationLastMessageDto? lastMessage;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? source;
+  final String? sportsGroupId;
+  final String? sportsChannelType;
 }
 
 class ConversationMemberDto {

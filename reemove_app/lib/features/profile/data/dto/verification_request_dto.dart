@@ -13,7 +13,7 @@ class VerificationRequestDto {
     required this.legalName,
     required this.summary,
     required this.evidence,
-    required this.submittedAt,
+    this.submittedAt,
     this.reviewedAt,
     this.rejectionReason,
   });
@@ -26,15 +26,8 @@ class VerificationRequestDto {
         snapshot.data() ?? const <String, dynamic>{};
     final List<VerificationEvidence> evidence = data['evidence'] is List
         ? (data['evidence'] as List<dynamic>)
-              .whereType<Map<Object?, Object?>>()
-              .map(
-                (Map<Object?, Object?> item) => VerificationEvidence(
-                  storagePath: item['storagePath'] is String
-                      ? item['storagePath'] as String
-                      : '',
-                  label: item['label'] is String ? item['label'] as String : '',
-                ),
-              )
+              .whereType<Map>()
+              .map(_evidenceFromMap)
               .where((VerificationEvidence item) => item.storagePath.isNotEmpty)
               .toList(growable: false)
         : const <VerificationEvidence>[];
@@ -50,9 +43,45 @@ class VerificationRequestDto {
       legalName: FirestoreParser.string(data, 'legalName'),
       summary: FirestoreParser.string(data, 'summary'),
       evidence: evidence,
-      submittedAt: FirestoreParser.dateTime(data, 'submittedAt'),
+      submittedAt: FirestoreParser.nullableDateTime(data, 'submittedAt'),
       reviewedAt: FirestoreParser.nullableDateTime(data, 'reviewedAt'),
       rejectionReason: FirestoreParser.nullableString(data, 'rejectionReason'),
+    );
+  }
+
+  static VerificationEvidence _evidenceFromMap(Map<dynamic, dynamic> item) {
+    final String kindRaw = item['documentKind'] is String
+        ? item['documentKind'] as String
+        : 'other';
+    final VerificationDocumentKind kind = VerificationDocumentKind.values
+        .cast<VerificationDocumentKind?>()
+        .firstWhere(
+          (VerificationDocumentKind? value) => value?.name == kindRaw,
+          orElse: () => VerificationDocumentKind.other,
+        )!;
+    DateTime? parseDate(Object? value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is String && value.trim().isNotEmpty) {
+        return DateTime.tryParse(value.trim());
+      }
+      return null;
+    }
+
+    return VerificationEvidence(
+      storagePath: item['storagePath'] is String
+          ? item['storagePath'] as String
+          : '',
+      label: item['label'] is String ? item['label'] as String : '',
+      documentKind: kind,
+      contentType: item['contentType'] is String
+          ? item['contentType'] as String
+          : null,
+      sizeBytes: item['sizeBytes'] is num
+          ? (item['sizeBytes'] as num).toInt()
+          : null,
+      issuer: item['issuer'] is String ? item['issuer'] as String : null,
+      issuedAt: parseDate(item['issuedAt']),
+      expiresAt: parseDate(item['expiresAt']),
     );
   }
 
@@ -63,20 +92,35 @@ class VerificationRequestDto {
   final String legalName;
   final String summary;
   final List<VerificationEvidence> evidence;
-  final DateTime submittedAt;
+  final DateTime? submittedAt;
   final DateTime? reviewedAt;
   final String? rejectionReason;
 
-  VerificationRequest toDomain() => VerificationRequest(
-    id: id,
-    uid: uid,
-    requestedType: VerificationType.values.byName(requestedType),
-    status: VerificationRequestStatus.values.byName(status),
-    legalName: legalName,
-    summary: summary,
-    evidence: evidence,
-    submittedAt: submittedAt,
-    reviewedAt: reviewedAt,
-    rejectionReason: rejectionReason,
-  );
+  VerificationRequest toDomain() {
+    final VerificationType type = VerificationType.values
+        .cast<VerificationType?>()
+        .firstWhere(
+          (VerificationType? value) => value?.name == requestedType,
+          orElse: () => VerificationType.athlete,
+        )!;
+    final VerificationRequestStatus parsedStatus = VerificationRequestStatus
+        .values
+        .cast<VerificationRequestStatus?>()
+        .firstWhere(
+          (VerificationRequestStatus? value) => value?.name == status,
+          orElse: () => VerificationRequestStatus.pending,
+        )!;
+    return VerificationRequest(
+      id: id,
+      uid: uid,
+      requestedType: type,
+      status: parsedStatus,
+      legalName: legalName,
+      summary: summary,
+      evidence: evidence,
+      submittedAt: submittedAt,
+      reviewedAt: reviewedAt,
+      rejectionReason: rejectionReason,
+    );
+  }
 }

@@ -1,3 +1,4 @@
+import '../../../groups/domain/entities/group_enums.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/message.dart';
 import '../../domain/entities/messaging_user.dart';
@@ -39,6 +40,9 @@ extension ConversationSummaryDtoMapper on ConversationSummaryDto {
         (mutedUntil != null && mutedUntil!.isAfter(DateTime.now())),
     isArchived: archivedAt != null,
     updatedAt: updatedAt,
+    source: source,
+    sportsGroupId: sportsGroupId,
+    sportsChannelType: sportsChannelType,
   );
 }
 
@@ -72,11 +76,15 @@ Conversation conversationToDomain(
   lastMessage: dto.lastMessage?.toDomain(),
   createdAt: dto.createdAt,
   updatedAt: dto.updatedAt,
+  source: dto.source,
+  sportsGroupId: dto.sportsGroupId,
+  sportsChannelType: dto.sportsChannelType,
 );
 
 extension MessageDtoMapper on MessageDto {
   ConversationMessage toDomain({
     Set<String> viewerReactions = const <String>{},
+    Set<String> consumedViewOnceAttachmentIds = const <String>{},
   }) => ConversationMessage(
     id: id,
     conversationId: conversationId,
@@ -97,6 +105,10 @@ extension MessageDtoMapper on MessageDto {
             height: item.height,
             durationMs: item.durationMs,
             processingState: _processingState(item.processingState),
+            mediaMode: parseGroupMediaMode(item.mediaMode),
+            viewOnceConsumed:
+                item.viewOnceConsumed ||
+                consumedViewOnceAttachmentIds.contains(item.id),
           ),
         )
         .toList(growable: false),

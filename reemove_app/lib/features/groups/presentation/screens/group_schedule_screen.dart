@@ -25,6 +25,7 @@ class GroupScheduleScreen extends ConsumerWidget {
     );
     final AsyncValue<Group> groupValue = ref.watch(groupProvider(groupId));
     final bool canManage = groupValue.value?.isManager ?? false;
+    final bool isMember = groupValue.value?.isMember ?? false;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Schedule')),
@@ -50,7 +51,8 @@ class GroupScheduleScreen extends ConsumerWidget {
                 AppEmptyState(
                   icon: Icons.event_outlined,
                   title: 'No sessions scheduled',
-                  message: 'Upcoming group sessions will appear here.',
+                  message:
+                      'Training, matches, and events for this group will appear here.',
                 ),
               ],
             );
@@ -68,7 +70,11 @@ class GroupScheduleScreen extends ConsumerWidget {
                     child: _SessionTile(
                       session: session,
                       canManage: canManage,
+                      canRsvp: isMember &&
+                          session.status == GroupSessionStatus.scheduled,
                       onCancel: () => _cancelSession(context, ref, session),
+                      onRsvp: (GroupSessionRsvpStatus status) =>
+                          _rsvp(context, ref, session, status),
                     ),
                   ),
                 ),
@@ -78,6 +84,34 @@ class GroupScheduleScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  Future<void> _rsvp(
+    BuildContext context,
+    WidgetRef ref,
+    GroupSession session,
+    GroupSessionRsvpStatus status,
+  ) async {
+    final bool ok = await ref
+        .read(groupsActionControllerProvider.notifier)
+        .respondToGroupSessionRsvp(
+          groupId: groupId,
+          sessionId: session.sessionId,
+          status: status,
+        );
+    if (!context.mounted) {
+      return;
+    }
+    if (!ok) {
+      final Object? error = ref.read(groupsActionControllerProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error?.toString() ?? 'Could not update RSVP.',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _cancelSession(
@@ -90,7 +124,9 @@ class GroupScheduleScreen extends ConsumerWidget {
           context: context,
           builder: (BuildContext context) => AlertDialog(
             title: Text('Cancel ${session.title}?'),
-            content: const Text('Members will see this session as cancelled.'),
+            content: const Text(
+              'Members will be notified and this session will show as cancelled.',
+            ),
             actions: <Widget>[
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
@@ -125,41 +161,62 @@ class _SessionTile extends StatelessWidget {
   const _SessionTile({
     required this.session,
     required this.canManage,
+    required this.canRsvp,
     required this.onCancel,
+    required this.onRsvp,
   });
 
   final GroupSession session;
   final bool canManage;
+  final bool canRsvp;
   final VoidCallback onCancel;
+  final ValueChanged<GroupSessionRsvpStatus> onRsvp;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return PremiumSurface(
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(session.title, style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  session.title,
+                      style: theme.textTheme.titleMedium,
+                ),
                 const SizedBox(height: AppSpacing.xxs),
-                if (session.activity.isNotEmpty)
                   Text(
-                    session.activity,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      session.sessionType.displayLabel,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
+                    if (session.activity.isNotEmpty &&
+                        session.activity != session.sessionType.wireValue) ...<Widget>[
+                      const SizedBox(height: AppSpacing.xxs),
+                      Text(
+                        session.activity,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                 const SizedBox(height: AppSpacing.xs),
                 if (session.startAt != null)
                   Text(
                     _formatRange(session.startAt!, session.endAt),
-                    style: Theme.of(context).textTheme.labelMedium,
+                        style: theme.textTheme.labelMedium,
                   ),
                 const SizedBox(height: AppSpacing.xs),
                 Wrap(
                   spacing: AppSpacing.xs,
+                      runSpacing: AppSpacing.xxs,
                   children: <Widget>[
                     AppStatusChip(
                       label: switch (session.status) {
@@ -171,10 +228,18 @@ class _SessionTile extends StatelessWidget {
                           ? Icons.event_busy_outlined
                           : Icons.event_available_outlined,
                       color: session.isCancelled
-                          ? Theme.of(context).colorScheme.error
-                          : Theme.of(context).colorScheme.primary,
-                    ),
-                  ],
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.primary,
+                        ),
+                        if (!session.isCancelled)
+                          AppStatusChip(
+                            label:
+                                '${session.rsvpCounts.going} going'
+                                '${session.capacity > 0 ? ' / ${session.capacity}' : ''}',
+                            icon: Icons.people_outline_rounded,
+                            color: theme.colorScheme.secondary,
+                          ),
+                      ],
                 ),
               ],
             ),
@@ -185,6 +250,30 @@ class _SessionTile extends StatelessWidget {
               onPressed: onCancel,
               icon: const Icon(Icons.event_busy_outlined),
             ),
+            ],
+          ),
+          if (canRsvp) ...<Widget>[
+            const SizedBox(height: AppSpacing.sm),
+            Wrap(
+              spacing: AppSpacing.xs,
+              children: GroupSessionRsvpStatus.values.map((
+                GroupSessionRsvpStatus status,
+              ) {
+                final bool selected = session.viewerRsvp == status;
+                final bool disabledGoing =
+                    status == GroupSessionRsvpStatus.going &&
+                    session.isAtCapacity &&
+                    session.viewerRsvp != GroupSessionRsvpStatus.going;
+                return FilterChip(
+                  label: Text(status.displayLabel),
+                  selected: selected,
+                  onSelected: disabledGoing
+                      ? null
+                      : (_) => onRsvp(status),
+                );
+              }).toList(growable: false),
+            ),
+          ],
         ],
       ),
     );
@@ -209,7 +298,8 @@ class _CreateSessionSheet extends ConsumerStatefulWidget {
   final String groupId;
 
   @override
-  ConsumerState<_CreateSessionSheet> createState() => _CreateSessionSheetState();
+  ConsumerState<_CreateSessionSheet> createState() =>
+      _CreateSessionSheetState();
 }
 
 class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
@@ -217,6 +307,8 @@ class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
   final TextEditingController _title = TextEditingController();
   final TextEditingController _activity = TextEditingController();
   final TextEditingController _description = TextEditingController();
+  final TextEditingController _capacity = TextEditingController(text: '0');
+  GroupSessionType _sessionType = GroupSessionType.training;
   DateTime _startAt = DateTime.now().add(const Duration(days: 1));
   DateTime _endAt = DateTime.now().add(const Duration(days: 1, hours: 1));
   bool _submitting = false;
@@ -226,6 +318,7 @@ class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
     _title.dispose();
     _activity.dispose();
     _description.dispose();
+    _capacity.dispose();
     super.dispose();
   }
 
@@ -240,11 +333,35 @@ class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
       ),
       child: Form(
         key: _formKey,
+        child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text('New session', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'New session',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                'Type',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              SegmentedButton<GroupSessionType>(
+                segments: GroupSessionType.values
+                    .map(
+                      (GroupSessionType type) => ButtonSegment<GroupSessionType>(
+                        value: type,
+                        label: Text(type.displayLabel),
+                      ),
+                    )
+                    .toList(growable: false),
+                selected: <GroupSessionType>{_sessionType},
+                onSelectionChanged: (Set<GroupSessionType> next) {
+                  setState(() => _sessionType = next.first);
+                },
+              ),
             const SizedBox(height: AppSpacing.md),
             TextFormField(
               controller: _title,
@@ -255,9 +372,10 @@ class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
             const SizedBox(height: AppSpacing.md),
             TextFormField(
               controller: _activity,
-              decoration: const InputDecoration(labelText: 'Activity'),
+                decoration: const InputDecoration(
+                  labelText: 'Sport / detail (optional)',
+                ),
               maxLength: 64,
-              validator: _required,
             ),
             const SizedBox(height: AppSpacing.md),
             TextFormField(
@@ -269,6 +387,21 @@ class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
               maxLines: 4,
               maxLength: 2000,
             ),
+              const SizedBox(height: AppSpacing.md),
+              TextFormField(
+                controller: _capacity,
+                decoration: const InputDecoration(
+                  labelText: 'Capacity (0 = unlimited)',
+                ),
+                keyboardType: TextInputType.number,
+                validator: (String? value) {
+                  final int? parsed = int.tryParse(value?.trim() ?? '');
+                  if (parsed == null || parsed < 0 || parsed > 10000) {
+                    return 'Enter a capacity from 0 to 10000';
+                  }
+                  return null;
+                },
+              ),
             const SizedBox(height: AppSpacing.md),
             ListTile(
               contentPadding: EdgeInsets.zero,
@@ -291,9 +424,17 @@ class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
               label: Text(_submitting ? 'Creating…' : 'Create session'),
             ),
           ],
+          ),
         ),
       ),
     );
+  }
+
+  String? _required(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Required';
+    }
+    return null;
   }
 
   Future<void> _pickDateTime({required bool isStart}) async {
@@ -301,8 +442,8 @@ class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
     final DateTime? date = await showDatePicker(
       context: context,
       initialDate: initial,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      firstDate: DateTime.now().subtract(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
     );
     if (date == null || !mounted) {
       return;
@@ -311,10 +452,10 @@ class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
       context: context,
       initialTime: TimeOfDay.fromDateTime(initial),
     );
-    if (time == null) {
+    if (time == null || !mounted) {
       return;
     }
-    final DateTime picked = DateTime(
+    final DateTime combined = DateTime(
       date.year,
       date.month,
       date.day,
@@ -323,23 +464,23 @@ class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
     );
     setState(() {
       if (isStart) {
-        _startAt = picked;
+        _startAt = combined;
         if (!_endAt.isAfter(_startAt)) {
           _endAt = _startAt.add(const Duration(hours: 1));
         }
       } else {
-        _endAt = picked;
+        _endAt = combined;
       }
     });
   }
 
   Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) {
+    if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
     if (!_endAt.isAfter(_startAt)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('End time must be after the start time.')),
+        const SnackBar(content: Text('End time must be after start time.')),
       );
       return;
     }
@@ -350,10 +491,12 @@ class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
           CreateGroupSessionRequest(
             groupId: widget.groupId,
             title: _title.text.trim(),
+            sessionType: _sessionType,
             activity: _activity.text.trim(),
-            startAt: _startAt,
-            endAt: _endAt,
             description: _description.text.trim(),
+            capacity: int.parse(_capacity.text.trim()),
+            startAt: _startAt.toUtc(),
+            endAt: _endAt.toUtc(),
           ),
         );
     if (!mounted) {
@@ -364,7 +507,4 @@ class _CreateSessionSheetState extends ConsumerState<_CreateSessionSheet> {
       Navigator.of(context).pop();
     }
   }
-
-  static String? _required(String? value) =>
-      value == null || value.trim().isEmpty ? 'This field is required.' : null;
 }

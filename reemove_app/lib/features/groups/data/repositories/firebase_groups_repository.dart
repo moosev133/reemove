@@ -22,20 +22,18 @@ class FirebaseGroupsRepository implements GroupsRepository {
   @override
   Future<Result<String>> createGroup(CreateGroupRequest request) async {
     try {
-      final Map<String, dynamic> response = await _call(
-        'createGroup',
-        <String, Object?>{
-          'name': request.name,
-          'description': request.description,
-          'category': request.category,
-          'privacy': request.privacy.name,
-          'joinPolicy': request.joinPolicy.name,
-          'capacity': request.capacity,
-          if (!request.location.isEmpty) 'location': request.location.toMap(),
-          if (request.avatarUrl != null) 'avatarUrl': request.avatarUrl,
-          if (request.coverUrl != null) 'coverUrl': request.coverUrl,
-        },
-      );
+      final Map<String, dynamic> response =
+          await _call('createGroup', <String, Object?>{
+            'name': request.name,
+            'description': request.description,
+            'category': request.category,
+            'privacy': request.privacy.name,
+            'joinPolicy': request.joinPolicy.name,
+            'capacity': request.capacity,
+            if (!request.location.isEmpty) 'location': request.location.toMap(),
+            if (request.avatarUrl != null) 'avatarUrl': request.avatarUrl,
+            if (request.coverUrl != null) 'coverUrl': request.coverUrl,
+          });
       return Success<String>(_requiredString(response, 'groupId'));
     } on FirebaseFunctionsException catch (error) {
       return FailureResult<String>(GroupsFailureMapper.fromFunctions(error));
@@ -45,29 +43,28 @@ class FirebaseGroupsRepository implements GroupsRepository {
   }
 
   @override
-  Future<Result<void>> updateGroup(UpdateGroupRequest request) => _voidCall(
-    'updateGroup',
-    <String, Object?>{
-      'groupId': request.groupId,
-      if (request.name != null) 'name': request.name,
-      if (request.description != null) 'description': request.description,
-      if (request.category != null) 'category': request.category,
-      if (request.privacy != null) 'privacy': request.privacy!.name,
-      if (request.joinPolicy != null) 'joinPolicy': request.joinPolicy!.name,
-      if (request.location != null) 'location': request.location!.toMap(),
-      if (request.capacity != null) 'capacity': request.capacity,
-      if (request.avatarUrl != null) 'avatarUrl': request.avatarUrl,
-      if (request.coverUrl != null) 'coverUrl': request.coverUrl,
-      if (request.status != null) 'status': request.status!.name,
-    },
-  );
+  Future<Result<void>> updateGroup(UpdateGroupRequest request) =>
+      _voidCall('updateGroup', <String, Object?>{
+        'groupId': request.groupId,
+        if (request.name != null) 'name': request.name,
+        if (request.description != null) 'description': request.description,
+        if (request.category != null) 'category': request.category,
+        if (request.privacy != null) 'privacy': request.privacy!.name,
+        if (request.joinPolicy != null) 'joinPolicy': request.joinPolicy!.name,
+        if (request.location != null) 'location': request.location!.toMap(),
+        if (request.capacity != null) 'capacity': request.capacity,
+        if (request.avatarUrl != null) 'avatarUrl': request.avatarUrl,
+        if (request.coverUrl != null) 'coverUrl': request.coverUrl,
+        if (request.status != null) 'status': request.status!.name,
+      });
 
   @override
   Future<Result<Group>> getGroup(String groupId) async {
     try {
-      final Map<String, dynamic> response = await _call('getGroup', <String, Object?>{
-        'groupId': groupId,
-      });
+      final Map<String, dynamic> response = await _call(
+        'getGroup',
+        <String, Object?>{'groupId': groupId},
+      );
       return Success<Group>(groupFromMap(response['group']));
     } on FirebaseFunctionsException catch (error) {
       return FailureResult<Group>(GroupsFailureMapper.fromFunctions(error));
@@ -82,20 +79,20 @@ class FirebaseGroupsRepository implements GroupsRepository {
     int limit = 20,
   }) async {
     try {
-      final Map<String, dynamic> response = await _call(
-        'listDiscoverableGroups',
-        <String, Object?>{
-          'limit': limit,
-          if (category != null && category.isNotEmpty) 'category': category,
-        },
-      );
+      final Map<String, dynamic> response =
+          await _call('listDiscoverableGroups', <String, Object?>{
+            'limit': limit,
+            if (category != null && category.isNotEmpty) 'category': category,
+          });
       return Success<List<Group>>(
         asMapList(response['groups'])
             .map((Map<String, dynamic> item) => groupFromMap(item))
             .toList(growable: false),
       );
     } on FirebaseFunctionsException catch (error) {
-      return FailureResult<List<Group>>(GroupsFailureMapper.fromFunctions(error));
+      return FailureResult<List<Group>>(
+        GroupsFailureMapper.fromFunctions(error),
+      );
     } on Object catch (error) {
       return FailureResult<List<Group>>(GroupsFailureMapper.unexpected(error));
     }
@@ -110,9 +107,7 @@ class FirebaseGroupsRepository implements GroupsRepository {
       );
       return Success<List<MyGroupMembership>>(
         asMapList(response['groups'])
-            .map(
-              (Map<String, dynamic> item) => myGroupMembershipFromMap(item),
-            )
+            .map((Map<String, dynamic> item) => myGroupMembershipFromMap(item))
             .toList(growable: false),
       );
     } on FirebaseFunctionsException catch (error) {
@@ -151,10 +146,8 @@ class FirebaseGroupsRepository implements GroupsRepository {
   }
 
   @override
-  Future<Result<void>> cancelJoinRequest(String groupId) => _voidCall(
-    'cancelJoinRequest',
-    <String, Object?>{'groupId': groupId},
-  );
+  Future<Result<void>> cancelJoinRequest(String groupId) =>
+      _voidCall('cancelJoinRequest', <String, Object?>{'groupId': groupId});
 
   @override
   Future<Result<void>> respondToJoinRequest({
@@ -289,6 +282,34 @@ class FirebaseGroupsRepository implements GroupsRepository {
   }
 
   @override
+  Future<Result<List<GroupPendingInvitation>>> listGroupPendingInvitations(
+    String groupId,
+  ) async {
+    try {
+      final Map<String, dynamic> response = await _call(
+        'listGroupPendingInvitations',
+        <String, Object?>{'groupId': groupId},
+      );
+      return Success<List<GroupPendingInvitation>>(
+        asMapList(response['invitations'])
+            .map(
+              (Map<String, dynamic> item) =>
+                  groupPendingInvitationFromMap(item),
+            )
+            .toList(growable: false),
+      );
+    } on FirebaseFunctionsException catch (error) {
+      return FailureResult<List<GroupPendingInvitation>>(
+        GroupsFailureMapper.fromFunctions(error),
+      );
+    } on Object catch (error) {
+      return FailureResult<List<GroupPendingInvitation>>(
+        GroupsFailureMapper.unexpected(error),
+      );
+    }
+  }
+
+  @override
   Future<Result<List<GroupInvitation>>> listMyGroupInvitations() async {
     try {
       final Map<String, dynamic> response = await _call(
@@ -316,19 +337,20 @@ class FirebaseGroupsRepository implements GroupsRepository {
     CreateGroupSessionRequest request,
   ) async {
     try {
-      final Map<String, dynamic> response = await _call(
-        'createGroupSession',
-        <String, Object?>{
-          'groupId': request.groupId,
-          'title': request.title,
-          'activity': request.activity,
-          'startAt': request.startAt.toUtc().toIso8601String(),
-          'endAt': request.endAt.toUtc().toIso8601String(),
-          'description': request.description,
-          'capacity': request.capacity,
-          if (!request.location.isEmpty) 'location': request.location.toMap(),
-        },
-      );
+      final Map<String, dynamic> response =
+          await _call('createGroupSession', <String, Object?>{
+            'groupId': request.groupId,
+            'title': request.title,
+            'sessionType': request.sessionType.wireValue,
+            'activity': request.activity.isEmpty
+                ? request.sessionType.wireValue
+                : request.activity,
+            'startAt': request.startAt.toUtc().toIso8601String(),
+            'endAt': request.endAt.toUtc().toIso8601String(),
+            'description': request.description,
+            'capacity': request.capacity,
+            if (!request.location.isEmpty) 'location': request.location.toMap(),
+          });
       return Success<String>(_requiredString(response, 'sessionId'));
     } on FirebaseFunctionsException catch (error) {
       return FailureResult<String>(GroupsFailureMapper.fromFunctions(error));
@@ -343,6 +365,8 @@ class FirebaseGroupsRepository implements GroupsRepository {
         'groupId': request.groupId,
         'sessionId': request.sessionId,
         if (request.title != null) 'title': request.title,
+        if (request.sessionType != null)
+          'sessionType': request.sessionType!.wireValue,
         if (request.activity != null) 'activity': request.activity,
         if (request.description != null) 'description': request.description,
         if (request.startAt != null)
@@ -386,6 +410,17 @@ class FirebaseGroupsRepository implements GroupsRepository {
   }
 
   @override
+  Future<Result<void>> respondToGroupSessionRsvp({
+    required String groupId,
+    required String sessionId,
+    required GroupSessionRsvpStatus status,
+  }) => _voidCall('respondToGroupSessionRsvp', <String, Object?>{
+    'groupId': groupId,
+    'sessionId': sessionId,
+    'status': status.wireValue,
+  });
+
+  @override
   Future<Result<List<GroupChannel>>> getGroupChannels(String groupId) async {
     try {
       final Map<String, dynamic> response = await _call(
@@ -415,14 +450,12 @@ class FirebaseGroupsRepository implements GroupsRepository {
     String? details,
   }) async {
     try {
-      final Map<String, dynamic> response = await _call(
-        'reportGroup',
-        <String, Object?>{
-          'groupId': groupId,
-          'reason': reason,
-          if (details != null && details.isNotEmpty) 'details': details,
-        },
-      );
+      final Map<String, dynamic> response =
+          await _call('reportGroup', <String, Object?>{
+            'groupId': groupId,
+            'reason': reason,
+            if (details != null && details.isNotEmpty) 'details': details,
+          });
       return Success<String>(_requiredString(response, 'reportId'));
     } on FirebaseFunctionsException catch (error) {
       return FailureResult<String>(GroupsFailureMapper.fromFunctions(error));

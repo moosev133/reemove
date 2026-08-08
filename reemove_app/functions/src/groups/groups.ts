@@ -43,19 +43,32 @@ import {
   softRemoveMemberInTx,
 } from "./groupsAccess";
 import {
+  addUserToGroupChannels,
+  deactivateGroupChannelConversations,
+  ensureGroupChannelsMaterialized,
+  materializeGroupChannelConversations,
+  removeUserFromGroupChannels,
+  syncGroupChannelRoles,
+} from "./groupChannels";
+import {
+  listSessionsForViewer,
+  notifyActiveMembersOfSession,
+  parseSessionPatch,
+} from "./groupSessions";
+import {
   asRecord,
   canRemoveMember,
+  emptyRsvpCounts,
   groupChannelContracts,
   isManagerRole,
   nextMemberCount,
   normalizeJoinPolicy,
-  optionalString,
   parseCreateGroupInput,
   parseCreateSessionInput,
   parseDecision,
-  parseIsoDate,
   parseUpdateGroupInput,
   requiredString,
+  resolveGroupSessionType,
   type GroupJoinPolicy,
   type GroupMemberRole,
   type GroupPrivacy,
@@ -163,14 +176,23 @@ export const createGroup = onCall(callableOptions, async (request) => {
       supportedMediaModes: channel.supportedMediaModes,
       publishRoles: channel.publishRoles,
       readRoles: channel.readRoles,
-      // Phase C2: disappearing / view-once media behavior.
-      phase: "c1_contract",
+      phase: "c2_live",
       createdAt: now,
       updatedAt: now,
       schemaVersion: currentSchemaVersion,
     });
   }
   await batch.commit();
+  await materializeGroupChannelConversations({
+    database,
+    groupId: reference.id,
+    groupName: input.name,
+    ownerId: uid,
+    ownerProfile: profile,
+    memberChatConversationId: memberChatId,
+    announcementsConversationId: announcementsId,
+    now,
+  });
   await writeAuditEvent({
     actorId: uid,
     action: "groups.created",
@@ -393,9 +415,9 @@ export const requestJoinGroup = onCall(callableOptions, async (request) => {
       transaction.get(joinRequestRef(database, groupId, uid)),
     ]);
     assertActiveGroup(fresh);
-    if (activeMemberRole(member)) return {status: "member" as const};
+    if (activeMemberRole(member)) return {status: "member" as const, joined: false};
     if (pending.exists && pending.get("status") === "pending") {
-      return {status: "pending" as const};
+      return {status: "pending" as const, joined: false};
     }
     const now = Timestamp.now();
     if (joinPolicy === "open") {
@@ -417,7 +439,7 @@ export const requestJoinGroup = onCall(callableOptions, async (request) => {
         updatedAt: now,
       });
       if (pending.exists) transaction.delete(pending.ref);
-      return {status: "member" as const};
+      return {status: "member" as const, joined: true};
     }
     transaction.set(joinRequestRef(database, groupId, uid), {
       requesterId: uid,
@@ -427,7 +449,7 @@ export const requestJoinGroup = onCall(callableOptions, async (request) => {
       updatedAt: now,
       schemaVersion: currentSchemaVersion,
     });
-    return {status: "pending" as const};
+    return {status: "pending" as const, joined: false};
   });
 
   if (result.status === "pending") {
@@ -440,6 +462,14 @@ export const requestJoinGroup = onCall(callableOptions, async (request) => {
         recipientId: managerId,
       }).catch(() => undefined),
     ));
+  } else if (result.status === "member" && result.joined) {
+    await addUserToGroupChannels({
+      database,
+      groupId,
+      uid,
+      role: "member",
+      profile,
+    }).catch(() => undefined);
   }
   await writeAuditEvent({
     actorId: uid,
@@ -486,7 +516,7 @@ export const respondToJoinRequest = onCall(callableOptions, async (request) => {
   const profile = await activeProfileSnapshot(database, requesterId);
   const group = await groupRef(database, groupId).get();
   assertActiveGroup(group);
-  await database.runTransaction(async (transaction) => {
+  const accepted = await database.runTransaction(async (transaction) => {
     const [fresh, requestSnap, member] = await Promise.all([
       transaction.get(group.ref),
       transaction.get(joinRequestRef(database, groupId, requesterId)),
@@ -498,11 +528,11 @@ export const respondToJoinRequest = onCall(callableOptions, async (request) => {
     const now = Timestamp.now();
     if (decision === "decline") {
       transaction.delete(requestSnap.ref);
-      return;
+      return false;
     }
     if (activeMemberRole(member)) {
       transaction.delete(requestSnap.ref);
-      return;
+      return false;
     }
     const count = Number(fresh.get("memberCount") ?? 0);
     const capacity = Number(fresh.get("capacity") ?? 0);
@@ -522,8 +552,16 @@ export const respondToJoinRequest = onCall(callableOptions, async (request) => {
       updatedAt: now,
     });
     transaction.delete(requestSnap.ref);
+    return true;
   });
-  if (decision === "accept") {
+  if (decision === "accept" && accepted) {
+    await addUserToGroupChannels({
+      database,
+      groupId,
+      uid: requesterId,
+      role: "member",
+      profile,
+    }).catch(() => undefined);
     await deliverGroupJoinAcceptedNotification({
       groupId,
       groupName: String(group.get("name") ?? "a group"),
@@ -660,8 +698,8 @@ export const respondToGroupInvitation = onCall(
       const now = Timestamp.now();
       transaction.delete(invite.ref);
       transaction.delete(invitationInboxRef(database, uid, groupId));
-      if (decision === "decline") return invitedBy;
-      if (activeMemberRole(member)) return invitedBy;
+      if (decision === "decline") return {invitedBy, joined: false};
+      if (activeMemberRole(member)) return {invitedBy, joined: false};
       const count = Number(fresh.get("memberCount") ?? 0);
       const capacity = Number(fresh.get("capacity") ?? 0);
       if (capacity > 0 && count >= capacity) {
@@ -679,13 +717,22 @@ export const respondToGroupInvitation = onCall(
         memberCount: nextMemberCount(count, 1),
         updatedAt: now,
       });
-      return invitedBy;
+      return {invitedBy, joined: true};
     });
-    if (decision === "accept" && inviterId) {
+    if (decision === "accept" && inviterId.joined) {
+      await addUserToGroupChannels({
+        database,
+        groupId,
+        uid,
+        role: "member",
+        profile,
+      }).catch(() => undefined);
+    }
+    if (decision === "accept" && inviterId.invitedBy) {
       await deliverGroupInvitationAcceptedNotification({
         groupId,
         groupName: String(group.get("name") ?? "a group"),
-        inviterId,
+        inviterId: inviterId.invitedBy,
         inviteeId: uid,
       }).catch(() => undefined);
     }
@@ -748,6 +795,8 @@ export const removeGroupMember = onCall(callableOptions, async (request) => {
       Timestamp.now(),
     );
   });
+  await removeUserFromGroupChannels({database, groupId, uid: memberId})
+    .catch(() => undefined);
   await writeAuditEvent({
     actorId: uid,
     action: "groups.member_removed",
@@ -789,6 +838,8 @@ export const setGroupMemberRole = onCall(callableOptions, async (request) => {
       {merge: true},
     );
   });
+  await syncGroupChannelRoles({database, groupId, uid: memberId, role})
+    .catch(() => undefined);
   await writeAuditEvent({
     actorId: uid,
     action: "groups.role_changed",
@@ -838,6 +889,10 @@ export const transferGroupOwnership = onCall(
         {merge: true},
       );
     });
+    await Promise.all([
+      syncGroupChannelRoles({database, groupId, uid, role: "admin"}),
+      syncGroupChannelRoles({database, groupId, uid: newOwnerId, role: "owner"}),
+    ]).catch(() => undefined);
     await writeAuditEvent({
       actorId: uid,
       action: "groups.ownership_transferred",
@@ -875,6 +930,8 @@ export const leaveGroup = onCall(callableOptions, async (request) => {
       Timestamp.now(),
     );
   });
+  await removeUserFromGroupChannels({database, groupId, uid})
+    .catch(() => undefined);
   await writeAuditEvent({
     actorId: uid,
     action: "groups.left",
@@ -902,6 +959,8 @@ export const deleteGroup = onCall(callableOptions, async (request) => {
       updatedAt: Timestamp.now(),
     });
   });
+  await deactivateGroupChannelConversations(groupId, database)
+    .catch(() => undefined);
   await writeAuditEvent({
     actorId: uid,
     action: "groups.deleted",
@@ -962,6 +1021,37 @@ export const listGroupJoinRequests = onCall(
   },
 );
 
+/** Manager-facing outbound pending invitations for a group. */
+export const listGroupPendingInvitations = onCall(
+  callableOptions,
+  async (request) => {
+    const uid = requireUid(request.auth?.uid);
+    const groupId = requiredString(asRecord(request.data).groupId, "groupId", 128);
+    await requireManager(getFirestore(), groupId, uid);
+    const snapshot = await groupRef(getFirestore(), groupId)
+      .collection("invitations")
+      .where("status", "==", "pending")
+      .orderBy("createdAt", "desc")
+      .limit(50)
+      .get();
+    return {
+      invitations: snapshot.docs.map((doc) => {
+        const invitee = asRecord(doc.get("inviteeSnapshot"));
+        const inviter = asRecord(doc.get("inviterSnapshot"));
+        return {
+          inviteeId: doc.id,
+          inviterId: String(doc.get("inviterId") ?? ""),
+          createdAt: doc.get("createdAt")?.toDate?.()?.toISOString?.() ?? null,
+          displayName: String(invitee.displayName ?? ""),
+          username: String(invitee.username ?? ""),
+          avatarUrl: invitee.avatarUrl ?? null,
+          inviterDisplayName: String(inviter.displayName ?? ""),
+        };
+      }),
+    };
+  },
+);
+
 export const listMyGroupInvitations = onCall(
   callableOptions,
   async (request) => {
@@ -986,16 +1076,20 @@ export const listMyGroupInvitations = onCall(
 export const createGroupSession = onCall(callableOptions, async (request) => {
   const uid = requireUid(request.auth?.uid);
   const input = parseCreateSessionInput(request.data);
-  await requireManager(getFirestore(), input.groupId, uid);
+  const database = getFirestore();
+  await requireManager(database, input.groupId, uid);
   await consumeRateLimit(uid, {
     key: "create_group_session",
     maxAttempts: 40,
     windowSeconds: 24 * 60 * 60,
   });
+  const group = await groupRef(database, input.groupId).get();
+  assertActiveGroup(group);
   const now = Timestamp.now();
-  const ref = groupRef(getFirestore(), input.groupId).collection("sessions").doc();
+  const ref = groupRef(database, input.groupId).collection("sessions").doc();
   await ref.create({
     title: input.title,
+    sessionType: input.sessionType,
     activity: input.activity,
     description: input.description,
     startAt: Timestamp.fromDate(input.startAt),
@@ -1003,6 +1097,7 @@ export const createGroupSession = onCall(callableOptions, async (request) => {
     location: input.location,
     capacity: input.capacity,
     status: "scheduled",
+    rsvpCounts: emptyRsvpCounts(),
     createdBy: uid,
     createdAt: now,
     updatedAt: now,
@@ -1014,6 +1109,16 @@ export const createGroupSession = onCall(callableOptions, async (request) => {
     targetType: "group_session",
     targetId: `${input.groupId}:${ref.id}`,
   });
+  await notifyActiveMembersOfSession({
+    database,
+    groupId: input.groupId,
+    groupName: String(group.get("name") ?? "Group"),
+    sessionId: ref.id,
+    sessionTitle: input.title,
+    sessionType: input.sessionType,
+    actorId: uid,
+    kind: "group_session_scheduled",
+  });
   return {sessionId: ref.id};
 });
 
@@ -1022,37 +1127,29 @@ export const updateGroupSession = onCall(callableOptions, async (request) => {
   const body = asRecord(request.data);
   const groupId = requiredString(body.groupId, "groupId", 128);
   const sessionId = requiredString(body.sessionId, "sessionId", 128);
-  await requireManager(getFirestore(), groupId, uid);
-  const patch: Record<string, unknown> = {updatedAt: Timestamp.now()};
-  if (body.title !== undefined) {
-    patch.title = requiredString(body.title, "title", 120);
+  const database = getFirestore();
+  await requireManager(database, groupId, uid);
+  const {patch, sessionType, title, significant} = parseSessionPatch(body);
+  const sessionRef = groupRef(database, groupId).collection("sessions").doc(sessionId);
+  const session = await sessionRef.get();
+  if (!session.exists) {
+    throw new HttpsError("not-found", "Session not found.");
   }
-  if (body.activity !== undefined) {
-    patch.activity = requiredString(body.activity, "activity", 64);
+  await sessionRef.update(patch);
+  if (significant && session.get("status") === "scheduled") {
+    const group = await groupRef(database, groupId).get();
+    await notifyActiveMembersOfSession({
+      database,
+      groupId,
+      groupName: String(group.get("name") ?? "Group"),
+      sessionId,
+      sessionTitle: title ?? String(session.get("title") ?? "Session"),
+      sessionType: sessionType ??
+        resolveGroupSessionType(session.get("sessionType"), session.get("activity")),
+      actorId: uid,
+      kind: "group_session_updated",
+    });
   }
-  if (body.description !== undefined) {
-    patch.description = optionalString(body.description, "description", 2000);
-  }
-  if (body.startAt !== undefined) {
-    patch.startAt = Timestamp.fromDate(parseIsoDate(body.startAt, "startAt"));
-  }
-  if (body.endAt !== undefined) {
-    patch.endAt = Timestamp.fromDate(parseIsoDate(body.endAt, "endAt"));
-  }
-  if (body.capacity !== undefined) {
-    const capacity = Number(body.capacity);
-    if (!Number.isInteger(capacity) || capacity < 0 || capacity > 10000) {
-      throw new HttpsError("invalid-argument", "capacity is invalid.");
-    }
-    patch.capacity = capacity;
-  }
-  if (body.location !== undefined) {
-    patch.location = asRecord(body.location);
-  }
-  await groupRef(getFirestore(), groupId)
-    .collection("sessions")
-    .doc(sessionId)
-    .update(patch);
   return {ok: true};
 });
 
@@ -1061,16 +1158,33 @@ export const cancelGroupSession = onCall(callableOptions, async (request) => {
   const body = asRecord(request.data);
   const groupId = requiredString(body.groupId, "groupId", 128);
   const sessionId = requiredString(body.sessionId, "sessionId", 128);
-  await requireManager(getFirestore(), groupId, uid);
-  await groupRef(getFirestore(), groupId)
-    .collection("sessions")
-    .doc(sessionId)
-    .update({status: "cancelled", updatedAt: Timestamp.now()});
+  const database = getFirestore();
+  await requireManager(database, groupId, uid);
+  const sessionRef = groupRef(database, groupId).collection("sessions").doc(sessionId);
+  const session = await sessionRef.get();
+  if (!session.exists) {
+    throw new HttpsError("not-found", "Session not found.");
+  }
+  await sessionRef.update({status: "cancelled", updatedAt: Timestamp.now()});
   await writeAuditEvent({
     actorId: uid,
     action: "groups.session_cancelled",
     targetType: "group_session",
     targetId: `${groupId}:${sessionId}`,
+  });
+  const group = await groupRef(database, groupId).get();
+  await notifyActiveMembersOfSession({
+    database,
+    groupId,
+    groupName: String(group.get("name") ?? "Group"),
+    sessionId,
+    sessionTitle: String(session.get("title") ?? "Session"),
+    sessionType: resolveGroupSessionType(
+      session.get("sessionType"),
+      session.get("activity"),
+    ),
+    actorId: uid,
+    kind: "group_session_cancelled",
   });
   return {ok: true};
 });
@@ -1078,57 +1192,40 @@ export const cancelGroupSession = onCall(callableOptions, async (request) => {
 export const listGroupSessions = onCall(callableOptions, async (request) => {
   const uid = requireUid(request.auth?.uid);
   const groupId = requiredString(asRecord(request.data).groupId, "groupId", 128);
-  const database = getFirestore();
-  const group = await groupRef(database, groupId).get();
-  assertActiveGroup(group);
-  const privacy = String(group.get("privacy")) as GroupPrivacy;
-  const role = activeMemberRole(
-    await memberRef(database, groupId, uid).get(),
-  );
-  if (privacy !== "public" && !role) {
-    throw new HttpsError("permission-denied", "Schedule is private.");
-  }
-  // Public non-members get the upcoming/past schedule preview; members always
-  // see the full schedule regardless of group privacy.
-  const snapshot = await groupRef(database, groupId)
-    .collection("sessions")
-    .where("status", "in", ["scheduled", "cancelled", "completed"])
-    .orderBy("startAt", "asc")
-    .limit(50)
-    .get();
-  return {
-    sessions: snapshot.docs.map((doc) => ({
-      sessionId: doc.id,
-      title: doc.get("title"),
-      activity: doc.get("activity"),
-      description: doc.get("description") ?? "",
-      startAt: doc.get("startAt")?.toDate?.()?.toISOString?.() ?? null,
-      endAt: doc.get("endAt")?.toDate?.()?.toISOString?.() ?? null,
-      location: doc.get("location") ?? {},
-      capacity: doc.get("capacity") ?? 0,
-      status: doc.get("status"),
-      createdBy: doc.get("createdBy"),
-    })),
-  };
+  return listSessionsForViewer({
+    database: getFirestore(),
+    groupId,
+    uid,
+  });
 });
 
 export const getGroupChannels = onCall(callableOptions, async (request) => {
   const uid = requireUid(request.auth?.uid);
   const groupId = requiredString(asRecord(request.data).groupId, "groupId", 128);
-  await requireActiveMember(getFirestore(), groupId, uid);
-  const snapshot = await groupRef(getFirestore(), groupId)
+  const database = getFirestore();
+  await requireActiveMember(database, groupId, uid);
+  await ensureGroupChannelsMaterialized(groupId, database);
+  const snapshot = await groupRef(database, groupId)
     .collection("channels")
     .limit(10)
     .get();
   return {
-    channels: snapshot.docs.map((doc) => ({
-      channelId: doc.id,
-      ...doc.data(),
-      // Explicit C2 marker for clients.
-      viewOnceSupported: false,
-      keepInChatSupported: true,
-      normalMediaSupported: true,
-    })),
+    channels: snapshot.docs.map((doc) => {
+      const type = String(doc.get("type") ?? doc.id);
+      const modes = Array.isArray(doc.get("supportedMediaModes")) ?
+        doc.get("supportedMediaModes") as string[] :
+        [];
+      const viewOnceSupported = type === "member_chat" &&
+        modes.includes("view_once");
+      return {
+        channelId: doc.id,
+        ...doc.data(),
+        phase: doc.get("phase") ?? "c2_live",
+        viewOnceSupported,
+        keepInChatSupported: modes.includes("keep_in_chat") || true,
+        normalMediaSupported: modes.includes("normal") || true,
+      };
+    }),
     contracts: groupChannelContracts(),
   };
 });

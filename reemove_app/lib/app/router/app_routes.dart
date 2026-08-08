@@ -73,17 +73,40 @@ abstract final class AppRoutes {
   static String group(String groupId) =>
       '/discover/groups/${_segment(groupId)}';
 
-  static String editGroup(String groupId) =>
-      '${group(groupId)}/edit';
+  static String editGroup(String groupId) => '${group(groupId)}/edit';
 
-  static String groupMembers(String groupId) =>
-      '${group(groupId)}/members';
+  static String groupMembers(String groupId) => '${group(groupId)}/members';
 
   static String groupJoinRequests(String groupId) =>
       '${group(groupId)}/requests';
 
-  static String groupSchedule(String groupId) =>
-      '${group(groupId)}/schedule';
+  static String groupInvite(String groupId) => '${group(groupId)}/invite';
+
+  static String groupSchedule(String groupId) => '${group(groupId)}/schedule';
+
+  static String groupChannels(String groupId) => '${group(groupId)}/channels';
+
+  static String groupNotificationSettings(String groupId) =>
+      '${group(groupId)}/notifications';
+
+  static String groupChannel(String groupId, String channelType) =>
+      '${groupChannels(groupId)}/${_segment(channelType)}';
+
+  /// Notification / deep-link helper including optional message focus.
+  static String groupChannelDeepLink(
+    String groupId,
+    String channelType, {
+    String? messageId,
+  }) {
+    final String path = groupChannel(groupId, channelType);
+    if (messageId == null || messageId.trim().isEmpty) {
+      return path;
+    }
+    return Uri(
+      path: path,
+      queryParameters: <String, String>{'messageId': messageId.trim()},
+    ).toString();
+  }
 
   static String groupDetail(String groupId) => group(groupId);
 
@@ -203,31 +226,45 @@ abstract final class AppRoutes {
   static String sportAlias(String sportId) => '/s/${_segment(sportId)}';
 
   /// Resolves short aliases (for example `/u/:username`) to canonical routes.
+  /// Also rewrites sports-group notification paths `/groups/:id/...` to the
+  /// shell location under `/discover/groups/:id/...`.
   static String normalizeDeepLinkLocation(String location) {
     final Uri? uri = Uri.tryParse(location);
     final String path = (uri?.path.isNotEmpty ?? false) ? uri!.path : location;
-    final Map<String, String> query = uri?.queryParameters ?? const <String, String>{};
+    final Map<String, String> query =
+        uri?.queryParameters ?? const <String, String>{};
 
     String normalized = path;
-    final Match? profileAliasMatch = RegExp(
-      r'^/u/([^/]+)/?$',
+    final Match? sportsGroupMatch = RegExp(
+      r'^/groups/([^/]+)(/.*)?$',
     ).firstMatch(path);
-    if (profileAliasMatch != null) {
-      normalized = publicProfile(
-        Uri.decodeComponent(profileAliasMatch.group(1)!),
-      );
+    if (sportsGroupMatch != null) {
+      final String groupId = Uri.decodeComponent(sportsGroupMatch.group(1)!);
+      final String suffix = sportsGroupMatch.group(2) ?? '';
+      normalized = '${group(groupId)}$suffix';
     } else {
-      final Match? postAliasMatch = RegExp(r'^/p/([^/]+)/?$').firstMatch(path);
-      if (postAliasMatch != null) {
-        normalized = homePost(Uri.decodeComponent(postAliasMatch.group(1)!));
+      final Match? profileAliasMatch = RegExp(
+        r'^/u/([^/]+)/?$',
+      ).firstMatch(path);
+      if (profileAliasMatch != null) {
+        normalized = publicProfile(
+          Uri.decodeComponent(profileAliasMatch.group(1)!),
+        );
       } else {
-        final Match? conversationAliasMatch = RegExp(
-          r'^/c/([^/]+)/?$',
+        final Match? postAliasMatch = RegExp(
+          r'^/p/([^/]+)/?$',
         ).firstMatch(path);
-        if (conversationAliasMatch != null) {
-          normalized = conversation(
-            Uri.decodeComponent(conversationAliasMatch.group(1)!),
-          );
+        if (postAliasMatch != null) {
+          normalized = homePost(Uri.decodeComponent(postAliasMatch.group(1)!));
+        } else {
+          final Match? conversationAliasMatch = RegExp(
+            r'^/c/([^/]+)/?$',
+          ).firstMatch(path);
+          if (conversationAliasMatch != null) {
+            normalized = conversation(
+              Uri.decodeComponent(conversationAliasMatch.group(1)!),
+            );
+          }
         }
       }
     }
@@ -268,13 +305,15 @@ abstract final class AppRoutes {
   static bool isProtectedAlias(String location) {
     final String path = Uri.tryParse(location)?.path ?? location;
     return <String>[
-      '/p/',
-      '/u/',
-      '/c/',
-      '/s/',
-      '/ch/',
-      '/m/',
-    ].any((String prefix) => path.startsWith(prefix));
+          '/p/',
+          '/u/',
+          '/c/',
+          '/s/',
+          '/ch/',
+          '/m/',
+          '/groups/',
+        ].any((String prefix) => path.startsWith(prefix)) ||
+        path == '/groups';
   }
 
   static bool isAuthenticatedLocation(String location) {
@@ -338,7 +377,12 @@ abstract final class AppRouteNames {
   static const String editGroup = 'edit-group';
   static const String groupMembers = 'group-members';
   static const String groupJoinRequests = 'group-join-requests';
+  static const String groupInvite = 'group-invite';
   static const String groupSchedule = 'group-schedule';
+  static const String groupChannels = 'group-channels';
+  static const String groupChannel = 'group-channel';
+  static const String groupNotificationSettings =
+      'group-notification-settings';
   static const String sports = 'sports';
   static const String sportHub = 'sport-hub';
   static const String sportPlaces = 'sport-places';
@@ -353,7 +397,7 @@ abstract final class AppRouteNames {
   static const String sportTrainer = 'sport-trainer';
   static const String manageTrainerService = 'manage-trainer-service';
   static const String sportLeaderboards = 'sport-leaderboards';
-    static const String create = 'create';
+  static const String create = 'create';
   static const String createFlow = 'create-flow';
   static const String messages = 'messages';
   static const String newConversation = 'new-conversation';

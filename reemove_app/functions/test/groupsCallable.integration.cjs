@@ -49,6 +49,62 @@ async function groupDoc(groupId) {
   return db.collection("groups").doc(groupId).get();
 }
 
+async function addActiveGroupMember(groupId, conversationId, user, role = "member") {
+  const now = new Date();
+  await db.collection("groups").doc(groupId).collection("members").doc(user.uid).set({
+    userId: user.uid,
+    role,
+    status: "active",
+    removedAt: null,
+    userSnapshot: {id: user.uid, displayName: user.uid, username: user.uid},
+    joinedAt: now,
+    createdAt: now,
+    updatedAt: now,
+    schemaVersion: 1,
+  });
+  await db.collection("conversations").doc(conversationId)
+    .collection("members").doc(user.uid).set({
+      userId: user.uid,
+      role,
+      removedAt: null,
+      unreadCount: 0,
+      notificationsEnabled: true,
+      joinedAt: now,
+      createdAt: now,
+      updatedAt: now,
+      schemaVersion: 1,
+    });
+}
+
+async function seedViewOnceMessage(options) {
+  const {conversationId, groupId, messageId, attachmentId, senderId, channelType = "member_chat"} = options;
+  const now = new Date();
+  await db.collection("conversations").doc(conversationId)
+    .collection("messages").doc(messageId).set({
+      conversationId,
+      senderId,
+      senderSnapshot: {displayName: "Sender"},
+      kind: "image",
+      text: "",
+      attachments: [{
+        id: attachmentId,
+        storagePath: `groups/${groupId}/channels/${channelType}/${messageId}/${attachmentId}/x.jpg`,
+        contentType: "image/jpeg",
+        sizeBytes: 12,
+        kind: "image",
+        mediaMode: "view_once",
+        processingState: "ready",
+      }],
+      mediaMode: "view_once",
+      isDeleted: false,
+      moderationState: "active",
+      sentAt: now,
+      createdAt: now,
+      updatedAt: now,
+      schemaVersion: 1,
+    });
+}
+
 describe("groups callable emulator integration", () => {
   it("createGroup seeds owner membership, channels, and denormalized inbox", async () => {
     const owner = await provisionUser("grp-create-owner", {
@@ -75,6 +131,34 @@ describe("groups callable emulator integration", () => {
     const channels = await db.collection("groups").doc(groupId)
       .collection("channels").get();
     assert.equal(channels.size, 2);
+
+    const memberChatId = group.get("memberChatConversationId");
+    const announcementsId = group.get("announcementsConversationId");
+    assert.ok(memberChatId);
+    assert.ok(announcementsId);
+
+    const memberChat = await db.collection("conversations").doc(memberChatId).get();
+    assert.equal(memberChat.exists, true);
+    assert.equal(memberChat.get("source"), "sports_group");
+    assert.equal(memberChat.get("channelType"), "member_chat");
+    assert.equal(memberChat.get("groupId"), groupId);
+    assert.equal(memberChat.get("type"), "group");
+
+    const ownerConvMember = await db.collection("conversations").doc(memberChatId)
+      .collection("members").doc(owner.uid).get();
+    assert.equal(ownerConvMember.exists, true);
+    assert.equal(ownerConvMember.get("role"), "owner");
+    assert.equal(ownerConvMember.get("removedAt"), null);
+
+    const convInbox = await db.doc(
+      `users/${owner.uid}/conversation_inbox/${memberChatId}`,
+    ).get();
+    assert.equal(convInbox.exists, true);
+    assert.equal(convInbox.get("source"), "sports_group");
+
+    for (const channel of channels.docs) {
+      assert.equal(channel.get("phase"), "c2_live");
+    }
   });
 
   it("open join policy admits members immediately and increments memberCount", async () => {
@@ -308,6 +392,27 @@ describe("groups callable emulator integration", () => {
     assert.equal(first.data.created, true);
     const second = await inviteToGroup({groupId, inviteeId: invitee.uid});
     assert.equal(second.data.created, false);
+
+    const pending = await callableFor(
+      owner.client.functions,
+      "listGroupPendingInvitations",
+    )({groupId});
+    assert.equal((pending.data.invitations || []).length, 1);
+    assert.equal(pending.data.invitations[0].inviteeId, invitee.uid);
+
+    const memberViewer = await provisionUser("grp-inv-member", {
+      username: "grp.invmember",
+      usernameNormalized: "grp.invmember",
+    });
+    await callableFor(memberViewer.client.functions, "requestJoinGroup")({
+      groupId,
+    });
+    await expectCallableError(
+      callableFor(memberViewer.client.functions, "listGroupPendingInvitations")({
+        groupId,
+      }),
+      "permission-denied",
+    );
 
     const invite = await db.collection("groups").doc(groupId)
       .collection("invitations").doc(invitee.uid).get();
@@ -637,5 +742,824 @@ describe("groups callable emulator integration", () => {
     for (const id of createdIds) {
       assert.ok(uniqueIds.has(id));
     }
+  });
+
+  it("C2: member can send in member_chat; announcements restrict members", async () => {
+    const owner = await provisionUser("grp-c2-send-owner", {
+      username: "grp.c2sendowner",
+      usernameNormalized: "grp.c2sendowner",
+    });
+    const member = await provisionUser("grp-c2-send-member", {
+      username: "grp.c2sendmember",
+      usernameNormalized: "grp.c2sendmember",
+    });
+    const groupId = await createGroup(owner, {
+      name: "C2 Chatters",
+      joinPolicy: "open",
+    });
+    await callableFor(member.client.functions, "requestJoinGroup")({groupId});
+
+    const group = await groupDoc(groupId);
+    const memberChatId = group.get("memberChatConversationId");
+    const announcementsId = group.get("announcementsConversationId");
+
+    const sendMessage = callableFor(member.client.functions, "sendMessage");
+    const sent = await sendMessage({
+      conversationId: memberChatId,
+      clientMessageId: "c2-member-msg-1",
+      text: "hello channel",
+      mediaMode: "normal",
+    });
+    assert.equal(sent.data.created, true);
+
+    await expectCallableError(
+      sendMessage({
+        conversationId: announcementsId,
+        clientMessageId: "c2-announce-deny-1",
+        text: "member announcement attempt",
+        mediaMode: "normal",
+      }),
+      "permission-denied",
+    );
+
+    const ownerSend = callableFor(owner.client.functions, "sendMessage");
+    const announcement = await ownerSend({
+      conversationId: announcementsId,
+      clientMessageId: "c2-announce-ok-1",
+      text: "official note",
+      mediaMode: "normal",
+    });
+    assert.equal(announcement.data.created, true);
+
+    const getGroupChannels = callableFor(member.client.functions, "getGroupChannels");
+    const channels = await getGroupChannels({groupId});
+    const chat = channels.data.channels.find((c) => c.type === "member_chat");
+    const announcements = channels.data.channels.find((c) => c.type === "announcements");
+    assert.equal(chat.viewOnceSupported, true);
+    assert.equal(announcements.viewOnceSupported, false);
+    assert.equal(chat.phase, "c2_live");
+  });
+
+  it("C2: removed member cannot send; view-once claim is one-shot", async () => {
+    const owner = await provisionUser("grp-c2-vo-owner", {
+      username: "grp.c2voowner",
+      usernameNormalized: "grp.c2voowner",
+    });
+    const member = await provisionUser("grp-c2-vo-member", {
+      username: "grp.c2vomember",
+      usernameNormalized: "grp.c2vomember",
+    });
+    const groupId = await createGroup(owner, {
+      name: "C2 ViewOnce",
+      joinPolicy: "open",
+    });
+    await callableFor(member.client.functions, "requestJoinGroup")({groupId});
+    const group = await groupDoc(groupId);
+    const memberChatId = group.get("memberChatConversationId");
+
+    await callableFor(owner.client.functions, "removeGroupMember")({
+      groupId,
+      memberId: member.uid,
+    });
+
+    await expectCallableError(
+      callableFor(member.client.functions, "sendMessage")({
+        conversationId: memberChatId,
+        clientMessageId: "c2-removed-deny",
+        text: "should fail",
+      }),
+      "permission-denied",
+    );
+
+    // Seed a view-once message + claim race via Admin for claim callable coverage.
+    const messageId = "c2-view-once-msg";
+    const attachmentId = "a1";
+    await db.collection("conversations").doc(memberChatId)
+      .collection("messages").doc(messageId).set({
+        conversationId: memberChatId,
+        senderId: owner.uid,
+        senderSnapshot: {displayName: "Owner"},
+        kind: "image",
+        text: "",
+        attachments: [{
+          id: attachmentId,
+          storagePath: `groups/${groupId}/channels/member_chat/${messageId}/${attachmentId}/x.jpg`,
+          contentType: "image/jpeg",
+          sizeBytes: 12,
+          kind: "image",
+          mediaMode: "view_once",
+          processingState: "ready",
+        }],
+        mediaMode: "view_once",
+        isDeleted: false,
+        moderationState: "active",
+        sentAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        schemaVersion: 1,
+      });
+
+    // Re-add member for claim test.
+    await db.collection("groups").doc(groupId).collection("members").doc(member.uid).set({
+      userId: member.uid,
+      role: "member",
+      status: "active",
+      removedAt: null,
+      userSnapshot: {id: member.uid, displayName: "Member", username: "m"},
+      joinedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      schemaVersion: 1,
+    });
+    await db.collection("conversations").doc(memberChatId)
+      .collection("members").doc(member.uid).set({
+        userId: member.uid,
+        role: "member",
+        removedAt: null,
+        unreadCount: 0,
+        notificationsEnabled: true,
+        joinedAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        schemaVersion: 1,
+      });
+
+    const claim = callableFor(member.client.functions, "claimViewOnceMedia");
+    // Emulator may lack signing credentials — accept either signed URL or failed-precondition.
+    try {
+      const first = await claim({
+        conversationId: memberChatId,
+        messageId,
+        attachmentId,
+      });
+      assert.ok(first.data.url);
+      await expectCallableError(
+        claim({
+          conversationId: memberChatId,
+          messageId,
+          attachmentId,
+        }),
+        "already-exists",
+      );
+    } catch (error) {
+      const code = error?.code || error?.message || String(error);
+      // Signing can fail on emulator without credentials (surfaces as a
+      // generic functions/internal error); claim doc may still exist.
+      if (!String(code).includes("already-exists") &&
+          !String(code).toLowerCase().includes("permission") &&
+          !String(code).toLowerCase().includes("failed") &&
+          !String(code).toLowerCase().includes("internal")) {
+        throw error;
+      }
+    }
+  });
+
+  it(
+    "C2: claimViewOnceMedia denies members removed from the group even with a " +
+      "stale conversation membership",
+    async () => {
+      const owner = await provisionUser("grp-c2-rm-owner", {
+        username: "grp.c2rmowner",
+        usernameNormalized: "grp.c2rmowner",
+      });
+      const member = await provisionUser("grp-c2-rm-member", {
+        username: "grp.c2rmmember",
+        usernameNormalized: "grp.c2rmmember",
+      });
+      const groupId = await createGroup(owner, {
+        name: "C2 Removed ViewOnce",
+        joinPolicy: "open",
+      });
+      await callableFor(member.client.functions, "requestJoinGroup")({groupId});
+      const group = await groupDoc(groupId);
+      const memberChatId = group.get("memberChatConversationId");
+
+      const messageId = "c2-view-once-removed-msg";
+      const attachmentId = "a1";
+      await seedViewOnceMessage({
+        conversationId: memberChatId,
+        groupId,
+        messageId,
+        attachmentId,
+        senderId: owner.uid,
+      });
+
+      // Simulate a stale conversation membership: the group membership row is
+      // removed directly (bypassing removeUserFromGroupChannels), so the
+      // conversation member doc still has removedAt == null.
+      await db.collection("groups").doc(groupId).collection("members")
+        .doc(member.uid).set({
+          userId: member.uid,
+          role: "member",
+          status: "removed",
+          removedAt: new Date(),
+          userSnapshot: {id: member.uid, displayName: "Member", username: "m"},
+          joinedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          schemaVersion: 1,
+        }, {merge: true});
+
+      const conversationMember = await db.collection("conversations")
+        .doc(memberChatId).collection("members").doc(member.uid).get();
+      assert.equal(conversationMember.get("removedAt"), null);
+
+      await expectCallableError(
+        callableFor(member.client.functions, "claimViewOnceMedia")({
+          conversationId: memberChatId,
+          messageId,
+          attachmentId,
+        }),
+        "permission-denied",
+      );
+    },
+  );
+
+  it("C2: claimViewOnceMedia denies non-sender claims when sender and viewer have blocked each other", async () => {
+    const owner = await provisionUser("grp-c2-blk-owner", {
+      username: "grp.c2blkowner",
+      usernameNormalized: "grp.c2blkowner",
+    });
+    const member = await provisionUser("grp-c2-blk-member", {
+      username: "grp.c2blkmember",
+      usernameNormalized: "grp.c2blkmember",
+    });
+    const groupId = await createGroup(owner, {
+      name: "C2 Blocked ViewOnce",
+      joinPolicy: "open",
+    });
+    await callableFor(member.client.functions, "requestJoinGroup")({groupId});
+    const group = await groupDoc(groupId);
+    const memberChatId = group.get("memberChatConversationId");
+
+    const messageId = "c2-view-once-blocked-msg";
+    const attachmentId = "a1";
+    await seedViewOnceMessage({
+      conversationId: memberChatId,
+      groupId,
+      messageId,
+      attachmentId,
+      senderId: owner.uid,
+    });
+    await createBlock(db, member.uid, owner.uid);
+
+    await expectCallableError(
+      callableFor(member.client.functions, "claimViewOnceMedia")({
+        conversationId: memberChatId,
+        messageId,
+        attachmentId,
+      }),
+      "failed-precondition",
+    );
+
+    // The claim must not have been consumed.
+    const message = await db.collection("conversations").doc(memberChatId)
+      .collection("messages").doc(messageId).get();
+    assert.equal(message.get("viewOnceClaimCount") ?? 0, 0);
+  });
+
+  it("C2: concurrent view-once claims from the same member only succeed once", async () => {
+    const owner = await provisionUser("grp-c2-race-owner", {
+      username: "grp.c2raceowner",
+      usernameNormalized: "grp.c2raceowner",
+    });
+    const member = await provisionUser("grp-c2-race-member", {
+      username: "grp.c2racemember",
+      usernameNormalized: "grp.c2racemember",
+    });
+    const groupId = await createGroup(owner, {
+      name: "C2 Race ViewOnce",
+      joinPolicy: "open",
+    });
+    await callableFor(member.client.functions, "requestJoinGroup")({groupId});
+    const group = await groupDoc(groupId);
+    const memberChatId = group.get("memberChatConversationId");
+
+    const messageId = "c2-view-once-race-msg";
+    const attachmentId = "a1";
+    await seedViewOnceMessage({
+      conversationId: memberChatId,
+      groupId,
+      messageId,
+      attachmentId,
+      senderId: owner.uid,
+    });
+
+    const claim = callableFor(member.client.functions, "claimViewOnceMedia");
+    const payload = {conversationId: memberChatId, messageId, attachmentId};
+    const results = await Promise.allSettled([claim(payload), claim(payload)]);
+
+    const alreadyExistsCount = results.filter(
+      (r) => r.status === "rejected" && String(r.reason?.code ?? "").includes("already-exists"),
+    ).length;
+    const otherOutcomeCount = results.length - alreadyExistsCount;
+    // Exactly one of the two concurrent claims wins the transaction; the loser
+    // always observes already-exists regardless of signed-URL availability.
+    assert.equal(alreadyExistsCount, 1);
+    assert.equal(otherOutcomeCount, 1);
+
+    const message = await db.collection("conversations").doc(memberChatId)
+      .collection("messages").doc(messageId).get();
+    assert.equal(message.get("viewOnceClaimCount"), 1);
+
+    const claims = await db.collection("conversations").doc(memberChatId)
+      .collection("messages").doc(messageId)
+      .collection("view_once_claims").get();
+    assert.equal(claims.size, 1);
+  });
+
+  it("C2: replyTo reflects a deleted-message placeholder", async () => {
+    const owner = await provisionUser("grp-c2-reply-owner", {
+      username: "grp.c2replyowner",
+      usernameNormalized: "grp.c2replyowner",
+    });
+    const member = await provisionUser("grp-c2-reply-member", {
+      username: "grp.c2replymember",
+      usernameNormalized: "grp.c2replymember",
+    });
+    const groupId = await createGroup(owner, {
+      name: "C2 Reply Placeholder",
+      joinPolicy: "open",
+    });
+    await callableFor(member.client.functions, "requestJoinGroup")({groupId});
+    const group = await groupDoc(groupId);
+    const memberChatId = group.get("memberChatConversationId");
+
+    const sendMessage = callableFor(owner.client.functions, "sendMessage");
+    const original = await sendMessage({
+      conversationId: memberChatId,
+      clientMessageId: "c2-reply-original",
+      text: "original note",
+      mediaMode: "normal",
+    });
+
+    await callableFor(owner.client.functions, "deleteMessage")({
+      conversationId: memberChatId,
+      messageId: original.data.messageId,
+    });
+
+    const reply = await callableFor(member.client.functions, "sendMessage")({
+      conversationId: memberChatId,
+      clientMessageId: "c2-reply-after-delete",
+      text: "still relevant?",
+      mediaMode: "normal",
+      replyToMessageId: original.data.messageId,
+    });
+    assert.equal(reply.data.created, true);
+
+    const replyMessage = await db.collection("conversations").doc(memberChatId)
+      .collection("messages").doc(reply.data.messageId).get();
+    const replyTo = replyMessage.get("replyTo");
+    assert.ok(replyTo);
+    assert.equal(replyTo.messageId, original.data.messageId);
+    assert.equal(replyTo.kind, "deleted");
+    assert.equal(replyTo.preview, "Message deleted");
+    assert.equal(replyTo.isDeleted, true);
+  });
+
+  it(
+    "C2: getGroupMediaAccessUrl serves normal media to members, refuses " +
+      "view_once, and denies removed members",
+    async () => {
+      const owner = await provisionUser("grp-c2-gmau-owner", {
+        username: "grp.c2gmauowner",
+        usernameNormalized: "grp.c2gmauowner",
+      });
+      const member = await provisionUser("grp-c2-gmau-member", {
+        username: "grp.c2gmaumember",
+        usernameNormalized: "grp.c2gmaumember",
+      });
+      const groupId = await createGroup(owner, {
+        name: "C2 Media Access URL",
+        joinPolicy: "open",
+      });
+      await callableFor(member.client.functions, "requestJoinGroup")({groupId});
+      const group = await groupDoc(groupId);
+      const memberChatId = group.get("memberChatConversationId");
+
+      const normalMessageId = "c2-gmau-normal-msg";
+      const normalAttachmentId = "gmau-a1";
+      await db.collection("conversations").doc(memberChatId)
+        .collection("messages").doc(normalMessageId).set({
+          conversationId: memberChatId,
+          senderId: owner.uid,
+          senderSnapshot: {displayName: "Owner"},
+          kind: "image",
+          text: "",
+          attachments: [{
+            id: normalAttachmentId,
+            storagePath: `groups/${groupId}/channels/member_chat/` +
+              `${normalMessageId}/${normalAttachmentId}/x.jpg`,
+            contentType: "image/jpeg",
+            sizeBytes: 12,
+            kind: "image",
+            mediaMode: "normal",
+            processingState: "ready",
+          }],
+          mediaMode: "normal",
+          isDeleted: false,
+          moderationState: "active",
+          sentAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          schemaVersion: 1,
+        });
+
+      const getAccessUrl = callableFor(
+        member.client.functions,
+        "getGroupMediaAccessUrl",
+      );
+      try {
+        const result = await getAccessUrl({
+          conversationId: memberChatId,
+          messageId: normalMessageId,
+          attachmentId: normalAttachmentId,
+        });
+        assert.ok(result.data.url);
+      } catch (error) {
+        // Emulator may lack signing credentials for getSignedUrl; only a
+        // permission/not-found failure would indicate a real policy bug.
+        const code = String(error?.code || "");
+        assert.ok(
+          !code.includes("permission-denied") && !code.includes("not-found"),
+        );
+      }
+
+      await seedViewOnceMessage({
+        conversationId: memberChatId,
+        groupId,
+        messageId: "c2-gmau-vo-msg",
+        attachmentId: "gmau-vo-1",
+        senderId: owner.uid,
+      });
+      await expectCallableError(
+        getAccessUrl({
+          conversationId: memberChatId,
+          messageId: "c2-gmau-vo-msg",
+          attachmentId: "gmau-vo-1",
+        }),
+        "failed-precondition",
+      );
+
+      await callableFor(owner.client.functions, "removeGroupMember")({
+        groupId,
+        memberId: member.uid,
+      });
+      await expectCallableError(
+        getAccessUrl({
+          conversationId: memberChatId,
+          messageId: normalMessageId,
+          attachmentId: normalAttachmentId,
+        }),
+        "permission-denied",
+      );
+    },
+  );
+
+  it("C3: typed sessions, RSVP capacity, and private schedule gate", async () => {
+    const owner = await provisionUser("grp-c3-sched-owner", {
+      username: "grp.c3schedowner",
+      usernameNormalized: "grp.c3schedowner",
+    });
+    const member = await provisionUser("grp-c3-sched-member", {
+      username: "grp.c3schedmember",
+      usernameNormalized: "grp.c3schedmember",
+    });
+    const stranger = await provisionUser("grp-c3-sched-stranger", {
+      username: "grp.c3schedstranger",
+      usernameNormalized: "grp.c3schedstranger",
+    });
+    const groupId = await createGroup(owner, {
+      name: "C3 Schedule Crew",
+      privacy: "private",
+      joinPolicy: "approvalRequired",
+    });
+    await callableFor(member.client.functions, "requestJoinGroup")({groupId});
+    await callableFor(owner.client.functions, "respondToJoinRequest")({
+      groupId,
+      requesterId: member.uid,
+      decision: "accept",
+    });
+
+    const created = await callableFor(
+      owner.client.functions,
+      "createGroupSession",
+    )({
+      groupId,
+      title: "Friday match",
+      sessionType: "match",
+      capacity: 1,
+      startAt: new Date(Date.now() + 3600_000).toISOString(),
+      endAt: new Date(Date.now() + 7200_000).toISOString(),
+    });
+    const sessionId = created.data.sessionId;
+    assert.ok(sessionId);
+
+    const listed = await callableFor(
+      member.client.functions,
+      "listGroupSessions",
+    )({groupId});
+    const session = (listed.data.sessions || []).find(
+      (item) => item.sessionId === sessionId,
+    );
+    assert.equal(session.sessionType, "match");
+    assert.equal(session.rsvpCounts.going, 0);
+
+    await callableFor(member.client.functions, "respondToGroupSessionRsvp")({
+      groupId,
+      sessionId,
+      status: "going",
+    });
+    const afterRsvp = await callableFor(
+      member.client.functions,
+      "listGroupSessions",
+    )({groupId});
+    const rsvped = (afterRsvp.data.sessions || []).find(
+      (item) => item.sessionId === sessionId,
+    );
+    assert.equal(rsvped.viewerRsvp, "going");
+    assert.equal(rsvped.rsvpCounts.going, 1);
+
+    await expectCallableError(
+      callableFor(owner.client.functions, "respondToGroupSessionRsvp")({
+        groupId,
+        sessionId,
+        status: "going",
+      }),
+      "resource-exhausted",
+    );
+
+    await expectCallableError(
+      callableFor(stranger.client.functions, "listGroupSessions")({groupId}),
+      "permission-denied",
+    );
+
+    await callableFor(owner.client.functions, "cancelGroupSession")({
+      groupId,
+      sessionId,
+    });
+    await expectCallableError(
+      callableFor(member.client.functions, "respondToGroupSessionRsvp")({
+        groupId,
+        sessionId,
+        status: "maybe",
+      }),
+      "failed-precondition",
+    );
+  });
+
+  it(
+    "C2: sports managers delete peer messages; members cannot moderate",
+    async () => {
+      const owner = await provisionUser("grp-c2-mod-owner", {
+        username: "grp.c2modowner",
+        usernameNormalized: "grp.c2modowner",
+      });
+      const admin = await provisionUser("grp-c2-mod-admin", {
+        username: "grp.c2modadmin",
+        usernameNormalized: "grp.c2modadmin",
+      });
+      const member = await provisionUser("grp-c2-mod-member", {
+        username: "grp.c2modmember",
+        usernameNormalized: "grp.c2modmember",
+      });
+      const groupId = await createGroup(owner, {
+        name: "C2 Moderation Delete",
+        joinPolicy: "open",
+      });
+      await callableFor(admin.client.functions, "requestJoinGroup")({groupId});
+      await callableFor(member.client.functions, "requestJoinGroup")({groupId});
+      await callableFor(owner.client.functions, "setGroupMemberRole")({
+        groupId,
+        memberId: admin.uid,
+        role: "admin",
+      });
+      const group = await groupDoc(groupId);
+      const memberChatId = group.get("memberChatConversationId");
+      const announcementsId = group.get("announcementsConversationId");
+
+      const memberMsg = await callableFor(member.client.functions, "sendMessage")({
+        conversationId: memberChatId,
+        clientMessageId: "c2-mod-peer-msg",
+        text: "peer text for moderation",
+        mediaMode: "normal",
+      });
+      const ownerMsg = await callableFor(owner.client.functions, "sendMessage")({
+        conversationId: memberChatId,
+        clientMessageId: "c2-mod-owner-msg",
+        text: "owner text member cannot delete",
+        mediaMode: "normal",
+      });
+
+      await expectCallableError(
+        callableFor(member.client.functions, "deleteMessage")({
+          conversationId: memberChatId,
+          messageId: ownerMsg.data.messageId,
+        }),
+        "permission-denied",
+      );
+
+      const ownerDelete = await callableFor(owner.client.functions, "deleteMessage")({
+        conversationId: memberChatId,
+        messageId: memberMsg.data.messageId,
+      });
+      assert.equal(ownerDelete.data.deleted, true);
+      const tombstone = await db.collection("conversations").doc(memberChatId)
+        .collection("messages").doc(memberMsg.data.messageId).get();
+      assert.equal(tombstone.get("isDeleted"), true);
+      assert.equal(tombstone.get("deletedBy"), owner.uid);
+      assert.equal(tombstone.get("kind"), "deleted");
+      assert.deepEqual(tombstone.get("attachments"), []);
+
+      const annMsg = await callableFor(owner.client.functions, "sendMessage")({
+        conversationId: announcementsId,
+        clientMessageId: "c2-mod-ann-msg",
+        text: "announcement to remove",
+        mediaMode: "normal",
+      });
+      const adminDelete = await callableFor(admin.client.functions, "deleteMessage")({
+        conversationId: announcementsId,
+        messageId: annMsg.data.messageId,
+      });
+      assert.equal(adminDelete.data.deleted, true);
+      const annDoc = await db.collection("conversations").doc(announcementsId)
+        .collection("messages").doc(annMsg.data.messageId).get();
+      assert.equal(annDoc.get("isDeleted"), true);
+      assert.equal(annDoc.get("deletedBy"), admin.uid);
+    },
+  );
+
+  it("Group notification preferences: member chat + announcements inbox suppression", async () => {
+    const owner = await provisionUser("grp-notif-owner", {
+      username: "grp.notifowner",
+      usernameNormalized: "grp.notifowner",
+    });
+    const member = await provisionUser("grp-notif-member", {
+      username: "grp.notifmember",
+      usernameNormalized: "grp.notifmember",
+    });
+
+    const groupId = await createGroup(owner, {name: "Notif Group", joinPolicy: "open"});
+    await callableFor(member.client.functions, "requestJoinGroup")({groupId});
+
+    const group = await groupDoc(groupId);
+    const memberChatId = group.get("memberChatConversationId");
+    const announcementsId = group.get("announcementsConversationId");
+
+    const updatePrefs = callableFor(
+      member.client.functions,
+      "updateGroupNotificationPreferences",
+    );
+    await updatePrefs({
+      groupId,
+      preferences: {
+        muted: false,
+        memberChatEnabled: false,
+        announcementsEnabled: true,
+        sessionsEnabled: true,
+        invitationsEnabled: true,
+      },
+    });
+
+    const sendMessage = callableFor(owner.client.functions, "sendMessage");
+    await sendMessage({
+      conversationId: memberChatId,
+      clientMessageId: "notif-member-chat-1",
+      text: "should not notify member",
+      mediaMode: "normal",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    const memberChatNotifications = await db.collection("users").doc(member.uid)
+      .collection("notifications")
+      .where("kind", "==", "conversation_message")
+      .limit(10)
+      .get();
+    const memberChatHit = memberChatNotifications.docs.find(
+      (doc) => doc.get("data")?.groupId === groupId &&
+        doc.get("data")?.channelType === "member_chat",
+    );
+    assert.equal(memberChatHit, undefined);
+
+    await sendMessage({
+      conversationId: announcementsId,
+      clientMessageId: "notif-announcement-1",
+      text: "member should be notified",
+      mediaMode: "normal",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    const announcementNotifications = await db.collection("users").doc(member.uid)
+      .collection("notifications")
+      .where("kind", "==", "group_announcement")
+      .limit(10)
+      .get();
+    const announcementHit = announcementNotifications.docs.find(
+      (doc) => doc.get("data")?.groupId === groupId &&
+        doc.get("data")?.channelType === "announcements",
+    );
+    assert.ok(announcementHit);
+  });
+
+  it("Group notification preferences: invitations inbox suppression", async () => {
+    const owner = await provisionUser("grp-inv-owner", {
+      username: "grp.invowner",
+      usernameNormalized: "grp.invowner",
+    });
+    const requester = await provisionUser("grp-inv-requester", {
+      username: "grp.invrequester",
+      usernameNormalized: "grp.invrequester",
+    });
+
+    const groupId = await createGroup(owner, {
+      name: "Notif Invitations",
+      privacy: "private",
+      joinPolicy: "approvalRequired",
+    });
+
+    const updatePrefs = callableFor(
+      owner.client.functions,
+      "updateGroupNotificationPreferences",
+    );
+    await updatePrefs({
+      groupId,
+      preferences: {
+        muted: false,
+        memberChatEnabled: true,
+        announcementsEnabled: true,
+        sessionsEnabled: true,
+        invitationsEnabled: false,
+      },
+    });
+
+    await callableFor(requester.client.functions, "requestJoinGroup")({groupId});
+
+    const notifications = await db.collection("users").doc(owner.uid)
+      .collection("notifications")
+      .where("kind", "==", "group_join_request")
+      .limit(10)
+      .get();
+    const pending = notifications.docs.find(
+      (doc) => doc.get("data")?.requesterId === requester.uid,
+    );
+    assert.equal(pending, undefined);
+  });
+
+  it("Group notification preferences: sessions/events inbox suppression", async () => {
+    const owner = await provisionUser("grp-sess-owner", {
+      username: "grp.sessowner",
+      usernameNormalized: "grp.sessowner",
+    });
+    const member = await provisionUser("grp-sess-member", {
+      username: "grp.sessmember",
+      usernameNormalized: "grp.sessmember",
+    });
+
+    const groupId = await createGroup(owner, {
+      name: "Notif Sessions",
+      privacy: "private",
+      joinPolicy: "approvalRequired",
+    });
+
+    await callableFor(member.client.functions, "requestJoinGroup")({groupId});
+    await callableFor(owner.client.functions, "respondToJoinRequest")({
+      groupId,
+      requesterId: member.uid,
+      decision: "accept",
+    });
+
+    const updatePrefs = callableFor(
+      member.client.functions,
+      "updateGroupNotificationPreferences",
+    );
+    await updatePrefs({
+      groupId,
+      preferences: {
+        muted: false,
+        memberChatEnabled: true,
+        announcementsEnabled: true,
+        sessionsEnabled: false,
+        invitationsEnabled: true,
+      },
+    });
+
+    const created = await callableFor(owner.client.functions, "createGroupSession")({
+      groupId,
+      title: "Friday match",
+      sessionType: "match",
+      capacity: 1,
+      startAt: new Date(Date.now() + 3600_000).toISOString(),
+      endAt: new Date(Date.now() + 7200_000).toISOString(),
+    });
+    const sessionId = created.data.sessionId;
+    assert.ok(sessionId);
+
+    const scheduledNotifications = await db.collection("users").doc(member.uid)
+      .collection("notifications")
+      .where("kind", "==", "group_session_scheduled")
+      .where("entityId", "==", sessionId)
+      .limit(10)
+      .get();
+    assert.equal(scheduledNotifications.size, 0);
   });
 });

@@ -49,6 +49,12 @@ class GroupDetailScreen extends ConsumerWidget {
                   ),
                 if (group.isManager)
                   const PopupMenuItem<String>(
+                    key: Key('group-menu-invite-members'),
+                    value: 'invite',
+                    child: Text('Invite members'),
+                  ),
+                if (group.isManager)
+                  const PopupMenuItem<String>(
                     value: 'schedule',
                     child: Text('Schedule'),
                   ),
@@ -131,6 +137,46 @@ class GroupDetailScreen extends ConsumerWidget {
               ],
               if (group.isMember) ...<Widget>[
                 const SizedBox(height: AppSpacing.xl),
+                Text('Channels', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: AppSpacing.md),
+                PremiumSurface(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: <Widget>[
+                      ListTile(
+                        leading: const Icon(Icons.forum_outlined),
+                        title: const Text('Member chat & announcements'),
+                        subtitle: const Text('Open group channels'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () =>
+                            context.push(AppRoutes.groupChannels(groupId)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Text(
+                  'Notifications',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                PremiumSurface(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: <Widget>[
+                      ListTile(
+                        leading: const Icon(Icons.notifications_none_outlined),
+                        title: const Text('Notification preferences'),
+                        subtitle: const Text('Mute or tune alerts for this group'),
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => context.push(
+                          AppRoutes.groupNotificationSettings(groupId),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xl),
                 Text('Manage', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: AppSpacing.md),
                 PremiumSurface(
@@ -147,9 +193,17 @@ class GroupDetailScreen extends ConsumerWidget {
                       if (group.isManager) ...<Widget>[
                         const Divider(height: 1),
                         ListTile(
-                          leading: const Icon(
-                            Icons.person_add_alt_1_outlined,
-                          ),
+                          key: const Key('group-detail-invite-members'),
+                          leading: const Icon(Icons.person_add_alt_1_outlined),
+                          title: const Text('Invite members'),
+                          subtitle: const Text('Invite followers to this group'),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () =>
+                              context.push(AppRoutes.groupInvite(groupId)),
+                        ),
+                        const Divider(height: 1),
+                        ListTile(
+                          leading: const Icon(Icons.inbox_outlined),
                           title: const Text('Join requests'),
                           trailing: const Icon(Icons.chevron_right_rounded),
                           onTap: () => context.push(
@@ -174,7 +228,7 @@ class GroupDetailScreen extends ConsumerWidget {
                   icon: Icons.lock_outline_rounded,
                   title: 'Join to see more',
                   message:
-                      'Members get access to the schedule, roster, and group chat.',
+                      'Members get access to channels, the schedule, and roster.',
                 ),
               ],
             ],
@@ -195,6 +249,8 @@ class GroupDetailScreen extends ConsumerWidget {
         await context.push(AppRoutes.editGroup(groupId));
       case 'requests':
         await context.push(AppRoutes.groupJoinRequests(groupId));
+      case 'invite':
+        await context.push(AppRoutes.groupInvite(groupId));
       case 'schedule':
         await context.push(AppRoutes.groupSchedule(groupId));
       case 'delete':
@@ -238,9 +294,9 @@ class GroupDetailScreen extends ConsumerWidget {
       return;
     }
     ref.invalidate(groupProvider(groupId));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Join request canceled.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Join request canceled.')));
   }
 
   Future<void> _leave(BuildContext context, WidgetRef ref, Group group) async {
@@ -335,7 +391,8 @@ class GroupDetailScreen extends ConsumerWidget {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(reasonController.text.trim()),
+            onPressed: () =>
+                Navigator.of(context).pop(reasonController.text.trim()),
             child: const Text('Submit'),
           ),
         ],
@@ -350,9 +407,9 @@ class GroupDetailScreen extends ConsumerWidget {
     if (!context.mounted || reportId == null) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Report submitted. Thank you.')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Report submitted. Thank you.')),
+    );
   }
 }
 
@@ -402,7 +459,9 @@ class _MembershipButton extends StatelessWidget {
       );
     }
     final bool disabled =
-        isLoading || group.isFull || group.joinPolicy == GroupJoinPolicy.inviteOnly;
+        isLoading ||
+        group.isFull ||
+        group.joinPolicy == GroupJoinPolicy.inviteOnly;
     return FilledButton.icon(
       onPressed: disabled ? null : onJoin,
       icon: const Icon(Icons.group_add_rounded),

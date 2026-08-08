@@ -150,8 +150,21 @@ class _MessagesScreenState extends ConsumerState<MessagesScreen>
                       final ConversationSummary conversation = filtered[index];
                       return ConversationTile(
                         conversation: conversation,
-                        onTap: () =>
-                            context.go(AppRoutes.conversation(conversation.id)),
+                        onTap: () {
+                          if (conversation.isSportsGroupChannel &&
+                              conversation.sportsGroupId != null &&
+                              conversation.sportsChannelType != null &&
+                              conversation.sportsChannelType!.isNotEmpty) {
+                            context.go(
+                              AppRoutes.groupChannel(
+                                conversation.sportsGroupId!,
+                                conversation.sportsChannelType!,
+                              ),
+                            );
+                            return;
+                          }
+                          context.go(AppRoutes.conversation(conversation.id));
+                        },
                       );
                     },
                   ),

@@ -5,6 +5,7 @@ import '../../../core/firebase/firebase_providers.dart';
 import '../../../core/result/result.dart';
 import '../../authentication/application/authentication_providers.dart';
 import '../../authentication/domain/entities/auth_user.dart';
+import '../../authentication/domain/value_objects/auth_validators.dart';
 import '../../feed/application/feed_providers.dart';
 import '../data/repositories/firebase_profile_content_repository.dart';
 import '../data/repositories/firebase_profile_image_repository.dart';
@@ -13,6 +14,7 @@ import '../data/repositories/firebase_profile_social_repository.dart';
 import '../data/repositories/firebase_verification_evidence_repository.dart';
 import '../data/repositories/firebase_verification_repository.dart';
 import '../data/services/platform_profile_image_picker.dart';
+import '../data/services/platform_verification_evidence_picker.dart';
 import '../domain/entities/blocked_profile.dart';
 import '../domain/entities/profile_connection.dart';
 import '../domain/entities/profile_content_page.dart';
@@ -38,6 +40,12 @@ final Provider<ProfileImageRepository> profileImageRepositoryProvider =
 final Provider<ProfileImagePicker> profileImagePickerProvider =
     Provider<ProfileImagePicker>((Ref ref) {
       return PlatformProfileImagePicker();
+    });
+
+final Provider<PlatformVerificationEvidencePicker>
+verificationEvidencePickerProvider =
+    Provider<PlatformVerificationEvidencePicker>((Ref ref) {
+      return PlatformVerificationEvidencePicker();
     });
 
 final Provider<ProfileSocialRepository> profileSocialRepositoryProvider =
@@ -87,7 +95,9 @@ final publicProfileByUsernameProvider =
     ) async {
       final Result<ProfileSurface> surface = await ref
           .watch(profileSocialRepositoryProvider)
-          .getProfileSurfaceByUsername(username);
+          .getProfileSurfaceByUsername(
+            AuthValidators.normalizeUsername(username),
+          );
       return surface.when<UserProfile?>(
         success: (ProfileSurface value) => value.profile,
         failure: (Failure failure) => throw failure,
@@ -101,7 +111,9 @@ final profileSurfaceByUsernameProvider =
     ) async {
       final Result<ProfileSurface> result = await ref
           .watch(profileSocialRepositoryProvider)
-          .getProfileSurfaceByUsername(username);
+          .getProfileSurfaceByUsername(
+            AuthValidators.normalizeUsername(username),
+          );
       return _value(result);
     });
 
@@ -350,6 +362,13 @@ class ProfileActionController extends Notifier<AsyncValue<void>> {
       ref.invalidate(profileConnectionsProvider);
       ref.invalidate(feedControllerProvider);
       ref.invalidate(storyRailProvider);
+    },
+  );
+
+  Future<bool> saveVerificationDraft(VerificationSubmission submission) => _run(
+    () => ref.read(verificationRepositoryProvider).saveDraft(submission),
+    onSuccess: () {
+      ref.invalidate(currentVerificationRequestProvider);
     },
   );
 

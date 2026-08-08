@@ -25,6 +25,27 @@ void main() {
       expect(group.isMember, isTrue);
       expect(group.isOwner, isFalse);
       expect(group.isFull, isFalse);
+      expect(group.canModerateAs('owner'), isTrue);
+      expect(group.canModerateAs(''), isFalse);
+    });
+
+    test('ownerId fallback grants moderation when viewerRole is stale', () {
+      const Group group = Group(
+        groupId: 'g2',
+        name: 'Owner fallback',
+        description: '',
+        category: 'running',
+        privacy: GroupPrivacy.public,
+        joinPolicy: GroupJoinPolicy.open,
+        status: GroupStatus.active,
+        memberCount: 1,
+        capacity: 10,
+        ownerId: 'owner-a',
+        location: GroupLocation.empty,
+        membershipStatus: GroupMembershipStatus.member,
+      );
+      expect(group.canModerateAs('owner-a'), isTrue);
+      expect(group.canModerateAs('member-b'), isFalse);
     });
 
     test('pending request flag', () {

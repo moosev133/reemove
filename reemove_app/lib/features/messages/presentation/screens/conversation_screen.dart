@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,14 +8,28 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/result/result.dart';
+import '../../../../core/debug/staging_diagnostics.dart';
+import '../../../../core/widgets/app_error_view.dart';
 import '../../../authentication/application/authentication_providers.dart';
 import '../../../authentication/domain/entities/auth_user.dart';
+import '../../../feed/application/feed_providers.dart';
+import '../../../groups/application/groups_providers.dart';
+import '../../../groups/application/sports_group_channel_context_resolver.dart';
+import '../../../groups/domain/entities/group.dart';
+import '../../../groups/domain/entities/group_channel.dart';
+import '../../../groups/domain/entities/group_enums.dart';
+import '../../../groups/domain/entities/sports_group_channel_context.dart';
+import '../../../feed/domain/entities/content_report.dart';
+import '../../../feed/presentation/widgets/content_report_reason_sheet.dart';
 import '../../../marketplace/presentation/widgets/marketplace_conversation_banner.dart';
+import '../../../profile/application/profile_providers.dart';
 import '../../application/messaging_providers.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/message.dart';
 import '../../domain/entities/message_attachment_draft.dart';
 import '../../domain/entities/messaging_presence.dart';
+import '../../domain/repositories/messaging_presence_repository.dart';
+import '../conversation_message_action_policy.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/message_composer.dart';
 import '../widgets/presence_badge.dart';
@@ -24,11 +39,13 @@ class ConversationScreen extends ConsumerStatefulWidget {
   const ConversationScreen({
     required this.conversationId,
     this.marketplaceListingId,
+    this.sportsGroupContext,
     super.key,
   });
 
   final String conversationId;
   final String? marketplaceListingId;
+  final SportsGroupChannelContext? sportsGroupContext;
 
   @override
   ConsumerState<ConversationScreen> createState() => _ConversationScreenState();
@@ -46,6 +63,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   bool _hasMore = true;
   String? _userId;
   String? _lastMarkedMessageId;
+  GroupMediaMode _mediaMode = GroupMediaMode.normal;
+  bool _didFocusMessage = false;
+  MessagingPresenceRepository? _presenceRepository;
 
   @override
   void initState() {
@@ -59,23 +79,20 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     _textController.dispose();
     _scrollController.dispose();
     final String? uid = _userId;
-    if (uid != null) {
+    final MessagingPresenceRepository? presence = _presenceRepository;
+    if (uid != null && presence != null) {
       unawaited(
-        ref
-            .read(messagingPresenceRepositoryProvider)
-            .setTyping(
-              conversationId: widget.conversationId,
-              userId: uid,
-              isTyping: false,
-            ),
+        presence.setTyping(
+          conversationId: widget.conversationId,
+          userId: uid,
+          isTyping: false,
+        ),
       );
       unawaited(
-        ref
-            .read(messagingPresenceRepositoryProvider)
-            .leaveConversation(
-              conversationId: widget.conversationId,
-              userId: uid,
-            ),
+        presence.leaveConversation(
+          conversationId: widget.conversationId,
+          userId: uid,
+        ),
       );
     }
     super.dispose();
@@ -87,12 +104,73 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       return;
     }
     _userId = user.uid;
-    await ref
-        .read(messagingPresenceRepositoryProvider)
-        .joinConversation(
-          conversationId: widget.conversationId,
-          userId: user.uid,
+    final MessagingPresenceRepository presence = ref.read(
+      messagingPresenceRepositoryProvider,
+    );
+    _presenceRepository = presence;
+    await presence.joinConversation(
+      conversationId: widget.conversationId,
+      userId: user.uid,
+    );
+  }
+
+  SportsGroupChannelContext? _resolveSportsContext(
+    Conversation? conversation, {
+    Group? watchedGroup,
+    List<GroupChannel>? watchedChannels,
+    String? viewerUid,
+  }) {
+    final String? resolvedViewerUid = viewerUid ??
+        _userId ??
+        ref.read(currentAuthUserProvider).value?.uid;
+    final String? groupId = SportsGroupChannelContextResolver.resolvedGroupId(
+      navigationContext: widget.sportsGroupContext,
+      conversation: conversation,
+    );
+    final Group? group = watchedGroup ??
+        (groupId == null
+            ? null
+            : ref.read(groupProvider(groupId)).value);
+    final List<GroupChannel> channels = watchedChannels ??
+        (groupId == null
+            ? const <GroupChannel>[]
+            : ref.read(groupChannelsProvider(groupId)).value ??
+                const <GroupChannel>[]);
+    final GroupChannelType channelType =
+        SportsGroupChannelContextResolver.resolvedChannelType(
+          navigationContext: widget.sportsGroupContext,
+          conversation: conversation,
         );
+    GroupChannel? channel;
+    for (final GroupChannel item in channels) {
+      if (item.type == channelType) {
+        channel = item;
+        break;
+      }
+    }
+    return SportsGroupChannelContextResolver.resolve(
+      navigationContext: widget.sportsGroupContext,
+      conversation: conversation,
+      group: group,
+      channel: channel,
+      viewerUid: resolvedViewerUid,
+    );
+  }
+
+  Future<String?> _resolveViewerUid() async {
+    if (_userId != null && _userId!.isNotEmpty) {
+      return _userId;
+    }
+    final AuthUser? cached = ref.read(currentAuthUserProvider).value;
+    if (cached != null) {
+      _userId = cached.uid;
+      return cached.uid;
+    }
+    final AuthUser? user = await ref.read(currentAuthUserProvider.future);
+    if (user != null && mounted) {
+      _userId = user.uid;
+    }
+    return user?.uid;
   }
 
   @override
@@ -118,13 +196,73 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         _scheduleRead(all);
         final List<String> typingNames = _typingNames(conversation);
         final MessagingPresenceState presence = _directPresence(conversation);
+        final String? resolvedGroupId =
+            SportsGroupChannelContextResolver.resolvedGroupId(
+              navigationContext: widget.sportsGroupContext,
+              conversation: conversation,
+            );
+        Group? watchedGroup;
+        List<GroupChannel>? watchedChannels;
+        if (resolvedGroupId != null) {
+          watchedGroup = ref.watch(groupProvider(resolvedGroupId)).value;
+          watchedChannels = ref.watch(groupChannelsProvider(resolvedGroupId)).value;
+        }
+        final String? viewerUid =
+            _userId ?? ref.watch(currentAuthUserProvider).value?.uid;
+        final SportsGroupChannelContext? sports = _resolveSportsContext(
+          conversation,
+          watchedGroup: watchedGroup,
+          watchedChannels: watchedChannels,
+          viewerUid: viewerUid,
+        );
+        final bool canPublish = sports?.canPublish ?? true;
+        final bool canReply = canPublish || sports == null;
+        final String? focusMessageId = sports?.focusMessageId;
+        final String title = sports == null
+            ? conversation.title
+            : '${sports.groupName} · ${sports.channelType.displayLabel}';
+        final AsyncValue<List<ConnectivityResult>> connectivity = ref.watch(
+          connectivityResultsProvider,
+        );
+        final bool offline =
+            connectivity.value?.contains(ConnectivityResult.none) ?? false;
+        if (focusMessageId != null &&
+            focusMessageId.isNotEmpty &&
+            !_didFocusMessage &&
+            all.any((ConversationMessage m) => m.id == focusMessageId)) {
+          _didFocusMessage = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || !_scrollController.hasClients) {
+              return;
+            }
+            final int focusIndex = all.indexWhere(
+              (ConversationMessage m) => m.id == focusMessageId,
+            );
+            if (focusIndex < 0) {
+              return;
+            }
+            final double offset = (focusIndex * 96.0).clamp(
+              0.0,
+              _scrollController.position.maxScrollExtent,
+            );
+            unawaited(
+              _scrollController.animateTo(
+                offset,
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOut,
+              ),
+            );
+          });
+        }
         return Scaffold(
           appBar: AppBar(
             titleSpacing: 0,
             title: InkWell(
-              onTap: () => context.go(
-                AppRoutes.conversationDetails(widget.conversationId),
-              ),
+              onTap: sports != null
+                  ? () => context.push(AppRoutes.groupChannels(sports.groupId))
+                  : () => context.go(
+                      AppRoutes.conversationDetails(widget.conversationId),
+                    ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                 child: Row(
@@ -135,12 +273,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            conversation.title,
+                            title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            conversation.isGroup
+                            sports != null
+                                ? (canPublish
+                                      ? 'Group channel'
+                                      : 'Announcements · read only')
+                                : conversation.isGroup
                                 ? '${conversation.memberCount} members'
                                 : presence == MessagingPresenceState.online
                                 ? 'Online'
@@ -150,7 +292,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                         ],
                       ),
                     ),
-                    if (!conversation.isGroup) ...<Widget>[
+                    if (!conversation.isGroup && sports == null) ...<Widget>[
                       const SizedBox(width: AppSpacing.xs),
                       PresenceBadge(state: presence),
                     ],
@@ -159,25 +301,57 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               ),
             ),
             actions: <Widget>[
-              IconButton(
-                tooltip: 'Conversation details',
-                onPressed: () => context.go(
-                  AppRoutes.conversationDetails(widget.conversationId),
+              if (sports != null)
+                IconButton(
+                  tooltip: 'Group channels',
+                  onPressed: () =>
+                      context.push(AppRoutes.groupChannels(sports.groupId)),
+                  icon: const Icon(Icons.forum_outlined),
+                )
+              else
+                IconButton(
+                  tooltip: 'Conversation details',
+                  onPressed: () => context.go(
+                    AppRoutes.conversationDetails(widget.conversationId),
+                  ),
+                  icon: const Icon(Icons.info_outline_rounded),
                 ),
-                icon: const Icon(Icons.info_outline_rounded),
-              ),
             ],
           ),
           body: Column(
             children: <Widget>[
+              if (offline)
+                Material(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  child: const ListTile(
+                    dense: true,
+                    leading: Icon(Icons.wifi_off_rounded),
+                    title: Text(
+                      'You are offline. Sending may fail until you reconnect.',
+                    ),
+                  ),
+                ),
               if (widget.marketplaceListingId != null)
                 MarketplaceConversationBanner(
                   listingId: widget.marketplaceListingId!,
                 ),
+              if (sports != null &&
+                  sports.channelType == GroupChannelType.announcements &&
+                  !canPublish)
+                Material(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: const ListTile(
+                    dense: true,
+                    leading: Icon(Icons.campaign_outlined),
+                    title: Text(
+                      'Only owners and admins can publish announcements.',
+                    ),
+                  ),
+                ),
               Expanded(
                 child: messagesValue.when(
                   data: (_) => all.isEmpty
-                      ? const _EmptyConversation()
+                      ? _EmptyConversation(sports: sports)
                       : ListView.builder(
                           controller: _scrollController,
                           padding: const EdgeInsets.only(
@@ -211,7 +385,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                             final ConversationMessage? previous =
                                 messageIndex > 0 ? all[messageIndex - 1] : null;
                             final bool showSender =
-                                conversation.isGroup &&
+                                (conversation.isGroup || sports != null) &&
                                 (previous == null ||
                                     previous.sender.id != message.sender.id ||
                                     message.sentAt
@@ -220,28 +394,52 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                                         5);
                             return MessageBubble(
                               message: message,
-                              isMine: message.sender.id == _userId,
+                              isMine: message.sender.id == viewerUid,
                               showSender: showSender,
-                              onReply: () => setState(
-                                () => _reply = MessageReplyPreview(
-                                  messageId: message.id,
-                                  senderId: message.sender.id,
-                                  senderDisplayName: message.sender.displayName,
-                                  kind: message.kind,
-                                  preview: message.preview,
-                                ),
-                              ),
-                              onReact: (String emoji) => ref
-                                  .read(
-                                    messagingActionControllerProvider.notifier,
-                                  )
-                                  .toggleReaction(
-                                    conversationId: widget.conversationId,
-                                    messageId: message.id,
-                                    emoji: emoji,
-                                  ),
+                              sportsGroupId: sports?.groupId,
+                              canReply: canReply,
+                              highlighted:
+                                  focusMessageId != null &&
+                                  message.id == focusMessageId,
+                              onReply: canReply
+                                  ? () => setState(
+                                      () => _reply = MessageReplyPreview(
+                                        messageId: message.id,
+                                        senderId: message.sender.id,
+                                        senderDisplayName:
+                                            message.sender.displayName,
+                                        kind: message.kind,
+                                        preview: message.preview,
+                                      ),
+                                    )
+                                  : () {},
+                              onReact: (String emoji) {
+                                unawaited(
+                                  ref
+                                      .read(
+                                        messagingActionControllerProvider
+                                            .notifier,
+                                      )
+                                      .toggleReaction(
+                                        conversationId: widget.conversationId,
+                                        messageId: message.id,
+                                        emoji: emoji,
+                                      ),
+                                );
+                              },
                               onMore: () => _showMessageActions(message),
-                              statusLabel: message.sender.id == _userId
+                              onOpenSenderProfile: () {
+                                final String username = message.sender.username;
+                                if (username.isEmpty) {
+                                  return;
+                                }
+                                unawaited(
+                                  context.push(
+                                    AppRoutes.publicProfile(username),
+                                  ),
+                                );
+                              },
+                              statusLabel: message.sender.id == viewerUid
                                   ? _readStatus(conversation, message)
                                   : null,
                             );
@@ -249,33 +447,64 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                         ),
                   loading: () =>
                       const Center(child: CircularProgressIndicator()),
-                  error: (Object error, _) => Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Text(
-                        error.toString(),
-                        textAlign: TextAlign.center,
-                      ),
+                  error: (Object error, _) => AppErrorView(
+                    title: 'Messages unavailable',
+                    message: error.toString(),
+                    actionLabel: 'Retry',
+                    onAction: () => ref.invalidate(
+                      recentMessagesProvider(widget.conversationId),
                     ),
                   ),
                 ),
               ),
               TypingIndicator(names: typingNames),
-              MessageComposer(
-                controller: _textController,
-                drafts: _drafts,
-                isSending: sending,
-                reply: _reply,
-                uploadProgress: _uploadProgress,
-                onCancelReply: () => setState(() => _reply = null),
-                onChanged: _onTypingChanged,
-                onSend: _send,
-                onPickImage: () => _pickMedia(video: false),
-                onPickVideo: () => _pickMedia(video: true),
-                onRemoveDraft: (String id) {
-                  setState(() => _drafts.removeWhere((item) => item.id == id));
-                },
-              ),
+              if (canPublish)
+                MessageComposer(
+                  controller: _textController,
+                  drafts: _drafts,
+                  isSending: sending,
+                  reply: _reply,
+                  uploadProgress: _uploadProgress,
+                  mediaMode: sports == null ? null : _mediaMode,
+                  supportedMediaModes: sports?.supportedMediaModes,
+                  onMediaModeChanged: sports == null
+                      ? null
+                      : (GroupMediaMode mode) => setState(() {
+                          _mediaMode = mode;
+                          for (int i = 0; i < _drafts.length; i++) {
+                            final MessageAttachmentDraft draft = _drafts[i];
+                            _drafts[i] = MessageAttachmentDraft(
+                              id: draft.id,
+                              bytes: draft.bytes,
+                              fileName: draft.fileName,
+                              contentType: draft.contentType,
+                              kind: draft.kind,
+                              mediaMode: mode,
+                            );
+                          }
+                        }),
+                  onCancelReply: () => setState(() => _reply = null),
+                  onChanged: _onTypingChanged,
+                  onSend: _send,
+                  onPickImage: () => _pickMedia(video: false),
+                  onPickVideo: () => _pickMedia(video: true),
+                  onRemoveDraft: (String id) {
+                    setState(
+                      () => _drafts.removeWhere((item) => item.id == id),
+                    );
+                  },
+                )
+              else
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Text(
+                      'You can read announcements, but only owners and admins can post.',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -284,11 +513,12 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (Object error, _) => Scaffold(
         appBar: AppBar(title: const Text('Conversation')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Text(error.toString(), textAlign: TextAlign.center),
-          ),
+        body: AppErrorView(
+          title: 'Conversation unavailable',
+          message: error.toString(),
+          actionLabel: 'Retry',
+          onAction: () =>
+              ref.invalidate(conversationProvider(widget.conversationId)),
         ),
       ),
     );
@@ -404,7 +634,25 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     result.when<void>(
       success: (MessageAttachmentDraft? draft) {
         if (draft != null) {
-          setState(() => _drafts.add(draft));
+          setState(
+            () => _drafts.add(
+              MessageAttachmentDraft(
+                id: draft.id,
+                bytes: draft.bytes,
+                fileName: draft.fileName,
+                contentType: draft.contentType,
+                kind: draft.kind,
+                mediaMode: _resolveSportsContext(
+                          ref
+                              .read(conversationProvider(widget.conversationId))
+                              .value,
+                        ) ==
+                        null
+                    ? GroupMediaMode.normal
+                    : _mediaMode,
+              ),
+            ),
+          );
         }
       },
       failure: (failure) {
@@ -420,6 +668,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     if (text.isEmpty && _drafts.isEmpty) {
       return;
     }
+    final SportsGroupChannelContext? sports = _resolveSportsContext(
+      ref.read(conversationProvider(widget.conversationId)).value,
+    );
     final bool sent = await ref
         .read(messagingActionControllerProvider.notifier)
         .send(
@@ -427,6 +678,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           text: text,
           drafts: List<MessageAttachmentDraft>.of(_drafts),
           replyToMessageId: _reply?.messageId,
+          sportsGroupId: sports?.groupId,
+          channelType: sports?.channelType.wireValue,
           onProgress: (double progress) {
             if (mounted) {
               setState(() => _uploadProgress = progress);
@@ -462,6 +715,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error?.toString() ?? 'Message could not be sent.'),
+          action: SnackBarAction(label: 'Retry', onPressed: _send),
         ),
       );
     }
@@ -500,35 +754,128 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   }
 
   Future<void> _showMessageActions(ConversationMessage message) async {
-    final bool mine = message.sender.id == _userId;
+    final String? viewerUid = await _resolveViewerUid();
+    final Conversation? conversation =
+        ref.read(conversationProvider(widget.conversationId)).value;
+    final String? resolvedGroupId =
+        SportsGroupChannelContextResolver.resolvedGroupId(
+          navigationContext: widget.sportsGroupContext,
+          conversation: conversation,
+        );
+    final Group? watchedGroup = resolvedGroupId == null
+        ? null
+        : ref.read(groupProvider(resolvedGroupId)).value;
+    final List<GroupChannel>? watchedChannels = resolvedGroupId == null
+        ? null
+        : ref.read(groupChannelsProvider(resolvedGroupId)).value;
+    final SportsGroupChannelContext? sports = _resolveSportsContext(
+      conversation,
+      watchedGroup: watchedGroup,
+      watchedChannels: watchedChannels,
+      viewerUid: viewerUid,
+    );
+    final bool mine = message.sender.id == viewerUid;
+    final bool canReply = sports == null || sports.canPublish;
+    final bool showBlock =
+        !mine && conversation != null && !conversation.isGroup;
+    final bool canModerate = sports?.canModerate ?? false;
+    final bool showOwnDelete = ConversationMessageActionPolicy.showDeleteOwn(
+      isMine: mine,
+      message: message,
+    );
+    final bool showModeratorDelete =
+        ConversationMessageActionPolicy.showModeratorDelete(
+          isMine: mine,
+          message: message,
+          canModerate: canModerate,
+        );
+
+    // Staging-only trace of permission propagation into the message action sheet.
+    final String? navGroupId = widget.sportsGroupContext?.groupId;
+    final bool navCanModerate = widget.sportsGroupContext?.canModerate ?? false;
+    final String? sportsGroupId = sports?.groupId;
+    final bool resolvedCanModerate = canModerate;
+    final Group? resolvedGroup = sportsGroupId == null
+        ? null
+        : ref.read(groupProvider(sportsGroupId)).value;
+
+    StagingDiagnostics.log(
+      'MESSAGE_ACTION_MENU',
+      <String, Object?>{
+        'currentUserUid': _userId,
+        'message.senderId': message.sender.id,
+        'message.isDeleted': message.isDeleted,
+        'conversationId': widget.conversationId,
+        'group.id': sportsGroupId,
+        'group.ownerId': resolvedGroup?.ownerId,
+        'group.viewerRole': resolvedGroup?.viewerRole?.name,
+        'group.membershipStatus': resolvedGroup?.membershipStatus.name,
+        'group.isManager': resolvedGroup?.isManager,
+        'navigationContext.null': widget.sportsGroupContext == null,
+        'navigationContext.groupId': navGroupId,
+        'navigationContext.canModerate': navCanModerate,
+        'resolvedContext.null': sports == null,
+        'SportsGroupChannelContext.canModerate': resolvedCanModerate,
+        'policy.isOwnMessage': mine,
+        'policy.canDeleteMessage': showOwnDelete || showModeratorDelete,
+        'policy.canDeleteModerator': showModeratorDelete,
+        'policy.canDeleteOwn': showOwnDelete,
+        'conversation.memberRole': _userId == null
+            ? null
+            : conversation?.member(_userId!)?.role.name,
+      },
+    );
+
     final String? action = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
       builder: (BuildContext context) => SafeArea(
         child: Wrap(
           children: <Widget>[
-            ListTile(
-              leading: const Icon(Icons.reply_rounded),
-              title: const Text('Reply'),
-              onTap: () => Navigator.pop(context, 'reply'),
-            ),
-            if (mine && !message.isDeleted && message.text.isNotEmpty)
+            if (canReply)
+              ListTile(
+                leading: const Icon(Icons.reply_rounded),
+                title: const Text('Reply'),
+                onTap: () => Navigator.pop(context, 'reply'),
+              ),
+            if (ConversationMessageActionPolicy.showEdit(
+              isMine: mine,
+              message: message,
+            ))
               ListTile(
                 leading: const Icon(Icons.edit_outlined),
                 title: const Text('Edit message'),
                 onTap: () => Navigator.pop(context, 'edit'),
               ),
-            if (mine && !message.isDeleted)
+            if (showOwnDelete)
               ListTile(
+                key: const Key('message-action-delete-own'),
                 leading: const Icon(Icons.delete_outline_rounded),
                 title: const Text('Delete message'),
                 onTap: () => Navigator.pop(context, 'delete'),
               ),
-            if (!mine)
+            if (showModeratorDelete)
+              ListTile(
+                key: const Key('message-action-delete-moderator'),
+                leading: const Icon(Icons.delete_forever_outlined),
+                title: const Text('Delete message'),
+                subtitle: const Text('Remove for everyone (manager)'),
+                onTap: () => Navigator.pop(context, 'moderate_delete'),
+              ),
+            if (ConversationMessageActionPolicy.showReport(
+              isMine: mine,
+              canModerate: canModerate,
+            ))
               ListTile(
                 leading: const Icon(Icons.flag_outlined),
                 title: const Text('Report message'),
                 onTap: () => Navigator.pop(context, 'report'),
+              ),
+            if (showBlock)
+              ListTile(
+                leading: const Icon(Icons.block_outlined),
+                title: Text('Block ${message.sender.displayName}'),
+                onTap: () => Navigator.pop(context, 'block'),
               ),
           ],
         ),
@@ -549,23 +896,115 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       );
     } else if (action == 'edit') {
       await _editMessage(message);
-    } else if (action == 'delete') {
-      await ref
+    } else if (action == 'delete' || action == 'moderate_delete') {
+      final bool isModeration = action == 'moderate_delete';
+      final bool? confirmed = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: Text(isModeration ? 'Remove message?' : 'Delete message?'),
+          content: Text(
+            isModeration
+                ? 'This removes the message for everyone in the channel. '
+                      'Replies will show “Message deleted”.'
+                : 'This removes the message for everyone in the conversation.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(isModeration ? 'Remove' : 'Delete'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) {
+        return;
+      }
+      final bool ok = await ref
           .read(messagingActionControllerProvider.notifier)
           .delete(conversationId: widget.conversationId, messageId: message.id);
+      if (!mounted) {
+        return;
+      }
+      if (ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isModeration ? 'Message removed.' : 'Message deleted.',
+            ),
+          ),
+        );
+      } else {
+        final Object? error = ref.read(messagingActionControllerProvider).error;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error?.toString() ?? 'Could not delete this message.',
+            ),
+          ),
+        );
+      }
     } else if (action == 'report') {
+      final ContentReportReason? reason = await showContentReportReasonSheet(
+        context,
+        title: 'Why are you reporting this message?',
+      );
+      if (!mounted || reason == null) {
+        return;
+      }
       await ref
           .read(messagingActionControllerProvider.notifier)
           .report(
             conversationId: widget.conversationId,
             messageId: message.id,
-            reason: 'other',
+            reason: reason.name,
           );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Report submitted for review.')),
         );
       }
+    } else if (action == 'block') {
+      final bool? confirmed = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: Text('Block ${message.sender.displayName}?'),
+          content: const Text(
+            'They will no longer be able to message you or see your profile.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Block'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) {
+        return;
+      }
+      final bool blocked = await ref
+          .read(profileActionControllerProvider.notifier)
+          .block(message.sender.id);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            blocked
+                ? '${message.sender.displayName} was blocked.'
+                : 'Could not block this profile.',
+          ),
+        ),
+      );
     }
   }
 
@@ -610,30 +1049,43 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 }
 
 class _EmptyConversation extends StatelessWidget {
-  const _EmptyConversation();
+  const _EmptyConversation({this.sports});
+
+  final SportsGroupChannelContext? sports;
 
   @override
   Widget build(BuildContext context) {
+    final String title = sports == null
+        ? 'No messages yet'
+        : sports!.channelType == GroupChannelType.announcements
+        ? 'No announcements yet'
+        : 'Start the conversation';
+    final String message = sports == null
+        ? 'Say hello or share a photo to begin.'
+        : sports!.channelType == GroupChannelType.announcements
+        ? (sports!.canPublish
+              ? 'Publish the first announcement for this group.'
+              : 'Owners and admins will post announcements here.')
+        : 'Share updates with active group members.';
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+        padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Icon(
-              Icons.sports_rounded,
+              sports?.channelType == GroupChannelType.announcements
+                  ? Icons.campaign_outlined
+                  : Icons.chat_bubble_outline_rounded,
               size: 48,
-              color: Theme.of(context).colorScheme.primary,
             ),
             const SizedBox(height: AppSpacing.md),
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: AppSpacing.sm),
             Text(
-              'Start the conversation',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            const Text(
-              'Plan a workout, match, route, or simply say hello.',
+              message,
               textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
         ),

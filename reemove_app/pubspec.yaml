@@ -30,6 +30,7 @@ dependencies:
   google_maps_flutter: ^2.17.1
   google_sign_in: ^7.2.0
   image_picker: ^1.2.3
+  file_selector: ^1.0.3
   package_info_plus: ^10.2.1
   shared_preferences: ^2.5.5
   url_launcher: ^6.3.2

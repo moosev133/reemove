@@ -97,8 +97,7 @@ Group groupFromMap(Object? value) {
     updatedAt: asDateTime(map['updatedAt']),
     viewerRole: tryParseGroupMemberRole(map['viewerRole']),
     memberChatConversationId: map['memberChatConversationId'] as String?,
-    announcementsConversationId:
-        map['announcementsConversationId'] as String?,
+    announcementsConversationId: map['announcementsConversationId'] as String?,
   );
 }
 
@@ -125,6 +124,19 @@ GroupJoinRequest groupJoinRequestFromMap(Object? value) {
   );
 }
 
+GroupPendingInvitation groupPendingInvitationFromMap(Object? value) {
+  final Map<String, dynamic> map = asStringKeyedMap(value);
+  return GroupPendingInvitation(
+    inviteeId: asString(map['inviteeId']),
+    inviterId: asString(map['inviterId']),
+    displayName: asString(map['displayName']),
+    username: asString(map['username']),
+    createdAt: asDateTime(map['createdAt']),
+    avatarUrl: map['avatarUrl'] as String?,
+    inviterDisplayName: map['inviterDisplayName'] as String?,
+  );
+}
+
 MyGroupMembership myGroupMembershipFromMap(Object? value) {
   final Map<String, dynamic> map = asStringKeyedMap(value);
   return MyGroupMembership(
@@ -147,9 +159,13 @@ GroupInvitation groupInvitationFromMap(Object? value) {
 
 GroupSession groupSessionFromMap(Object? value) {
   final Map<String, dynamic> map = asStringKeyedMap(value);
+  final Map<String, dynamic> counts = asStringKeyedMap(map['rsvpCounts']);
   return GroupSession(
     sessionId: asString(map['sessionId']),
     title: asString(map['title']),
+    sessionType: parseGroupSessionType(
+      map['sessionType'] ?? map['activity'],
+    ),
     activity: asString(map['activity']),
     description: asString(map['description']),
     location: groupLocationFromMap(map['location']),
@@ -158,6 +174,12 @@ GroupSession groupSessionFromMap(Object? value) {
     startAt: asDateTime(map['startAt']),
     endAt: asDateTime(map['endAt']),
     createdBy: map['createdBy'] as String?,
+    rsvpCounts: GroupSessionRsvpCounts(
+      going: asInt(counts['going']),
+      maybe: asInt(counts['maybe']),
+      notGoing: asInt(counts['not_going']),
+    ),
+    viewerRsvp: tryParseGroupSessionRsvpStatus(map['viewerRsvp']),
   );
 }
 
@@ -166,13 +188,14 @@ GroupChannel groupChannelFromMap(Object? value) {
   final List<Object?> modes = (map['supportedMediaModes'] as List?) ?? const [];
   final List<Object?> publish = (map['publishRoles'] as List?) ?? const [];
   final List<Object?> read = (map['readRoles'] as List?) ?? const [];
+  final List<GroupMediaMode> supportedMediaModes = modes
+      .map((Object? item) => parseGroupMediaMode(item))
+      .toList(growable: false);
   return GroupChannel(
     channelId: asString(map['channelId']),
     type: parseGroupChannelType(map['type']),
     conversationId: asString(map['conversationId']),
-    supportedMediaModes: modes
-        .map((Object? item) => parseGroupMediaMode(item))
-        .toList(growable: false),
+    supportedMediaModes: supportedMediaModes,
     publishRoles: publish
         .map((Object? item) => tryParseGroupMemberRole(item))
         .whereType<GroupMemberRole>()
@@ -183,7 +206,8 @@ GroupChannel groupChannelFromMap(Object? value) {
         .toList(growable: false),
     normalMediaSupported: map['normalMediaSupported'] as bool? ?? true,
     keepInChatSupported: map['keepInChatSupported'] as bool? ?? true,
-    // Always false in C1; see GroupChannel doc comment.
-    viewOnceSupported: false,
+    viewOnceSupported:
+        map['viewOnceSupported'] as bool? ??
+        supportedMediaModes.contains(GroupMediaMode.viewOnce),
   );
 }

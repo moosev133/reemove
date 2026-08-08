@@ -50,22 +50,29 @@ class FirebaseVerificationRepository implements VerificationRepository {
   }
 
   @override
+  Future<Result<VerificationRequest>> saveDraft(
+    VerificationSubmission submission,
+  ) =>
+      _callAndReload('saveVerificationDraft', submission);
+
+  @override
   Future<Result<VerificationRequest>> submit(
+    VerificationSubmission submission,
+  ) =>
+      _callAndReload('submitVerificationRequest', submission);
+
+  Future<Result<VerificationRequest>> _callAndReload(
+    String callableName,
     VerificationSubmission submission,
   ) async {
     try {
-      await _functions.httpsCallable('submitVerificationRequest').call<dynamic>(
+      await _functions.httpsCallable(callableName).call<dynamic>(
         <String, Object?>{
           'requestedType': submission.requestedType.name,
           'legalName': submission.legalName,
           'summary': submission.summary,
           'evidence': submission.evidence
-              .map(
-                (VerificationEvidence item) => <String, Object?>{
-                  'storagePath': item.storagePath,
-                  'label': item.label,
-                },
-              )
+              .map((VerificationEvidence item) => item.toCallableJson())
               .toList(growable: false),
         },
       );

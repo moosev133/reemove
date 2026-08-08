@@ -4,6 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/release/release_feature_gate.dart';
+import '../../../../core/release/release_providers.dart';
+import '../../../../core/release/release_state.dart';
+import '../../../../core/release/release_control_service.dart';
 import '../../application/authentication_providers.dart';
 import '../widgets/auth_buttons.dart';
 import '../widgets/auth_card.dart';
@@ -17,6 +21,11 @@ class AuthWelcomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<void> action = ref.watch(authActionControllerProvider);
     final bool loading = action.isLoading;
+    final ReleaseState release = ref.watch(releaseStateProvider).maybeWhen(
+          data: (ReleaseState value) => value,
+          orElse: () => ReleaseControlService.loadSafeDefaults(),
+        );
+    final bool showRegistration = ReleaseFeatureGate.showRegistration(release);
 
     return AuthScaffold(
       child: AuthCard(
@@ -29,6 +38,7 @@ class AuthWelcomeScreen extends ConsumerWidget {
               AuthErrorBanner(error: action.error!),
               const SizedBox(height: AppSpacing.md),
             ],
+            if (showRegistration) ...<Widget>[
             AuthPrimaryButton(
               label: 'Create an account',
               icon: Icons.arrow_forward_rounded,
@@ -40,6 +50,7 @@ class AuthWelcomeScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
+            ],
             OutlinedButton(
               onPressed: loading
                   ? null

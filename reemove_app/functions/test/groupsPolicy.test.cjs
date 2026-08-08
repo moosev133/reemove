@@ -71,3 +71,31 @@ test("groupChannelContracts expose C1 media modes including view_once", () => {
   const announcements = contracts.find((c) => c.type === "announcements");
   assert.deepEqual(announcements.publishRoles, ["owner", "admin"]);
 });
+
+test("parseCreateSessionInput accepts typed session kinds", () => {
+  const {
+    parseCreateSessionInput,
+    resolveGroupSessionType,
+  } = require("../lib/groups/groupsPolicy");
+  const parsed = parseCreateSessionInput({
+    groupId: "g1",
+    title: "Tuesday track",
+    sessionType: "training",
+    startAt: "2026-09-01T10:00:00.000Z",
+    endAt: "2026-09-01T11:00:00.000Z",
+  });
+  assert.equal(parsed.sessionType, "training");
+  assert.equal(parsed.activity, "training");
+  assert.equal(resolveGroupSessionType(undefined, "match"), "match");
+  assert.equal(resolveGroupSessionType(undefined, "pickup soccer"), "event");
+  assert.throws(
+    () => parseCreateSessionInput({
+      groupId: "g1",
+      title: "Bad",
+      sessionType: "scrimmage",
+      startAt: "2026-09-01T10:00:00.000Z",
+      endAt: "2026-09-01T11:00:00.000Z",
+    }),
+    (error) => String(error.message || error).includes("sessionType"),
+  );
+});

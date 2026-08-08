@@ -26,6 +26,11 @@ import {
   type NotificationKind,
   type ParsedNotificationPreferences,
 } from "./notificationPolicy";
+import {
+  groupNotificationCategoryForKind,
+  groupNotificationPreferencesDocId,
+  parseStoredGroupNotificationPreferences,
+} from "./groupNotificationPolicy";
 
 const invalidTokenCodes = new Set([
   "messaging/invalid-registration-token",
@@ -329,6 +334,40 @@ export async function createAndDeliverNotification(
   if (!recipient.exists || recipient.get("moderationState") !== "active") {
     return {created: false};
   }
+
+  // Group-specific category suppression.
+  //
+  // When a user disables a category for a group, we do not create the
+  // durable inbox notification at all (no notification doc, no delivery
+  // record).
+  if (input.data) {
+    const groupId = typeof input.data.groupId === "string" ?
+      input.data.groupId.trim() :
+      "";
+    const category = groupNotificationCategoryForKind(input.kind);
+    if (groupId && category) {
+      const groupPrefsSnapshot = await getFirestore().doc(
+        `users/${input.recipientId}/private/${groupNotificationPreferencesDocId(groupId)}`,
+      ).get();
+      const prefs = parseStoredGroupNotificationPreferences(
+        groupPrefsSnapshot.data(),
+      );
+      if (prefs.muted) {
+        return {created: false};
+      }
+      const enabled = category === "member_chat" ?
+        prefs.memberChatEnabled :
+        category === "announcements" ?
+          prefs.announcementsEnabled :
+          category === "sessions" ?
+            prefs.sessionsEnabled :
+            prefs.invitationsEnabled;
+      if (!enabled) {
+        return {created: false};
+      }
+    }
+  }
+
   const actor = input.actor ?? (input.actorId ?
     await actorSnapshot(input.actorId) : undefined);
   const result = await writeNotification(input, actor);

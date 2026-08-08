@@ -1,3 +1,4 @@
+import '../../../groups/domain/entities/sports_group_channel_context.dart';
 import 'messaging_user.dart';
 
 enum ConversationType { direct, group }
@@ -32,6 +33,9 @@ class ConversationSummary {
     required this.updatedAt,
     this.avatarUrl,
     this.lastMessage,
+    this.source,
+    this.sportsGroupId,
+    this.sportsChannelType,
   });
 
   final String id;
@@ -44,6 +48,14 @@ class ConversationSummary {
   final bool isMuted;
   final bool isArchived;
   final DateTime updatedAt;
+  final String? source;
+  final String? sportsGroupId;
+  final String? sportsChannelType;
+
+  bool get isSportsGroupChannel =>
+      source == SportsGroupChannelContext.sourceValue &&
+      sportsGroupId != null &&
+      sportsGroupId!.isNotEmpty;
 }
 
 class Conversation {
@@ -59,6 +71,9 @@ class Conversation {
     required this.updatedAt,
     this.avatarUrl,
     this.lastMessage,
+    this.source,
+    this.sportsGroupId,
+    this.sportsChannelType,
   });
 
   final String id;
@@ -72,8 +87,16 @@ class Conversation {
   final ConversationLastMessage? lastMessage;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String? source;
+  final String? sportsGroupId;
+  final String? sportsChannelType;
 
   bool get isGroup => type == ConversationType.group;
+
+  bool get isSportsGroupChannel =>
+      source == SportsGroupChannelContext.sourceValue &&
+      sportsGroupId != null &&
+      sportsGroupId!.isNotEmpty;
 
   ConversationMember? member(String uid) {
     for (final ConversationMember item in members) {

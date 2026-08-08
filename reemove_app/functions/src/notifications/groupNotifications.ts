@@ -199,3 +199,56 @@ export async function resolveGroupJoinRequestNotifications(
   await batch.commit();
   return matching.length;
 }
+
+export async function deliverGroupSessionNotification(input: {
+  recipientId: string;
+  actorId: string;
+  groupId: string;
+  groupName: string;
+  sessionId: string;
+  sessionTitle: string;
+  sessionType: string;
+  kind:
+    | "group_session_scheduled"
+    | "group_session_updated"
+    | "group_session_cancelled";
+}): Promise<void> {
+  const {username, displayName} = await actorLabel(input.actorId);
+  const typeLabel = input.sessionType === "training" ?
+    "training" :
+    input.sessionType === "match" ?
+      "match" :
+      "event";
+  const titles: Record<typeof input.kind, string> = {
+    group_session_scheduled: "New group session",
+    group_session_updated: "Session updated",
+    group_session_cancelled: "Session cancelled",
+  };
+  const bodies: Record<typeof input.kind, string> = {
+    group_session_scheduled:
+      `${displayName} (@${username}) scheduled ${typeLabel} “${input.sessionTitle}” in ${input.groupName}.`,
+    group_session_updated:
+      `${displayName} (@${username}) updated ${typeLabel} “${input.sessionTitle}” in ${input.groupName}.`,
+    group_session_cancelled:
+      `${displayName} (@${username}) cancelled ${typeLabel} “${input.sessionTitle}” in ${input.groupName}.`,
+  };
+  await createAndDeliverNotification({
+    eventId: `${input.kind}_${input.groupId}_${input.sessionId}_${input.recipientId}`,
+    recipientId: input.recipientId,
+    actorId: input.actorId,
+    category: "events",
+    kind: input.kind,
+    title: titles[input.kind],
+    body: bodies[input.kind],
+    route: `/discover/groups/${encodeURIComponent(input.groupId)}/schedule`,
+    groupKey: `${input.kind}:${input.groupId}:${input.sessionId}`,
+    entityType: "group_session",
+    entityId: input.sessionId,
+    data: {
+      groupId: input.groupId,
+      sessionId: input.sessionId,
+      sessionType: input.sessionType,
+      status: input.kind === "group_session_cancelled" ? "cancelled" : "scheduled",
+    },
+  });
+}

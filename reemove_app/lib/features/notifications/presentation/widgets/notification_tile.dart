@@ -13,6 +13,10 @@ class NotificationTile extends StatelessWidget {
     this.onActorTap,
     this.onAcceptFollowRequest,
     this.onDeclineFollowRequest,
+    this.onAcceptGroupJoinRequest,
+    this.onDeclineGroupJoinRequest,
+    this.onAcceptGroupInvitation,
+    this.onDeclineGroupInvitation,
     super.key,
   });
 
@@ -22,6 +26,10 @@ class NotificationTile extends StatelessWidget {
   final VoidCallback? onActorTap;
   final VoidCallback? onAcceptFollowRequest;
   final VoidCallback? onDeclineFollowRequest;
+  final VoidCallback? onAcceptGroupJoinRequest;
+  final VoidCallback? onDeclineGroupJoinRequest;
+  final VoidCallback? onAcceptGroupInvitation;
+  final VoidCallback? onDeclineGroupInvitation;
 
   bool get _showRequestActions {
     if (notification.kind != AppNotificationKind.followRequest &&
@@ -35,6 +43,28 @@ class NotificationTile extends StatelessWidget {
     if (status == null || status.isEmpty) {
       return true;
     }
+    return status == 'pending';
+  }
+
+  bool get _showGroupJoinRequestActions {
+    if (notification.kind != AppNotificationKind.groupJoinRequest) return false;
+    if (onAcceptGroupJoinRequest == null &&
+        onDeclineGroupJoinRequest == null) {
+      return false;
+    }
+    final String? status = notification.data['status'];
+    if (status == null || status.isEmpty) return true;
+    return status == 'pending';
+  }
+
+  bool get _showGroupInvitationActions {
+    if (notification.kind != AppNotificationKind.groupInvitation) return false;
+    if (onAcceptGroupInvitation == null &&
+        onDeclineGroupInvitation == null) {
+      return false;
+    }
+    final String? status = notification.data['status'];
+    if (status == null || status.isEmpty) return true;
     return status == 'pending';
   }
 
@@ -204,6 +234,46 @@ class NotificationTile extends StatelessWidget {
                         ],
                       ),
                     ],
+                    if (_showGroupJoinRequestActions) ...<Widget>[
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: <Widget>[
+                          if (onAcceptGroupJoinRequest != null)
+                            FilledButton(
+                              onPressed: onAcceptGroupJoinRequest,
+                              child: const Text('Accept'),
+                            ),
+                          if (onAcceptGroupJoinRequest != null &&
+                              onDeclineGroupJoinRequest != null)
+                            const SizedBox(width: AppSpacing.xs),
+                          if (onDeclineGroupJoinRequest != null)
+                            OutlinedButton(
+                              onPressed: onDeclineGroupJoinRequest,
+                              child: const Text('Decline'),
+                            ),
+                        ],
+                      ),
+                    ],
+                    if (_showGroupInvitationActions) ...<Widget>[
+                      const SizedBox(height: AppSpacing.sm),
+                      Row(
+                        children: <Widget>[
+                          if (onAcceptGroupInvitation != null)
+                            FilledButton(
+                              onPressed: onAcceptGroupInvitation,
+                              child: const Text('Accept'),
+                            ),
+                          if (onAcceptGroupInvitation != null &&
+                              onDeclineGroupInvitation != null)
+                            const SizedBox(width: AppSpacing.xs),
+                          if (onDeclineGroupInvitation != null)
+                            OutlinedButton(
+                              onPressed: onDeclineGroupInvitation,
+                              child: const Text('Decline'),
+                            ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -225,6 +295,11 @@ IconData _icon(AppNotificationKind kind) => switch (kind) {
   AppNotificationKind.groupJoinRequest => Icons.group_add_outlined,
   AppNotificationKind.groupJoinAccepted => Icons.groups_outlined,
   AppNotificationKind.groupInvitation => Icons.mail_outline_rounded,
+  AppNotificationKind.groupInvitationAccepted => Icons.mark_email_read_outlined,
+  AppNotificationKind.groupAnnouncement => Icons.campaign_outlined,
+  AppNotificationKind.groupSessionScheduled => Icons.event_available_outlined,
+  AppNotificationKind.groupSessionUpdated => Icons.edit_calendar_outlined,
+  AppNotificationKind.groupSessionCancelled => Icons.event_busy_outlined,
   AppNotificationKind.postLike => Icons.favorite_outline_rounded,
   AppNotificationKind.postComment => Icons.mode_comment_outlined,
   AppNotificationKind.postRepost => Icons.repeat_rounded,

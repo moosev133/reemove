@@ -1,3 +1,4 @@
+import '../../../groups/domain/entities/group_enums.dart';
 import 'messaging_user.dart';
 
 enum MessageKind { text, image, video, audio, system, deleted }
@@ -17,6 +18,8 @@ class MessageAttachment {
     this.width,
     this.height,
     this.durationMs,
+    this.mediaMode = GroupMediaMode.normal,
+    this.viewOnceConsumed = false,
   });
 
   final String id;
@@ -30,6 +33,12 @@ class MessageAttachment {
   final int? height;
   final int? durationMs;
   final AttachmentProcessingState processingState;
+  final GroupMediaMode mediaMode;
+  final bool viewOnceConsumed;
+
+  bool get isProtectedMedia =>
+      mediaMode == GroupMediaMode.keepInChat ||
+      mediaMode == GroupMediaMode.viewOnce;
 }
 
 class MessageReplyPreview {

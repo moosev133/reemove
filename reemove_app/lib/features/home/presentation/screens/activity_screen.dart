@@ -14,6 +14,7 @@ import '../../../../core/widgets/app_error_view.dart';
 import '../../../../core/widgets/app_page_header.dart';
 import '../../../messages/application/messaging_providers.dart';
 import '../../../messages/domain/repositories/messaging_repository.dart';
+import '../../../groups/application/groups_providers.dart';
 import '../../../notifications/application/notification_providers.dart';
 import '../../../notifications/domain/entities/app_notification.dart';
 import '../../../notifications/presentation/widgets/notification_tile.dart';
@@ -184,9 +185,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                       child: NotificationTile(
                         notification: notification,
                         onTap: () => unawaited(_open(context, notification)),
-                        onActorTap: () => unawaited(
-                          _openActorProfile(context, notification),
-                        ),
+                        onActorTap: () =>
+                            unawaited(_openActorProfile(context, notification)),
                         onDelete: () => unawaited(
                           ref
                               .read(
@@ -194,10 +194,20 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                               )
                               .delete(notification.id),
                         ),
-                        onAcceptFollowRequest:
-                            _acceptRequestHandler(notification),
-                        onDeclineFollowRequest:
-                            _declineRequestHandler(notification),
+                        onAcceptFollowRequest: _acceptRequestHandler(
+                          notification,
+                        ),
+                        onDeclineFollowRequest: _declineRequestHandler(
+                          notification,
+                        ),
+                        onAcceptGroupJoinRequest:
+                            _acceptGroupJoinRequestHandler(notification),
+                        onDeclineGroupJoinRequest:
+                            _declineGroupJoinRequestHandler(notification),
+                        onAcceptGroupInvitation:
+                            _acceptGroupInvitationHandler(notification),
+                        onDeclineGroupInvitation:
+                            _declineGroupInvitationHandler(notification),
                       ),
                     ),
                   ),
@@ -250,7 +260,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     if (!context.mounted) {
       return;
     }
-    context.go(notification.route);
+    context.go(AppRoutes.normalizeDeepLinkLocation(notification.route));
   }
 
   Future<void> _openActorProfile(
@@ -273,35 +283,115 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
       context.go(AppRoutes.publicProfile(username));
       return;
     }
-    context.go(notification.route);
+    context.go(AppRoutes.normalizeDeepLinkLocation(notification.route));
   }
 
   VoidCallback? _acceptRequestHandler(AppNotification notification) {
     if (_canRespondToFollowRequest(notification)) {
-      return () => unawaited(
-        _respondToFollowRequest(notification, accept: true),
-      );
+      return () =>
+          unawaited(_respondToFollowRequest(notification, accept: true));
     }
     if (_canRespondToMessageRequest(notification)) {
-      return () => unawaited(
-        _respondToMessageRequest(notification, accept: true),
-      );
+      return () =>
+          unawaited(_respondToMessageRequest(notification, accept: true));
     }
     return null;
   }
 
   VoidCallback? _declineRequestHandler(AppNotification notification) {
     if (_canRespondToFollowRequest(notification)) {
-      return () => unawaited(
-        _respondToFollowRequest(notification, accept: false),
-      );
+      return () =>
+          unawaited(_respondToFollowRequest(notification, accept: false));
     }
     if (_canRespondToMessageRequest(notification)) {
-      return () => unawaited(
-        _respondToMessageRequest(notification, accept: false),
-      );
+      return () =>
+          unawaited(_respondToMessageRequest(notification, accept: false));
     }
     return null;
+  }
+
+  VoidCallback? _acceptGroupJoinRequestHandler(
+    AppNotification notification,
+  ) {
+    if (notification.kind != AppNotificationKind.groupJoinRequest) {
+      return null;
+    }
+    final String? groupId = notification.data['groupId'];
+    final String? requesterId = notification.data['requesterId'];
+    if (groupId == null || groupId.isEmpty) return null;
+    if (requesterId == null || requesterId.isEmpty) return null;
+    final String? status = notification.data['status'];
+    if (status != null && status.isNotEmpty && status != 'pending') {
+      return null;
+    }
+    return () => unawaited(
+          _respondToGroupJoinRequest(
+            notification,
+            accept: true,
+          ),
+        );
+  }
+
+  VoidCallback? _declineGroupJoinRequestHandler(
+    AppNotification notification,
+  ) {
+    if (notification.kind != AppNotificationKind.groupJoinRequest) {
+      return null;
+    }
+    final String? groupId = notification.data['groupId'];
+    final String? requesterId = notification.data['requesterId'];
+    if (groupId == null || groupId.isEmpty) return null;
+    if (requesterId == null || requesterId.isEmpty) return null;
+    final String? status = notification.data['status'];
+    if (status != null && status.isNotEmpty && status != 'pending') {
+      return null;
+    }
+    return () => unawaited(
+          _respondToGroupJoinRequest(
+            notification,
+            accept: false,
+          ),
+        );
+  }
+
+  VoidCallback? _acceptGroupInvitationHandler(
+    AppNotification notification,
+  ) {
+    if (notification.kind != AppNotificationKind.groupInvitation) {
+      return null;
+    }
+    final String? groupId = notification.data['groupId'];
+    if (groupId == null || groupId.isEmpty) return null;
+    final String? status = notification.data['status'];
+    if (status != null && status.isNotEmpty && status != 'pending') {
+      return null;
+    }
+    return () => unawaited(
+          _respondToGroupInvitation(
+            notification,
+            accept: true,
+          ),
+        );
+  }
+
+  VoidCallback? _declineGroupInvitationHandler(
+    AppNotification notification,
+  ) {
+    if (notification.kind != AppNotificationKind.groupInvitation) {
+      return null;
+    }
+    final String? groupId = notification.data['groupId'];
+    if (groupId == null || groupId.isEmpty) return null;
+    final String? status = notification.data['status'];
+    if (status != null && status.isNotEmpty && status != 'pending') {
+      return null;
+    }
+    return () => unawaited(
+          _respondToGroupInvitation(
+            notification,
+            accept: false,
+          ),
+        );
   }
 
   bool _canRespondToFollowRequest(AppNotification notification) {
@@ -385,9 +475,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
     if (requesterId == null || requesterId.isEmpty) {
       return;
     }
-    final MessagingRepository messaging = ref.read(
-      messagingRepositoryProvider,
-    );
+    final MessagingRepository messaging = ref.read(messagingRepositoryProvider);
     final Result<String?> result = await messaging.respondToMessageRequest(
       requesterId: requesterId,
       decision: accept ? 'accept' : 'decline',
@@ -409,9 +497,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         if (!mounted) {
           return;
         }
-        if (accept &&
-            conversationId != null &&
-            conversationId.isNotEmpty) {
+        if (accept && conversationId != null && conversationId.isNotEmpty) {
           context.go(AppRoutes.conversation(conversationId));
           return;
         }
@@ -432,6 +518,107 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(failure.message)));
+      },
+    );
+  }
+
+  Future<void> _respondToGroupJoinRequest(
+    AppNotification notification, {
+    required bool accept,
+  }) async {
+    final String? groupId = notification.data['groupId'];
+    final String? requesterId = notification.data['requesterId'];
+    if (groupId == null || groupId.isEmpty) return;
+    if (requesterId == null || requesterId.isEmpty) return;
+
+    final Result<void> result = await ref
+        .read(groupsRepositoryProvider)
+        .respondToJoinRequest(
+      groupId: groupId,
+      requesterId: requesterId,
+      approve: accept,
+    );
+
+    result.when(
+      success: (_) {
+        unawaited(
+          ref
+              .read(notificationActionControllerProvider.notifier)
+              .markRead(notification.id),
+        );
+        unawaited(
+          ref
+              .read(notificationActionControllerProvider.notifier)
+              .delete(notification.id),
+        );
+        ref.invalidate(notificationsProvider);
+        ref.invalidate(notificationUnreadCountProvider);
+        ref.invalidate(groupJoinRequestsProvider(groupId));
+        ref.invalidate(groupMembersProvider(groupId));
+        ref.invalidate(groupProvider(groupId));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              accept ? 'Join request accepted.' : 'Join request declined.',
+            ),
+          ),
+        );
+      },
+      failure: (Failure failure) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(failure.message)),
+        );
+      },
+    );
+  }
+
+  Future<void> _respondToGroupInvitation(
+    AppNotification notification, {
+    required bool accept,
+  }) async {
+    final String? groupId = notification.data['groupId'];
+    if (groupId == null || groupId.isEmpty) return;
+
+    final Result<void> result = await ref
+        .read(groupsRepositoryProvider)
+        .respondToGroupInvitation(
+      groupId: groupId,
+      accept: accept,
+    );
+
+    result.when(
+      success: (_) {
+        unawaited(
+          ref
+              .read(notificationActionControllerProvider.notifier)
+              .markRead(notification.id),
+        );
+        unawaited(
+          ref
+              .read(notificationActionControllerProvider.notifier)
+              .delete(notification.id),
+        );
+        ref.invalidate(notificationsProvider);
+        ref.invalidate(notificationUnreadCountProvider);
+        ref.invalidate(myGroupInvitationsProvider);
+        ref.invalidate(myGroupsProvider);
+        ref.invalidate(groupProvider(groupId));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              accept ? 'Invitation accepted.' : 'Invitation declined.',
+            ),
+          ),
+        );
+      },
+      failure: (Failure failure) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(failure.message)),
+        );
       },
     );
   }

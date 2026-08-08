@@ -12,11 +12,15 @@ import {
 import {
   collection,
   doc,
+  documentId,
   getDoc,
   getDocs,
   limit,
+  orderBy,
   query,
   setDoc,
+  updateDoc,
+  where,
 } from "firebase/firestore";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -137,6 +141,48 @@ describe("private messaging metadata rules", () => {
     );
   });
 
+  it("denies reaction whereIn without limit (inbox-ok / thread-fail regression)", async () => {
+    const alice = testEnv.authenticatedContext("alice").firestore();
+    // Mirrors the Flutter bug: inbox preview is readable, then opening the
+    // conversation hydrates reactions via documentId whereIn with no limit.
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(alice, "users/alice/conversation_inbox"),
+          where("isArchived", "==", false),
+          orderBy("updatedAt", "desc"),
+          limit(50),
+        ),
+      ),
+    );
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(alice, "conversations/conversation-1/messages"),
+          orderBy("sentAt", "desc"),
+          limit(40),
+        ),
+      ),
+    );
+    await assertFails(
+      getDocs(
+        query(
+          collection(alice, "users/alice/message_reactions"),
+          where(documentId(), "in", ["conversation-1--message-1"]),
+        ),
+      ),
+    );
+    await assertSucceeds(
+      getDocs(
+        query(
+          collection(alice, "users/alice/message_reactions"),
+          where(documentId(), "in", ["conversation-1--message-1"]),
+          limit(1),
+        ),
+      ),
+    );
+  });
+
   it("prevents other users and clients from reading or writing private metadata", async () => {
     const bob = testEnv.authenticatedContext("bob").firestore();
     const alice = testEnv.authenticatedContext("alice").firestore();
@@ -144,6 +190,151 @@ describe("private messaging metadata rules", () => {
     await assertFails(
       setDoc(doc(alice, "users/alice/conversation_inbox/forged"), {
         unreadCount: 0,
+      }),
+    );
+  });
+});
+
+describe("sports group channel message history", () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      const now = new Date("2026-08-04T12:00:00Z");
+      await Promise.all([
+        setDoc(doc(db, "conversations/c2-member-chat"), {
+          type: "group",
+          source: "sports_group",
+          groupId: "c2-manual-test",
+          channelType: "member_chat",
+          title: "C2-MANUAL-TEST",
+          createdBy: "owner-a",
+          memberCount: 2,
+          moderationState: "active",
+          createdAt: now,
+          updatedAt: now,
+          schemaVersion: 1,
+        }),
+        setDoc(doc(db, "conversations/c2-member-chat/members/owner-a"), {
+          userId: "owner-a",
+          role: "owner",
+          removedAt: null,
+          joinedAt: now,
+        }),
+        setDoc(doc(db, "conversations/c2-member-chat/members/member-b"), {
+          userId: "member-b",
+          role: "member",
+          removedAt: null,
+          joinedAt: now,
+        }),
+        setDoc(doc(db, "conversations/c2-member-chat/messages/step2"), {
+          conversationId: "c2-member-chat",
+          senderId: "member-b",
+          kind: "text",
+          text: "C2 step2 member text",
+          sentAt: now,
+          isDeleted: false,
+          moderationState: "active",
+        }),
+        setDoc(doc(db, "users/owner-a/conversation_inbox/c2-member-chat"), {
+          conversationId: "c2-member-chat",
+          type: "group",
+          source: "sports_group",
+          groupId: "c2-manual-test",
+          channelType: "member_chat",
+          title: "C2-MANUAL-TEST",
+          isArchived: false,
+          unreadCount: 1,
+          lastMessage: {
+            id: "step2",
+            preview: "C2 step2 member text",
+            sentAt: now,
+          },
+          updatedAt: now,
+        }),
+        setDoc(doc(db, "users/member-b/conversation_inbox/c2-member-chat"), {
+          conversationId: "c2-member-chat",
+          type: "group",
+          source: "sports_group",
+          channelType: "member_chat",
+          title: "C2-MANUAL-TEST",
+          isArchived: false,
+          unreadCount: 0,
+          updatedAt: now,
+        }),
+      ]);
+    });
+  });
+
+  it("owner can read inbox preview and list the same conversation messages", async () => {
+    const owner = testEnv.authenticatedContext("owner-a").firestore();
+    const inbox = await assertSucceeds(
+      getDocs(
+        query(
+          collection(owner, "users/owner-a/conversation_inbox"),
+          where("isArchived", "==", false),
+          orderBy("updatedAt", "desc"),
+          limit(50),
+        ),
+      ),
+    );
+    assert.equal(inbox.size, 1);
+    assert.equal(inbox.docs[0].id, "c2-member-chat");
+
+    const messages = await assertSucceeds(
+      getDocs(
+        query(
+          collection(owner, "conversations/c2-member-chat/messages"),
+          orderBy("sentAt", "desc"),
+          orderBy(documentId(), "desc"),
+          limit(40),
+        ),
+      ),
+    );
+    assert.equal(messages.size, 1);
+    assert.equal(messages.docs[0].id, "step2");
+  });
+
+  it("active member can list messages; stranger and removed cannot", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, "conversations/c2-member-chat/members/removed-c"), {
+        userId: "removed-c",
+        role: "member",
+        removedAt: new Date("2026-08-04T13:00:00Z"),
+        joinedAt: new Date("2026-08-04T11:00:00Z"),
+      });
+    });
+
+    const member = testEnv.authenticatedContext("member-b").firestore();
+    const stranger = testEnv.authenticatedContext("stranger").firestore();
+    const removed = testEnv.authenticatedContext("removed-c").firestore();
+    const messagesQuery = (db) =>
+      query(
+        collection(db, "conversations/c2-member-chat/messages"),
+        orderBy("sentAt", "desc"),
+        limit(40),
+      );
+
+    await assertSucceeds(getDocs(messagesQuery(member)));
+    await assertFails(getDocs(messagesQuery(stranger)));
+    await assertFails(getDocs(messagesQuery(removed)));
+  });
+
+  it("clients cannot tombstone messages directly (moderation is server-only)", async () => {
+    const owner = testEnv.authenticatedContext("owner-a").firestore();
+    const member = testEnv.authenticatedContext("member-b").firestore();
+    await assertFails(
+      updateDoc(doc(owner, "conversations/c2-member-chat/messages/step2"), {
+        isDeleted: true,
+        kind: "deleted",
+        text: "",
+        deletedBy: "owner-a",
+      }),
+    );
+    await assertFails(
+      updateDoc(doc(member, "conversations/c2-member-chat/messages/step2"), {
+        isDeleted: true,
+        kind: "deleted",
       }),
     );
   });

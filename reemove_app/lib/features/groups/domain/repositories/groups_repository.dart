@@ -53,6 +53,9 @@ abstract class GroupsRepository {
   Future<Result<void>> deleteGroup(String groupId);
   Future<Result<List<GroupMember>>> listGroupMembers(String groupId);
   Future<Result<List<GroupJoinRequest>>> listGroupJoinRequests(String groupId);
+  Future<Result<List<GroupPendingInvitation>>> listGroupPendingInvitations(
+    String groupId,
+  );
   Future<Result<List<GroupInvitation>>> listMyGroupInvitations();
   Future<Result<String>> createGroupSession(CreateGroupSessionRequest request);
   Future<Result<void>> updateGroupSession(UpdateGroupSessionRequest request);
@@ -61,6 +64,11 @@ abstract class GroupsRepository {
     required String sessionId,
   });
   Future<Result<List<GroupSession>>> listGroupSessions(String groupId);
+  Future<Result<void>> respondToGroupSessionRsvp({
+    required String groupId,
+    required String sessionId,
+    required GroupSessionRsvpStatus status,
+  });
   Future<Result<List<GroupChannel>>> getGroupChannels(String groupId);
   Future<Result<String>> reportGroup({
     required String groupId,

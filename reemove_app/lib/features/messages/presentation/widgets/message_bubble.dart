@@ -16,6 +16,10 @@ class MessageBubble extends StatelessWidget {
     required this.onMore,
     super.key,
     this.statusLabel,
+    this.sportsGroupId,
+    this.canReply = true,
+    this.highlighted = false,
+    this.onOpenSenderProfile,
   });
 
   final ConversationMessage message;
@@ -25,6 +29,10 @@ class MessageBubble extends StatelessWidget {
   final ValueChanged<String> onReact;
   final VoidCallback onMore;
   final String? statusLabel;
+  final String? sportsGroupId;
+  final bool canReply;
+  final bool highlighted;
+  final VoidCallback? onOpenSenderProfile;
 
   @override
   Widget build(BuildContext context) {

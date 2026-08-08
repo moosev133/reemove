@@ -8,6 +8,7 @@ import '../../../../core/constants/firestore_paths.dart';
 import '../../../../core/database/firestore_parser.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/result/result.dart';
+import '../../../groups/domain/entities/group_enums.dart';
 import '../../domain/entities/conversation.dart';
 import '../../domain/entities/message.dart';
 import '../../domain/entities/messaging_action.dart';
@@ -172,12 +173,22 @@ class FirebaseMessagingRepository implements MessagingRepository {
             (QueryDocumentSnapshot<MessageDto> item) => item.id,
           ),
         );
+        final Map<String, Set<String>> viewOnceClaims =
+            await _viewerViewOnceClaims(
+              viewerId,
+              conversationId,
+              snapshot.docs.map(
+                (QueryDocumentSnapshot<MessageDto> item) => item.data(),
+              ),
+            );
         final List<ConversationMessage> messages =
             snapshot.docs
                 .map(
                   (QueryDocumentSnapshot<MessageDto> item) =>
                       item.data().toDomain(
                         viewerReactions: reactions[item.id] ?? const <String>{},
+                        consumedViewOnceAttachmentIds:
+                            viewOnceClaims[item.id] ?? const <String>{},
                       ),
                 )
                 .toList(growable: true)
@@ -223,12 +234,22 @@ class FirebaseMessagingRepository implements MessagingRepository {
         conversationId,
         snapshot.docs.map((QueryDocumentSnapshot<MessageDto> item) => item.id),
       );
+      final Map<String, Set<String>> viewOnceClaims =
+          await _viewerViewOnceClaims(
+            viewerId,
+            conversationId,
+            snapshot.docs.map(
+              (QueryDocumentSnapshot<MessageDto> item) => item.data(),
+            ),
+          );
       final List<ConversationMessage> items =
           snapshot.docs
               .map(
                 (QueryDocumentSnapshot<MessageDto> item) =>
                     item.data().toDomain(
                       viewerReactions: reactions[item.id] ?? const <String>{},
+                      consumedViewOnceAttachmentIds:
+                          viewOnceClaims[item.id] ?? const <String>{},
                     ),
               )
               .toList(growable: true)
@@ -287,7 +308,9 @@ class FirebaseMessagingRepository implements MessagingRepository {
       }
       return const Success<String?>(null);
     } on FirebaseFunctionsException catch (error) {
-      return FailureResult<String?>(MessagingFailureMapper.fromFunctions(error));
+      return FailureResult<String?>(
+        MessagingFailureMapper.fromFunctions(error),
+      );
     } on Object catch (error) {
       return FailureResult<String?>(MessagingFailureMapper.unexpected(error));
     }
@@ -315,7 +338,9 @@ class FirebaseMessagingRepository implements MessagingRepository {
       }
       return const Success<String?>(null);
     } on FirebaseFunctionsException catch (error) {
-      return FailureResult<String?>(MessagingFailureMapper.fromFunctions(error));
+      return FailureResult<String?>(
+        MessagingFailureMapper.fromFunctions(error),
+      );
     } on Object catch (error) {
       return FailureResult<String?>(MessagingFailureMapper.unexpected(error));
     }
@@ -374,6 +399,7 @@ class FirebaseMessagingRepository implements MessagingRepository {
             'conversationId': request.conversationId,
             'clientMessageId': request.clientMessageId,
             'text': request.text,
+            'mediaMode': request.mediaMode.wireValue,
             'attachments': request.attachments
                 .map((item) => item.toRequestMap())
                 .toList(growable: false),
@@ -517,6 +543,7 @@ class FirebaseMessagingRepository implements MessagingRepository {
       return const <String, Set<String>>{};
     }
     final Map<String, Set<String>> result = <String, Set<String>>{};
+    try {
     for (int start = 0; start < ids.length; start += 30) {
       final List<String> slice = ids.sublist(
         start,
@@ -525,11 +552,15 @@ class FirebaseMessagingRepository implements MessagingRepository {
       final List<String> keys = slice
           .map((String messageId) => '$conversationId--$messageId')
           .toList(growable: false);
+        // Rules require request.query.limit <= 100. A whereIn without limit is
+        // denied (permission-denied) even for the document owner — which made
+        // inbox previews work while opening the same thread failed.
       final QuerySnapshot<FirestoreMap> snapshot = await _firestore
           .collection(FirestoreCollections.users)
           .doc(viewerId)
           .collection(FirestoreCollections.messageReactions)
           .where(FieldPath.documentId, whereIn: keys)
+            .limit(keys.length.clamp(1, 100).toInt())
           .get();
       for (final QueryDocumentSnapshot<FirestoreMap> document
           in snapshot.docs) {
@@ -542,7 +573,56 @@ class FirebaseMessagingRepository implements MessagingRepository {
           result[messageId] = emojis.toSet();
         }
       }
+      }
+    } on FirebaseException {
+      // Reaction hydration is best-effort; never block message history.
+      return result;
     }
+    return result;
+  }
+
+  /// Loads the viewer's own view-once claim docs so UI can show consumed state.
+  Future<Map<String, Set<String>>> _viewerViewOnceClaims(
+    String viewerId,
+    String conversationId,
+    Iterable<MessageDto> messages,
+  ) async {
+    final List<MapEntry<String, String>> targets = <MapEntry<String, String>>[];
+    for (final MessageDto message in messages) {
+      for (final MessageAttachmentDto attachment in message.attachments) {
+        if (attachment.mediaMode == 'view_once' &&
+            !attachment.viewOnceConsumed) {
+          targets.add(MapEntry<String, String>(message.id, attachment.id));
+        }
+      }
+    }
+    if (targets.isEmpty) {
+      return const <String, Set<String>>{};
+    }
+    final Map<String, Set<String>> result = <String, Set<String>>{};
+    final CollectionReference<MessageDto> messagesRef = _messages(
+      conversationId,
+    );
+    await Future.wait(
+      targets.map((MapEntry<String, String> record) async {
+        final String messageId = record.key;
+        final String attachmentId = record.value;
+        final String claimId = '$viewerId--$attachmentId';
+        try {
+          final DocumentSnapshot<FirestoreMap> claim = await messagesRef
+              .doc(messageId)
+              .collection('view_once_claims')
+              .doc(claimId)
+              .get();
+          if (claim.exists) {
+            result.putIfAbsent(messageId, () => <String>{}).add(attachmentId);
+          }
+        } on FirebaseException {
+          // Claim reads are best-effort; missing permission should not fail
+          // the message stream.
+        }
+      }),
+    );
     return result;
   }
 

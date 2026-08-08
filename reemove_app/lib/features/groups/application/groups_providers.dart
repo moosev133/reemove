@@ -22,15 +22,19 @@ final Provider<GroupsRepository> groupsRepositoryProvider =
     });
 
 /// `null` category means "all categories".
-final discoverableGroupsProvider =
-    FutureProvider.family<List<Group>, String?>((Ref ref, String? category) async {
-      final Result<List<Group>> result = await ref
-          .watch(groupsRepositoryProvider)
-          .listDiscoverableGroups(category: category);
-      return _value(result);
-    });
+final discoverableGroupsProvider = FutureProvider.family<List<Group>, String?>((
+  Ref ref,
+  String? category,
+) async {
+  final Result<List<Group>> result = await ref
+      .watch(groupsRepositoryProvider)
+      .listDiscoverableGroups(category: category);
+  return _value(result);
+});
 
-final myGroupsProvider = FutureProvider<List<MyGroupMembership>>((Ref ref) async {
+final myGroupsProvider = FutureProvider<List<MyGroupMembership>>((
+  Ref ref,
+) async {
   final Result<List<MyGroupMembership>> result = await ref
       .watch(groupsRepositoryProvider)
       .listMyGroups();
@@ -68,6 +72,17 @@ final groupJoinRequestsProvider =
       return _value(result);
     });
 
+final groupPendingInvitationsProvider =
+    FutureProvider.family<List<GroupPendingInvitation>, String>((
+      Ref ref,
+      String groupId,
+    ) async {
+      final Result<List<GroupPendingInvitation>> result = await ref
+          .watch(groupsRepositoryProvider)
+          .listGroupPendingInvitations(groupId);
+      return _value(result);
+    });
+
 final myGroupInvitationsProvider = FutureProvider<List<GroupInvitation>>((
   Ref ref,
 ) async {
@@ -77,25 +92,23 @@ final myGroupInvitationsProvider = FutureProvider<List<GroupInvitation>>((
   return _value(result);
 });
 
-final groupSessionsProvider = FutureProvider.family<List<GroupSession>, String>((
-  Ref ref,
-  String groupId,
-) async {
-  final Result<List<GroupSession>> result = await ref
-      .watch(groupsRepositoryProvider)
-      .listGroupSessions(groupId);
-  return _value(result);
-});
+final groupSessionsProvider = FutureProvider.family<List<GroupSession>, String>(
+  (Ref ref, String groupId) async {
+    final Result<List<GroupSession>> result = await ref
+        .watch(groupsRepositoryProvider)
+        .listGroupSessions(groupId);
+    return _value(result);
+  },
+);
 
-final groupChannelsProvider = FutureProvider.family<List<GroupChannel>, String>((
-  Ref ref,
-  String groupId,
-) async {
-  final Result<List<GroupChannel>> result = await ref
-      .watch(groupsRepositoryProvider)
-      .getGroupChannels(groupId);
-  return _value(result);
-});
+final groupChannelsProvider = FutureProvider.family<List<GroupChannel>, String>(
+  (Ref ref, String groupId) async {
+    final Result<List<GroupChannel>> result = await ref
+        .watch(groupsRepositoryProvider)
+        .getGroupChannels(groupId);
+    return _value(result);
+  },
+);
 
 final groupsActionControllerProvider =
     NotifierProvider<GroupsActionController, AsyncValue<void>>(
@@ -142,11 +155,13 @@ class GroupsActionController extends Notifier<AsyncValue<void>> {
     required String requesterId,
     required bool approve,
   }) => _resultAction(
-    () => ref.read(groupsRepositoryProvider).respondToJoinRequest(
-      groupId: groupId,
-      requesterId: requesterId,
-      approve: approve,
-    ),
+    () => ref
+        .read(groupsRepositoryProvider)
+        .respondToJoinRequest(
+          groupId: groupId,
+          requesterId: requesterId,
+          approve: approve,
+        ),
     onSuccess: () {
       ref.invalidate(groupJoinRequestsProvider(groupId));
       ref.invalidate(groupMembersProvider(groupId));
@@ -161,6 +176,8 @@ class GroupsActionController extends Notifier<AsyncValue<void>> {
     () => ref
         .read(groupsRepositoryProvider)
         .inviteToGroup(groupId: groupId, inviteeId: inviteeId),
+    onSuccess: () =>
+        ref.invalidate(groupPendingInvitationsProvider(groupId)),
   );
 
   Future<bool> respondToGroupInvitation({
@@ -184,6 +201,8 @@ class GroupsActionController extends Notifier<AsyncValue<void>> {
     () => ref
         .read(groupsRepositoryProvider)
         .cancelGroupInvitation(groupId: groupId, inviteeId: inviteeId),
+    onSuccess: () =>
+        ref.invalidate(groupPendingInvitationsProvider(groupId)),
   );
 
   Future<bool> removeGroupMember({
@@ -204,11 +223,9 @@ class GroupsActionController extends Notifier<AsyncValue<void>> {
     required String memberId,
     required GroupMemberRole role,
   }) => _resultAction(
-    () => ref.read(groupsRepositoryProvider).setGroupMemberRole(
-      groupId: groupId,
-      memberId: memberId,
-      role: role,
-    ),
+    () => ref
+        .read(groupsRepositoryProvider)
+        .setGroupMemberRole(groupId: groupId, memberId: memberId, role: role),
     onSuccess: () => ref.invalidate(groupMembersProvider(groupId)),
   );
 
@@ -216,10 +233,9 @@ class GroupsActionController extends Notifier<AsyncValue<void>> {
     required String groupId,
     required String newOwnerId,
   }) => _resultAction(
-    () => ref.read(groupsRepositoryProvider).transferGroupOwnership(
-      groupId: groupId,
-      newOwnerId: newOwnerId,
-    ),
+    () => ref
+        .read(groupsRepositoryProvider)
+        .transferGroupOwnership(groupId: groupId, newOwnerId: newOwnerId),
     onSuccess: () {
       ref.invalidate(groupMembersProvider(groupId));
       ref.invalidate(groupProvider(groupId));
@@ -258,9 +274,21 @@ class GroupsActionController extends Notifier<AsyncValue<void>> {
     required String groupId,
     required String sessionId,
   }) => _resultAction(
-    () => ref.read(groupsRepositoryProvider).cancelGroupSession(
+    () => ref
+        .read(groupsRepositoryProvider)
+        .cancelGroupSession(groupId: groupId, sessionId: sessionId),
+    onSuccess: () => ref.invalidate(groupSessionsProvider(groupId)),
+  );
+
+  Future<bool> respondToGroupSessionRsvp({
+    required String groupId,
+    required String sessionId,
+    required GroupSessionRsvpStatus status,
+  }) => _resultAction(
+    () => ref.read(groupsRepositoryProvider).respondToGroupSessionRsvp(
       groupId: groupId,
       sessionId: sessionId,
+      status: status,
     ),
     onSuccess: () => ref.invalidate(groupSessionsProvider(groupId)),
   );
@@ -270,11 +298,9 @@ class GroupsActionController extends Notifier<AsyncValue<void>> {
     required String reason,
     String? details,
   }) => _stringAction(
-    () => ref.read(groupsRepositoryProvider).reportGroup(
-      groupId: groupId,
-      reason: reason,
-      details: details,
-    ),
+    () => ref
+        .read(groupsRepositoryProvider)
+        .reportGroup(groupId: groupId, reason: reason, details: details),
   );
 
   Future<String?> _stringAction(

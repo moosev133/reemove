@@ -8,9 +8,15 @@ import {HttpsError, onCall} from "firebase-functions/v2/https";
 import {writeAuditEvent} from "../core/audit";
 import {callableOptions} from "../core/functionOptions";
 import {consumeRateLimit} from "../core/rateLimit";
+import {assertActiveGroup, groupRef, requireActiveMember} from "../groups/groupsAccess";
 import {currentSchemaVersion} from "../core/schema";
 import {safeDocumentId} from "../feed/contentPolicy";
 import {parseNotificationPreferencesUpdate} from "./notificationPolicy";
+import {
+  parseGroupNotificationPreferencesUpdate,
+  parseStoredGroupNotificationPreferences,
+  groupNotificationPreferencesDocId,
+} from "./groupNotificationPolicy";
 
 function requireUid(value: string | undefined): string {
   if (!value) throw new HttpsError("unauthenticated", "Sign in to continue.");
@@ -53,6 +59,76 @@ export const updateNotificationPreferences = onCall(
       },
     });
     return {ok: true, preferences};
+  },
+);
+
+export const getGroupNotificationPreferences = onCall(
+  callableOptions,
+  async (request) => {
+    const uid = requireUid(request.auth?.uid);
+    const data = asRecord(request.data);
+    const database = getFirestore();
+    const groupId = safeDocumentId(data.groupId, "groupId");
+
+    // Authorization: only active group members may read their preferences.
+    const groupSnap = await groupRef(database, groupId).get();
+    assertActiveGroup(groupSnap);
+    await requireActiveMember(database, groupId, uid);
+
+    const snapshot = await database.doc(
+      `users/${uid}/private/${groupNotificationPreferencesDocId(groupId)}`,
+    ).get();
+    const preferences = parseStoredGroupNotificationPreferences(
+      snapshot.data(),
+    );
+    return {ok: true, preferences};
+  },
+);
+
+export const updateGroupNotificationPreferences = onCall(
+  callableOptions,
+  async (request) => {
+    const uid = requireUid(request.auth?.uid);
+    await consumeRateLimit(uid, {
+      key: "update_group_notification_preferences",
+      maxAttempts: 60,
+      windowSeconds: 60 * 60,
+    });
+    const data = asRecord(request.data);
+    const database = getFirestore();
+    const groupId = safeDocumentId(data.groupId, "groupId");
+
+    // Authorization: only active group members may update their preferences.
+    const groupSnap = await groupRef(database, groupId).get();
+    assertActiveGroup(groupSnap);
+    await requireActiveMember(database, groupId, uid);
+
+    const parsed = parseGroupNotificationPreferencesUpdate(
+      asRecord(data.preferences),
+    );
+    const now = Timestamp.now();
+    await database.doc(
+      `users/${uid}/private/${groupNotificationPreferencesDocId(groupId)}`,
+    ).set({
+      uid,
+      groupId,
+      muted: parsed.muted,
+      memberChatEnabled: parsed.memberChatEnabled,
+      announcementsEnabled: parsed.announcementsEnabled,
+      sessionsEnabled: parsed.sessionsEnabled,
+      invitationsEnabled: parsed.invitationsEnabled,
+      updatedAt: now,
+      schemaVersion: currentSchemaVersion,
+    }, {merge: true});
+
+    await writeAuditEvent({
+      actorId: uid,
+      action: "notifications.group_preferences_updated",
+      targetType: "group",
+      targetId: groupId,
+    });
+
+    return {ok: true, preferences: parsed};
   },
 );
 

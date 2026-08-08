@@ -49,9 +49,25 @@ class Group {
   bool get isMember => viewerRole != null;
 
   bool get isManager =>
-      viewerRole == GroupMemberRole.owner || viewerRole == GroupMemberRole.admin;
+      viewerRole == GroupMemberRole.owner ||
+      viewerRole == GroupMemberRole.admin ||
+      membershipStatus == GroupMembershipStatus.owner ||
+      membershipStatus == GroupMembershipStatus.admin;
 
-  bool get isOwner => viewerRole == GroupMemberRole.owner;
+  bool get isOwner =>
+      viewerRole == GroupMemberRole.owner ||
+      membershipStatus == GroupMembershipStatus.owner;
+
+  /// Owner/admin moderation for the authenticated viewer of this snapshot.
+  bool canModerateAs(String? viewerUid) {
+    if (viewerUid == null || viewerUid.isEmpty) {
+      return false;
+    }
+    if (viewerUid == ownerId) {
+      return true;
+    }
+    return isManager;
+  }
 
   bool get hasPendingRequest =>
       membershipStatus == GroupMembershipStatus.pending;

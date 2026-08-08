@@ -1,22 +1,25 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../app/theme/app_spacing.dart';
+import '../../../../core/release/release_control_service.dart';
+import '../../../../core/release/release_feature_gate.dart';
+import '../../../../core/release/release_providers.dart';
+import '../../../../core/release/release_state.dart';
 import '../../../../core/widgets/adaptive_page_body.dart';
 import '../../../../core/widgets/app_page_header.dart';
 import '../../../../core/widgets/premium_surface.dart';
 
-class CreateScreen extends StatefulWidget {
+class CreateScreen extends ConsumerStatefulWidget {
   const CreateScreen({super.key});
 
   @override
-  State<CreateScreen> createState() => _CreateScreenState();
+  ConsumerState<CreateScreen> createState() => _CreateScreenState();
 }
 
-class _CreateScreenState extends State<CreateScreen>
+class _CreateScreenState extends ConsumerState<CreateScreen>
     with AutomaticKeepAliveClientMixin<CreateScreen> {
   @override
   bool get wantKeepAlive => true;
@@ -24,44 +27,51 @@ class _CreateScreenState extends State<CreateScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    const List<_CreationOption> options = <_CreationOption>[
-      _CreationOption(
+    final ReleaseState release = ref.watch(releaseStateProvider).maybeWhen(
+          data: (ReleaseState value) => value,
+          orElse: () => ReleaseControlService.loadSafeDefaults(),
+        );
+    final List<_CreationOption> options = <_CreationOption>[
+      const _CreationOption(
         id: 'post',
         title: 'Post',
         description: 'Share photos, video, progress, or a sports moment.',
         icon: Icons.photo_camera_back_outlined,
       ),
-      _CreationOption(
+      if (ReleaseFeatureGate.showStoryUpload(release))
+        const _CreationOption(
         id: 'story',
         title: 'Story',
         description: 'Share an update designed for a temporary story.',
         icon: Icons.auto_awesome_motion_outlined,
       ),
-      _CreationOption(
+      const _CreationOption(
         id: 'reel',
         title: 'Reel',
         description: 'Create a short sports video for discovery.',
         icon: Icons.video_collection_outlined,
       ),
-      _CreationOption(
+      const _CreationOption(
         id: 'event',
         title: 'Event or match',
         description: 'Organize a session, match, race, or meetup.',
         icon: Icons.event_available_outlined,
       ),
-      _CreationOption(
+      const _CreationOption(
         id: 'challenge',
         title: 'Challenge',
         description: 'Create a community challenge with goals and rankings.',
         icon: Icons.emoji_events_outlined,
       ),
-      _CreationOption(
+      if (ReleaseFeatureGate.showMarketplace(release))
+        const _CreationOption(
         id: 'listing',
         title: 'Marketplace listing',
         description: 'List sports equipment for the ReeMove community.',
         icon: Icons.sell_outlined,
       ),
-      _CreationOption(
+      if (ReleaseFeatureGate.showAiModules(release))
+        const _CreationOption(
         id: 'ai_content',
         title: 'Content Assistant',
         description: 'Draft captions and post ideas with ReeMove AI.',
@@ -95,12 +105,10 @@ class _CreateScreenState extends State<CreateScreen>
                           option: option,
                           onTap: () {
                             if (option.id == 'ai_content') {
-                              unawaited(context.push(AppRoutes.aiContent));
+                              context.push(AppRoutes.aiContent);
                               return;
                             }
-                            unawaited(
-                              context.push(AppRoutes.createFlow(option.id)),
-                            );
+                            context.push(AppRoutes.createFlow(option.id));
                           },
                         ),
                       ),

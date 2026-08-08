@@ -3,7 +3,10 @@ import {
   getFirestore,
   Timestamp,
   type DocumentData,
+  type DocumentReference,
+  type Firestore,
   type QueryDocumentSnapshot,
+  type WriteBatch,
 } from "firebase-admin/firestore";
 import {getStorage} from "firebase-admin/storage";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
@@ -12,6 +15,21 @@ import {writeAuditEvent} from "../core/audit";
 import {callableOptions} from "../core/functionOptions";
 import {consumeRateLimit} from "../core/rateLimit";
 import {collections, currentSchemaVersion} from "../core/schema";
+import {
+  assertCanPublishInSportsChannel,
+  groupChannelStoragePrefix,
+  isGroupChannelStoragePath,
+  loadSportsConversationContext,
+  sportsManagerCanModerate,
+  sportsGroupConversationSource,
+} from "../groups/groupChannelAccess";
+import {
+  channelSyncBatchSize,
+  commitBatchedOps,
+  ensureGroupChannelsMaterialized,
+  iterateActiveGroupMembers,
+} from "../groups/groupChannels";
+import {assertNotBlocked} from "../groups/groupsAccess";
 import {activeProfileSnapshot, assertConversationMember, requireUid} from "./conversationAccess";
 import {
   deletableMessageHours,
@@ -29,7 +47,7 @@ import {
   parseSendRequest,
 } from "./requestData";
 
-async function activeMembers(
+async function activeConversationMembers(
   conversationId: string,
 ): Promise<QueryDocumentSnapshot<DocumentData>[]> {
   const snapshot = await getFirestore().collection(collections.conversations)
@@ -42,28 +60,68 @@ async function verifiedAttachments(options: {
   conversationId: string;
   messageId: string;
   attachments: AttachmentInput[];
+  sports?: {
+    groupId: string;
+    channelType: string;
+    mediaMode: string;
+  };
 }): Promise<Record<string, unknown>[]> {
   const bucket = getStorage().bucket();
   const result: Record<string, unknown>[] = [];
   for (const attachment of options.attachments) {
-    const expectedPrefix = `messages/${options.conversationId}/${options.messageId}/${attachment.id}/`;
-    if (!attachment.storagePath.startsWith(expectedPrefix)) {
-      throw new HttpsError("invalid-argument", "Attachment path is invalid.");
+    const mediaMode = options.sports?.mediaMode ?? "normal";
+    let expectedPrefix: string;
+    if (options.sports) {
+      expectedPrefix = `${groupChannelStoragePrefix(
+        options.sports.groupId,
+        options.sports.channelType,
+        options.messageId,
+        attachment.id,
+      )}/`;
+      if (!isGroupChannelStoragePath(
+        attachment.storagePath,
+        options.sports.groupId,
+        options.sports.channelType,
+        options.messageId,
+        attachment.id,
+      )) {
+        throw new HttpsError("invalid-argument", "Attachment path is invalid.");
+      }
+    } else {
+      expectedPrefix =
+        `messages/${options.conversationId}/${options.messageId}/${attachment.id}/`;
+      if (!attachment.storagePath.startsWith(expectedPrefix)) {
+        throw new HttpsError("invalid-argument", "Attachment path is invalid.");
+      }
     }
     const [metadata] = await bucket.file(attachment.storagePath).getMetadata();
     const custom = metadata.metadata ?? {};
     const actualSize = Number(metadata.size ?? 0);
-    if (custom.ownerId !== options.uid ||
-        custom.conversationId !== options.conversationId ||
-        custom.messageId !== options.messageId ||
-        custom.assetId !== attachment.id ||
-        custom.kind !== attachment.kind ||
-        metadata.contentType !== attachment.contentType ||
-        actualSize !== attachment.sizeBytes) {
+    const baseMetaOk = custom.ownerId === options.uid &&
+      custom.conversationId === options.conversationId &&
+      custom.messageId === options.messageId &&
+      custom.assetId === attachment.id &&
+      custom.kind === attachment.kind &&
+      metadata.contentType === attachment.contentType &&
+      actualSize === attachment.sizeBytes;
+    if (!baseMetaOk) {
       throw new HttpsError(
         "failed-precondition",
         "Attachment ownership or metadata could not be verified.",
       );
+    }
+    if (options.sports) {
+      if (
+        custom.groupId !== options.sports.groupId ||
+        custom.channelType !== options.sports.channelType ||
+        String(custom.mediaMode ?? "normal") !== mediaMode ||
+        custom.schemaVersion !== String(currentSchemaVersion)
+      ) {
+        throw new HttpsError(
+          "failed-precondition",
+          "Attachment ownership or metadata could not be verified.",
+        );
+      }
     }
     const maximum = attachment.kind === "image" ? 15 * 1024 * 1024 :
       attachment.kind === "audio" ? 25 * 1024 * 1024 : 100 * 1024 * 1024;
@@ -74,14 +132,20 @@ async function verifiedAttachments(options: {
     if (!attachment.contentType.startsWith(expectedContentPrefix)) {
       throw new HttpsError("invalid-argument", "Attachment content type is invalid.");
     }
-    result.push({
+    const stored: Record<string, unknown> = {
       id: attachment.id,
       storagePath: attachment.storagePath,
       contentType: attachment.contentType,
       sizeBytes: actualSize,
       kind: attachment.kind,
+      mediaMode,
       processingState: "ready",
-    });
+    };
+    // Never persist a durable download URL for view_once media.
+    if (mediaMode !== "view_once") {
+      // Clients resolve via Storage rules for normal / keep_in_chat.
+    }
+    result.push(stored);
   }
   return result;
 }
@@ -94,8 +158,19 @@ async function replyPreview(options: {
   const snapshot = await getFirestore().doc(
     `conversations/${options.conversationId}/messages/${options.messageId}`,
   ).get();
-  if (!snapshot.exists || snapshot.get("isDeleted") === true) {
+  if (!snapshot.exists) {
     throw new HttpsError("failed-precondition", "The replied-to message is unavailable.");
+  }
+  if (snapshot.get("isDeleted") === true) {
+    const sender = snapshot.get("senderSnapshot") as Record<string, unknown> | undefined;
+    return {
+      messageId: snapshot.id,
+      senderId: String(snapshot.get("senderId") ?? ""),
+      senderDisplayName: String(sender?.displayName ?? "Athlete"),
+      kind: "deleted",
+      preview: "Message deleted",
+      isDeleted: true,
+    };
   }
   const sender = snapshot.get("senderSnapshot") as Record<string, unknown> | undefined;
   const kind = String(snapshot.get("kind") ?? "text");
@@ -108,7 +183,86 @@ async function replyPreview(options: {
       kind === "image" || kind === "video" || kind === "audio" ? kind : "text",
       String(snapshot.get("text") ?? ""),
     ),
+    isDeleted: false,
   };
+}
+
+async function fanOutLastMessage(options: {
+  database: Firestore;
+  conversationId: string;
+  senderId: string;
+  lastMessage: Record<string, unknown>;
+  now: Timestamp;
+  sportsGroupId?: string;
+  /** When true, increments unread for non-senders (send path only). */
+  incrementUnread?: boolean;
+}): Promise<void> {
+  const database = options.database;
+  const incrementUnread = options.incrementUnread === true;
+  const applyMemberUpdate = (
+    batch: WriteBatch,
+    memberId: string,
+    memberRef?: DocumentReference,
+  ) => {
+    const isSender = memberId === options.senderId;
+    const unreadPatch = incrementUnread ?
+      (isSender ? {unreadCount: 0} : {unreadCount: FieldValue.increment(1)}) :
+      {};
+    batch.set(
+      database.doc(`users/${memberId}/conversation_inbox/${options.conversationId}`),
+      {
+        lastMessage: options.lastMessage,
+        updatedAt: options.now,
+        ...(incrementUnread ? {
+          isArchived: false,
+          archivedAt: FieldValue.delete(),
+        } : {}),
+        ...unreadPatch,
+      },
+      {merge: true},
+    );
+    if (memberRef) {
+      // Keep removedAt explicitly null so rules activeConversationMember
+      // stays true even if this merge creates a stub member doc.
+      batch.set(
+        memberRef,
+        {
+          updatedAt: options.now,
+          removedAt: null,
+          ...(incrementUnread ? {archivedAt: FieldValue.delete()} : {}),
+          ...unreadPatch,
+        },
+        {merge: true},
+      );
+    }
+  };
+
+  if (options.sportsGroupId) {
+    const ops: Array<(batch: WriteBatch) => void> = [];
+    for await (const page of iterateActiveGroupMembers(
+      database,
+      options.sportsGroupId,
+      channelSyncBatchSize,
+    )) {
+      for (const member of page) {
+        const memberRef = database
+          .collection(collections.conversations)
+          .doc(options.conversationId)
+          .collection("members")
+          .doc(member.id);
+        ops.push((batch) => applyMemberUpdate(batch, member.id, memberRef));
+      }
+    }
+    await commitBatchedOps(database, ops);
+    return;
+  }
+
+  const members = await activeConversationMembers(options.conversationId);
+  const ops: Array<(batch: WriteBatch) => void> = [];
+  for (const member of members) {
+    ops.push((batch) => applyMemberUpdate(batch, member.id, member.ref));
+  }
+  await commitBatchedOps(database, ops);
 }
 
 export const sendMessage = onCall(callableOptions, async (request) => {
@@ -131,23 +285,46 @@ export const sendMessage = onCall(callableOptions, async (request) => {
     return {messageId: messageRef.id, created: false};
   }
 
-  const [sender, attachments, reply, members] = await Promise.all([
+  const sports = await loadSportsConversationContext(access.conversation, uid);
+  if (sports) {
+    await ensureGroupChannelsMaterialized(sports.groupId, database);
+    assertCanPublishInSportsChannel(
+      sports.channelType,
+      sports.membershipRole,
+      parsed.mediaMode,
+    );
+    const ownerId = String(sports.group.get("ownerId") ?? "");
+    if (ownerId && ownerId !== uid) {
+      await assertNotBlocked(database, uid, ownerId);
+    }
+  }
+
+  const [sender, attachments, reply] = await Promise.all([
     activeProfileSnapshot(database, uid),
     verifiedAttachments({
       uid,
       conversationId: parsed.conversationId,
       messageId: parsed.clientMessageId,
       attachments: parsed.attachments,
+      sports: sports ? {
+        groupId: sports.groupId,
+        channelType: sports.channelType,
+        mediaMode: parsed.mediaMode,
+      } : undefined,
     }),
     replyPreview({
       conversationId: parsed.conversationId,
       messageId: parsed.replyToMessageId,
     }),
-    activeMembers(parsed.conversationId),
   ]);
-  if (members.length === 0 || !members.some((item) => item.id === uid)) {
-    throw new HttpsError("permission-denied", "You are not a member of this conversation.");
+
+  if (!sports) {
+    const members = await activeConversationMembers(parsed.conversationId);
+    if (members.length === 0 || !members.some((item) => item.id === uid)) {
+      throw new HttpsError("permission-denied", "You are not a member of this conversation.");
+    }
   }
+
   const kind = messageKind(parsed.text, parsed.attachments);
   const now = Timestamp.now();
   const lastMessage = {
@@ -158,6 +335,48 @@ export const sendMessage = onCall(callableOptions, async (request) => {
     sentAt: now,
   };
 
+  if (sports) {
+    await database.runTransaction(async (transaction) => {
+      const latest = await transaction.get(messageRef);
+      if (latest.exists) return;
+      transaction.create(messageRef, {
+        conversationId: parsed.conversationId,
+        senderId: uid,
+        senderSnapshot: sender,
+        kind,
+        text: parsed.text,
+        attachments,
+        mediaMode: parsed.mediaMode,
+        groupId: sports.groupId,
+        channelType: sports.channelType,
+        source: sportsGroupConversationSource,
+        ...(reply ? {replyTo: reply} : {}),
+        reactionCounts: {},
+        isDeleted: false,
+        moderationState: "active",
+        sentAt: now,
+        createdAt: now,
+        updatedAt: now,
+        schemaVersion: currentSchemaVersion,
+      });
+      transaction.update(access.conversation.ref, {
+        lastMessage,
+        updatedAt: now,
+      });
+    });
+    await fanOutLastMessage({
+      database,
+      conversationId: parsed.conversationId,
+      senderId: uid,
+      lastMessage,
+      now,
+      sportsGroupId: sports.groupId,
+      incrementUnread: true,
+    });
+    return {messageId: messageRef.id, created: true};
+  }
+
+  const members = await activeConversationMembers(parsed.conversationId);
   await database.runTransaction(async (transaction) => {
     const latest = await transaction.get(messageRef);
     if (latest.exists) return;
@@ -168,6 +387,7 @@ export const sendMessage = onCall(callableOptions, async (request) => {
       kind,
       text: parsed.text,
       attachments,
+      mediaMode: parsed.mediaMode,
       ...(reply ? {replyTo: reply} : {}),
       reactionCounts: {},
       isDeleted: false,
@@ -217,6 +437,14 @@ export const editMessage = onCall(callableOptions, async (request) => {
     maxAttempts: 120,
     windowSeconds: 60 * 60,
   });
+  const sports = await loadSportsConversationContext(access.conversation, uid);
+  if (sports) {
+    assertCanPublishInSportsChannel(
+      sports.channelType,
+      sports.membershipRole,
+      "normal",
+    );
+  }
   const messageRef = access.conversation.ref.collection("messages").doc(parsed.messageId);
   const message = await messageRef.get();
   if (!message.exists || message.get("isDeleted") === true) {
@@ -242,16 +470,19 @@ export const editMessage = onCall(callableOptions, async (request) => {
       sentAt,
     };
     batch.update(access.conversation.ref, {lastMessage, updatedAt: now});
-    const members = await activeMembers(parsed.conversationId);
-    for (const member of members) {
-      batch.set(
-        access.database.doc(`users/${member.id}/conversation_inbox/${parsed.conversationId}`),
-        {lastMessage, updatedAt: now},
-        {merge: true},
-      );
-    }
+    await batch.commit();
+    await fanOutLastMessage({
+      database: access.database,
+      conversationId: parsed.conversationId,
+      senderId: uid,
+      lastMessage,
+      now,
+      sportsGroupId: sports?.groupId,
+      incrementUnread: false,
+    });
+  } else {
+    await batch.commit();
   }
-  await batch.commit();
   return {updated: true};
 });
 
@@ -264,22 +495,28 @@ export const deleteMessage = onCall(callableOptions, async (request) => {
   if (!message.exists || message.get("isDeleted") === true) return {deleted: true};
   const isSender = message.get("senderId") === uid;
   const role = access.member.get("role");
-  const isAdmin = role === "owner" || role === "admin";
+  const isConversationAdmin = role === "owner" || role === "admin";
+  const sports = await loadSportsConversationContext(access.conversation, uid)
+    .catch(() => null);
+  const isSportsModerator = sports ?
+    sportsManagerCanModerate(sports.membershipRole) :
+    false;
   const sentAt = message.get("sentAt");
   const withinWindow = sentAt instanceof Timestamp &&
     Timestamp.now().toMillis() - sentAt.toMillis() <= deletableMessageHours * 60 * 60 * 1000;
-  if ((!isSender || !withinWindow) && !isAdmin) {
+  if ((!isSender || !withinWindow) && !isConversationAdmin && !isSportsModerator) {
     throw new HttpsError("permission-denied", "This message cannot be deleted.");
   }
   const attachments = Array.isArray(message.get("attachments")) ?
     message.get("attachments") as Array<Record<string, unknown>> : [];
   const now = Timestamp.now();
   const batch = access.database.batch();
+  // Soft-delete keeps a placeholder shape for reply integrity. Do not strip
+  // replyTo from child messages — UI reads parent or embedded preview.
   batch.update(messageRef, {
     kind: "deleted",
     text: "",
     attachments: [],
-    replyTo: FieldValue.delete(),
     isDeleted: true,
     deletedAt: now,
     deletedBy: uid,
@@ -294,21 +531,30 @@ export const deleteMessage = onCall(callableOptions, async (request) => {
       sentAt: sentAt instanceof Timestamp ? sentAt : now,
     };
     batch.update(access.conversation.ref, {lastMessage, updatedAt: now});
-    const members = await activeMembers(parsed.conversationId);
-    for (const member of members) {
-      batch.set(
-        access.database.doc(`users/${member.id}/conversation_inbox/${parsed.conversationId}`),
-        {lastMessage, updatedAt: now},
-        {merge: true},
-      );
-    }
+    await batch.commit();
+    await fanOutLastMessage({
+      database: access.database,
+      conversationId: parsed.conversationId,
+      senderId: uid,
+      lastMessage,
+      now,
+      sportsGroupId: sports?.groupId,
+      incrementUnread: false,
+    });
+  } else {
+    await batch.commit();
   }
-  await batch.commit();
 
   await Promise.allSettled(attachments.map(async (item) => {
     const path = item.storagePath;
-    if (typeof path === "string" &&
-        path.startsWith(`messages/${parsed.conversationId}/${parsed.messageId}/`)) {
+    if (typeof path !== "string") return;
+    const messagePrefix =
+      `messages/${parsed.conversationId}/${parsed.messageId}/`;
+    const groupPrefix = sports ?
+      `groups/${sports.groupId}/channels/${sports.channelType}/${parsed.messageId}/` :
+      null;
+    if (path.startsWith(messagePrefix) ||
+        (groupPrefix && path.startsWith(groupPrefix))) {
       await getStorage().bucket().file(path).delete({ignoreNotFound: true});
     }
   }));
@@ -317,7 +563,11 @@ export const deleteMessage = onCall(callableOptions, async (request) => {
     action: "messaging.message_deleted",
     targetType: "message",
     targetId: parsed.messageId,
-    metadata: {conversationId: parsed.conversationId, adminDelete: !isSender},
+    metadata: {
+      conversationId: parsed.conversationId,
+      adminDelete: !isSender,
+      sportsModerator: isSportsModerator && !isSender,
+    },
   });
   return {deleted: true};
 });
@@ -331,6 +581,9 @@ export const toggleMessageReaction = onCall(callableOptions, async (request) => 
     maxAttempts: 400,
     windowSeconds: 60 * 60,
   });
+  if (access.conversation.get("source") === sportsGroupConversationSource) {
+    await loadSportsConversationContext(access.conversation, uid);
+  }
   const messageRef = access.conversation.ref.collection("messages").doc(parsed.messageId);
   const reactionRef = messageRef.collection("reactions").doc(uid);
   const mirrorRef = access.database.doc(
@@ -383,6 +636,9 @@ export const markConversationRead = onCall(callableOptions, async (request) => {
   const uid = requireUid(request.auth?.uid);
   const parsed = parseReadRequest(request.data);
   const access = await assertConversationMember(parsed.conversationId, uid);
+  if (access.conversation.get("source") === sportsGroupConversationSource) {
+    await loadSportsConversationContext(access.conversation, uid);
+  }
   const message = await access.conversation.ref.collection("messages")
     .doc(parsed.messageId).get();
   if (!message.exists) {
@@ -398,6 +654,7 @@ export const markConversationRead = onCall(callableOptions, async (request) => {
     const previousMessageAt = member.get("lastReadMessageSentAt");
     if (previousMessageAt instanceof Timestamp &&
         previousMessageAt.toMillis() >= sentAt.toMillis()) return;
+    // Clamp unread to zero — never allow negative unread via increments elsewhere.
     transaction.set(access.member.ref, {
       lastReadAt: now,
       lastReadMessageId: parsed.messageId,

@@ -1,3 +1,4 @@
+import '../../../groups/domain/entities/group_enums.dart';
 import 'message_attachment_draft.dart';
 
 class SendMessageRequest {
@@ -7,6 +8,7 @@ class SendMessageRequest {
     required this.text,
     required this.attachments,
     this.replyToMessageId,
+    this.mediaMode = GroupMediaMode.normal,
   });
 
   final String conversationId;
@@ -14,6 +16,7 @@ class SendMessageRequest {
   final String text;
   final List<UploadedMessageAttachment> attachments;
   final String? replyToMessageId;
+  final GroupMediaMode mediaMode;
 }
 
 class ConversationPreferencesUpdate {
