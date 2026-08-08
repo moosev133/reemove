@@ -3,3 +3,6 @@
 android/key.properties
 android/*.jks
 android/*.keystore
+reemove_app/android/key.properties
+reemove_app/android/*.jks
+reemove_app/android/*.keystore
