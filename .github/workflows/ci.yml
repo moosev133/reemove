@@ -38,7 +38,7 @@ jobs:
         run: python3 scripts/scan_secrets.py .
       - name: Package validation
         run: python3 scripts/validate_package.py .
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: flutter-coverage
