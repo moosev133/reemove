@@ -14,7 +14,7 @@ dependencies:
   firebase_analytics: ^12.4.4
   firebase_app_check: ^0.4.5
   firebase_auth: ^6.5.4
-  firebase_core: ^4.11.0
+  firebase_core: ^4.13.0
   firebase_crashlytics: ^5.2.6
   firebase_database: ^12.4.1
   firebase_messaging: ^16.4.2
