@@ -11,7 +11,7 @@
     "test:emulated": "firebase emulators:exec --project demo-reemove --only firestore,database,storage \"npm test\""
   },
   "dependencies": {
-    "@firebase/rules-unit-testing": "5.0.1",
+    "@firebase/rules-unit-testing": "5.0.2",
     "firebase": "12.16.0"
   }
 }
